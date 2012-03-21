@@ -1,9 +1,9 @@
-var phantomdriver = phantomdriver || {};
+var ghostdriver = ghostdriver || {};
 
-phantomdriver.StatusReqHand = function() {
+ghostdriver.StatusReqHand = function() {
     // private:
     var
-    _protoParent = phantomdriver.StatusReqHand.prototype,
+    _protoParent = ghostdriver.StatusReqHand.prototype,
     _statusObj = {
         "build" : {
             "version" : "0.1a",
@@ -27,7 +27,7 @@ phantomdriver.StatusReqHand = function() {
             return;
         }
 
-        throw new phantomdriver.InvalidCommandMethod(req);
+        throw new ghostdriver.InvalidCommandMethod(req);
     }
 
     // public:
@@ -36,4 +36,4 @@ phantomdriver.StatusReqHand = function() {
     };
 };
 // prototype inheritance:
-phantomdriver.StatusReqHand.prototype = new phantomdriver.RequestHandler();
+ghostdriver.StatusReqHand.prototype = new ghostdriver.RequestHandler();

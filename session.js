@@ -1,6 +1,6 @@
-var phantomdriver = phantomdriver || {};
+var ghostdriver = ghostdriver || {};
 
-phantomdriver.Session = function(desiredCapabilities) {
+ghostdriver.Session = function(desiredCapabilities) {
     // TODO - Actually try to match the "desiredCapabilities" instead of ignoring them
 
     // private:
@@ -26,7 +26,7 @@ phantomdriver.Session = function(desiredCapabilities) {
         }
     },
     _page = require("webpage").create(),
-    _id = ++phantomdriver.Session.instanceCounter;
+    _id = ++ghostdriver.Session.instanceCounter;
 
     // public:
     return {
@@ -37,4 +37,4 @@ phantomdriver.Session = function(desiredCapabilities) {
 };
 
 // public static:
-phantomdriver.Session.instanceCounter = 0;
+ghostdriver.Session.instanceCounter = 0;

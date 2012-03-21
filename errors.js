@@ -1,7 +1,7 @@
-var phantomdriver = phantomdriver || {};
+var ghostdriver = ghostdriver || {};
 
 // Invalid Command Method
-phantomdriver.InvalidCommandMethod = function(req) {
+ghostdriver.InvalidCommandMethod = function(req) {
     this.name = "InvalidCommandMethod";
     if (typeof(req) === "object") {
         this.message = "Request = "+JSON.stringify(req);
@@ -9,10 +9,10 @@ phantomdriver.InvalidCommandMethod = function(req) {
         this.message = req || "";
     }
 };
-phantomdriver.InvalidCommandMethod.prototype = Error.prototype;
+ghostdriver.InvalidCommandMethod.prototype = Error.prototype;
 
 // Unknown Command
-phantomdriver.UnknownCommand = function(req) {
+ghostdriver.UnknownCommand = function(req) {
     this.name = "UnknownCommand";
     if (typeof(req) === "object") {
         this.message = "Request = "+JSON.stringify(req);
@@ -20,10 +20,10 @@ phantomdriver.UnknownCommand = function(req) {
         this.message = req || "";
     }
 };
-phantomdriver.UnknownCommand.prototype = Error.prototype;
+ghostdriver.UnknownCommand.prototype = Error.prototype;
 
 // Variable Resource Not Found
-phantomdriver.VariableResourceNotFound = function(req) {
+ghostdriver.VariableResourceNotFound = function(req) {
     this.name = "VariableResourceNotFound";
     if (typeof(req) === "object") {
         this.message = "Request = "+JSON.stringify(req);
@@ -31,10 +31,10 @@ phantomdriver.VariableResourceNotFound = function(req) {
         this.message = req || "";
     }
 };
-phantomdriver.VariableResourceNotFound.prototype = Error.prototype;
+ghostdriver.VariableResourceNotFound.prototype = Error.prototype;
 
 // Missing Command Parameters
-phantomdriver.MissingCommandParameters = function(req) {
+ghostdriver.MissingCommandParameters = function(req) {
     this.name = "MissingCommandParameters";
     if (typeof(req) === "object") {
         this.message = "Request = "+JSON.stringify(req);
@@ -42,4 +42,4 @@ phantomdriver.MissingCommandParameters = function(req) {
         this.message = req || "";
     }
 };
-phantomdriver.MissingCommandParameters.prototype = Error.prototype;
+ghostdriver.MissingCommandParameters.prototype = Error.prototype;

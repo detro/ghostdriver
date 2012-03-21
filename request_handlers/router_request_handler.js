@@ -1,14 +1,14 @@
-var phantomdriver = phantomdriver || {};
+var ghostdriver = ghostdriver || {};
 
 /**
  * This Class does first level routing: based on the REST Path, sends Request and Response to the right Request Handler.
  */
-phantomdriver.RouterReqHand = function() {
+ghostdriver.RouterReqHand = function() {
     // private:
     var
-    _protoParent = phantomdriver.RouterReqHand.prototype,
-    _statusRH = new phantomdriver.StatusReqHand(),
-    _sessionManRH = new phantomdriver.SessionManagerReqHand(),
+    _protoParent = ghostdriver.RouterReqHand.prototype,
+    _statusRH = new ghostdriver.StatusReqHand(),
+    _sessionManRH = new ghostdriver.SessionManagerReqHand(),
     _handle = function(req, res) {
         // Invoke parent implementation
         _protoParent.handle.call(this, req, res);
@@ -21,7 +21,7 @@ phantomdriver.RouterReqHand = function() {
                 || req.urlParsed.directory === "/session/") {       // GET or DELETE '/session/:id'
                 _sessionManRH.handle(req, res);
             } else {
-                throw new phantomdriver.UnknownCommand(req);
+                throw new ghostdriver.UnknownCommand(req);
             }
         } catch (e) {
             // Don't know where to Route this!
@@ -39,4 +39,4 @@ phantomdriver.RouterReqHand = function() {
     };
 };
 // prototype inheritance:
-phantomdriver.RouterReqHand.prototype = new phantomdriver.RequestHandler();
+ghostdriver.RouterReqHand.prototype = new ghostdriver.RequestHandler();

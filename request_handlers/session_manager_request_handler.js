@@ -1,9 +1,9 @@
-var phantomdriver = phantomdriver || {};
+var ghostdriver = ghostdriver || {};
 
-phantomdriver.SessionManagerReqHand = function() {
+ghostdriver.SessionManagerReqHand = function() {
     // private:
     var
-    _protoParent = phantomdriver.SessionManagerReqHand.prototype,
+    _protoParent = ghostdriver.SessionManagerReqHand.prototype,
     _sessions = {}, //< will store key/value pairs like 'SESSION_ID : SESSION_OBJECT'
 
     _handle = function(req, res) {
@@ -21,7 +21,7 @@ phantomdriver.SessionManagerReqHand = function() {
             }
         }
 
-        throw new phantomdriver.InvalidCommandMethod(req);
+        throw new ghostdriver.InvalidCommandMethod(req);
     },
 
     _createAndRedirectToNewSession = function(req, res) {
@@ -34,7 +34,7 @@ phantomdriver.SessionManagerReqHand = function() {
             desiredCapabilities = JSON.parse(req.post);
         }
         // Create and store a new Session
-        newSession = new phantomdriver.Session(desiredCapabilities);
+        newSession = new ghostdriver.Session(desiredCapabilities);
         _sessions[newSession.getId()] = newSession;
 
         // Redirect to the newly created Session
@@ -66,7 +66,7 @@ phantomdriver.SessionManagerReqHand = function() {
         var sId = req.urlParsed.file;
 
         if (sId === "")
-            throw new phantomdriver.MissingCommandParameters(req);
+            throw new ghostdriver.MissingCommandParameters(req);
 
         if (typeof(_sessions[sId]) !== "undefined") {
             // Release resources associated with the page
@@ -86,14 +86,14 @@ phantomdriver.SessionManagerReqHand = function() {
         var sId = req.urlParsed.file;
 
         if (sId === "")
-            throw new phantomdriver.MissingCommandParameters(req);
+            throw new ghostdriver.MissingCommandParameters(req);
 
         if (typeof(_sessions[sId]) !== "undefined") {
             res.statusCode = 200;
             res.writeJSON(_protoParent.buildSuccessResponseBody.call(this, sId, _sessions[sId].getCapabilities()));
             res.close();
         } else {
-            throw new phantomdriver.VariableResourceNotFound(req);
+            throw new ghostdriver.VariableResourceNotFound(req);
         }
     };
 
@@ -103,4 +103,4 @@ phantomdriver.SessionManagerReqHand = function() {
     };
 };
 // prototype inheritance:
-phantomdriver.SessionManagerReqHand.prototype = new phantomdriver.RequestHandler();
+ghostdriver.SessionManagerReqHand.prototype = new ghostdriver.RequestHandler();
