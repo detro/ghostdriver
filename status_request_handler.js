@@ -35,5 +35,5 @@ phantomdriver.StatusReqHand = function() {
         handle : _handle
     };
 };
-
+// prototype inheritance:
 phantomdriver.StatusReqHand.prototype = new phantomdriver.RequestHandler();

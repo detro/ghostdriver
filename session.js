@@ -36,4 +36,5 @@ phantomdriver.Session = function(desiredCapabilities) {
     };
 };
 
+// public static:
 phantomdriver.Session.instanceCounter = 0;
