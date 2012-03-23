@@ -83,23 +83,33 @@ ghostdriver.SessionManagerReqHand = function() {
     },
 
     _getSessionCapabilities = function(req, res) {
-        var sId = req.urlParsed.file;
+        var sId = req.urlParsed.file,
+            session;
 
         if (sId === "")
             throw new ghostdriver.MissingCommandParameters(req);
 
-        if (typeof(_sessions[sId]) !== "undefined") {
+        session = _getSession(sId);
+        if (session !== null) {
             res.statusCode = 200;
             res.writeJSON(_protoParent.buildSuccessResponseBody.call(this, sId, _sessions[sId].getCapabilities()));
             res.close();
         } else {
             throw new ghostdriver.VariableResourceNotFound(req);
         }
+    },
+
+    _getSession = function(sessionId) {
+        if (typeof(_sessions[sessionId]) !== "undefined") {
+            return _sessions[sessionId];
+        }
+        return null;
     };
 
     // public:
     return {
-        handle : _handle
+        handle : _handle,
+        getSession : _getSession
     };
 };
 // prototype inheritance:
