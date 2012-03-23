@@ -39,7 +39,8 @@ ghostdriver.RouterReqHand = function() {
                 if (session !== null) {
                     sessionRH = new ghostdriver.SessionReqHand(session);
 
-                    // Rebase the "url" to start from AFTER the "/session/:id" part
+                    // Rebase the "url" to start from AFTER the "/session/:id" part (store the Original URL in 'req.urlOriginal')
+                    req.urlOriginal = req.url;
                     req.url = req.urlParsed.path.substr((_const.SESSION_DIR + sessionId).length);
                     // Re-decorate the Request object
                     _protoParent.decorateRequest.call(this, req);
