@@ -4,10 +4,15 @@ ghostdriver.RequestHandler = function() {
     // private:
     var
     _handle = function(request, response) {
-        // Decorate the Request object
-        request.urlParsed = parseUri(request.url);
+        _decorateRequest(request);
+        _decorateResponse(response);
+    },
 
-        // Decorate the Response object
+    _decorateRequest = function(request) {
+        request.urlParsed = parseUri(request.url);
+    },
+
+    _decorateResponse = function(response) {
         response.setHeader("Cache", "no-cache");
         response.setHeader("Content-Type", "application/json;charset=UTF-8");
         response.writeJSON = function(obj) { this.write(JSON.stringify(obj)); };
@@ -29,7 +34,9 @@ ghostdriver.RequestHandler = function() {
     return {
         handle : _handle,
         buildResponseBody : _buildResponseBody,
-        buildSuccessResponseBody : _buildSuccessResponseBody
+        buildSuccessResponseBody : _buildSuccessResponseBody,
+        decorateRequest : _decorateRequest,
+        decorateResponse : _decorateResponse
     };
 };
 
