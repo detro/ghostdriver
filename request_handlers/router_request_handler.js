@@ -9,17 +9,45 @@ ghostdriver.RouterReqHand = function() {
     _protoParent = ghostdriver.RouterReqHand.prototype,
     _statusRH = new ghostdriver.StatusReqHand(),
     _sessionManRH = new ghostdriver.SessionManagerReqHand(),
+    _const = {
+        STATUS          : "status",
+        SESSION         : "session",
+        SESSIONS        : "sessions",
+        SESSION_DIR     : "/session/"
+    },
+
     _handle = function(req, res) {
+        var session,
+            sessionId,
+            sessionRH;
+
         // Invoke parent implementation
         _protoParent.handle.call(this, req, res);
 
         try {
-            if (req.urlParsed.file === "status") {                  // GET '/status'
+            if (req.urlParsed.file === _const.STATUS) {                             // GET '/status'
                 _statusRH.handle(req, res);
-            } else if (req.urlParsed.file === "session"             // POST '/session'
-                || req.urlParsed.file === "sessions"                // GET '/sessions'
-                || req.urlParsed.directory === "/session/") {       // GET or DELETE '/session/:id'
+            } else if (req.urlParsed.file === _const.SESSION                        // POST '/session'
+                || req.urlParsed.file === _const.SESSIONS                           // GET '/sessions'
+                || req.urlParsed.directory === _const.SESSION_DIR) {                // GET or DELETE '/session/:id'
                 _sessionManRH.handle(req, res);
+            } else if (req.urlParsed.path.indexOf(_const.SESSION_DIR) === 0) {      // GET, POST or DELETE '/session/:id/...'
+                // Retrieve session
+                sessionId = req.urlParsed.pathChunks[1];
+                session = _sessionManRH.getSession(sessionId);
+
+                if (session !== null) {
+                    sessionRH = new ghostdriver.SessionReqHand(session);
+
+                    // Rebase the "url" to start from AFTER the "/session/:id" part
+                    req.url = req.urlParsed.path.substr((_const.SESSION_DIR + sessionId).length);
+                    // Re-decorate the Request object
+                    _protoParent.decorateRequest.call(this, req);
+
+                    sessionRH.handle(req, res);
+                } else {
+                    throw new ghostdriver.VariableResourceNotFound(req);
+                }
             } else {
                 throw new ghostdriver.UnknownCommand(req);
             }
