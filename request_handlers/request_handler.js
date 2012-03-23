@@ -21,7 +21,7 @@ ghostdriver.RequestHandler = function() {
     _buildResponseBody = function(sessionId, statusCode, value) {
         return {
             "sessionId" : sessionId || null,
-            "statusCode" : statusCode || ghostdriver.ResponseStatusCodes.SUCCESS,
+            "status" : statusCode || ghostdriver.ResponseStatusCodes.SUCCESS,
             "value" : value || {}
         };
     },

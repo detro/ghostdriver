@@ -26,7 +26,7 @@ ghostdriver.Session = function(desiredCapabilities) {
         }
     },
     _page = require("webpage").create(),
-    _id = ++ghostdriver.Session.instanceCounter;
+    _id = (++ghostdriver.Session.instanceCounter) + ''; //< must be a string, even if I use progressive integers as unique ID
 
     // public:
     return {
