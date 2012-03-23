@@ -10,15 +10,18 @@ ghostdriver.SessionManagerReqHand = function() {
         _protoParent.handle.call(this, req, res);
 
         if (req.urlParsed.file === "session" && req.method === "POST") {
-            _createAndRedirectToNewSession(req, res); return;
+            _createAndRedirectToNewSession(req, res);
+            return;
         } else if (req.urlParsed.file === "sessions" && req.method === "GET") {
-            _listActiveSessions(req, res); return;
+            _listActiveSessions(req, res);
+            return;
         } else if (req.urlParsed.directory === "/session/") {
             if (req.method === "GET") {
-                _getSessionCapabilities(req, res); return;
+                _getSessionCapabilities(req, res);
             } else if (req.method === "DELETE") {
-                _deleteSession(req, res); return;
+                _deleteSession(req, res);
             }
+            return;
         }
 
         throw new ghostdriver.InvalidCommandMethod(req);
@@ -40,8 +43,7 @@ ghostdriver.SessionManagerReqHand = function() {
         // Redirect to the newly created Session
         res.statusCode = 303; //< "303 See Other"
         res.setHeader("Location", "/session/"+newSession.getId());
-        res.write("");
-        res.close();
+        res.closeGracefully();
     },
 
     _listActiveSessions = function(req, res) {
@@ -75,8 +77,7 @@ ghostdriver.SessionManagerReqHand = function() {
             delete _sessions[sId];
 
             res.statusCode = 200;
-            res.write("");
-            res.close();
+            res.closeGracefully();
         } else {
             throw new VariableResourceNotFound(req);
         }
