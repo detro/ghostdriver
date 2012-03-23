@@ -2,3 +2,6 @@
 *.xcodeproj
 Makefile*
 *~
+.idea
+*.iml
+target/
