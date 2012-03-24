@@ -5,6 +5,7 @@ ghostdriver.SessionManagerReqHand = function() {
     var
     _protoParent = ghostdriver.SessionManagerReqHand.prototype,
     _sessions = {}, //< will store key/value pairs like 'SESSION_ID : SESSION_OBJECT'
+    _sessionRHs = {},
 
     _handle = function(req, res) {
         _protoParent.handle.call(this, req, res);
@@ -105,12 +106,24 @@ ghostdriver.SessionManagerReqHand = function() {
             return _sessions[sessionId];
         }
         return null;
+    },
+
+    _getSessionReqHand = function(sessionId) {
+        if (_getSession(sessionId) !== null) {
+            // The session exists: what about the relative Session Request Handler?
+            if (typeof(_sessionRHs[sessionId]) === "undefined") {
+                _sessionRHs[sessionId] = new ghostdriver.SessionReqHand(_getSession(sessionId));
+            }
+            return _sessionRHs[sessionId];
+        }
+        return null;
     };
 
     // public:
     return {
         handle : _handle,
-        getSession : _getSession
+        getSession : _getSession,
+        getSessionReqHand : _getSessionReqHand
     };
 };
 // prototype inheritance:
