@@ -18,11 +18,12 @@ ghostdriver.RouterReqHand = function() {
 
     _handle = function(req, res) {
         var session,
-            sessionId,
             sessionRH;
 
         // Invoke parent implementation
         _protoParent.handle.call(this, req, res);
+
+        // console.log("Request => " + JSON.stringify(req, null, '  '));
 
         try {
             if (req.urlParsed.file === _const.STATUS) {                             // GET '/status'
@@ -33,19 +34,12 @@ ghostdriver.RouterReqHand = function() {
                 _sessionManRH.handle(req, res);
             } else if (req.urlParsed.path.indexOf(_const.SESSION_DIR) === 0) {      // GET, POST or DELETE '/session/:id/...'
                 // Retrieve session
-                sessionId = req.urlParsed.pathChunks[1];
-                session = _sessionManRH.getSession(sessionId);
+                session = _sessionManRH.getSession(req.urlParsed.chunks[1]);
 
                 if (session !== null) {
-                    sessionRH = new ghostdriver.SessionReqHand(session);
-
-                    // Rebase the "url" to start from AFTER the "/session/:id" part (store the Original URL in 'req.urlOriginal')
-                    req.urlOriginal = req.url;
-                    req.url = req.urlParsed.path.substr((_const.SESSION_DIR + sessionId).length);
-                    // Re-decorate the Request object
-                    _protoParent.decorateRequest.call(this, req);
-
-                    sessionRH.handle(req, res);
+                    // Create a new Session Request Handler and re-route the request to it
+                    sessionRH = _sessionManRH.getSessionReqHand(req.urlParsed.chunks[1]);
+                    _protoParent.reroute.call(sessionRH, req, res, _const.SESSION_DIR + session.getId());
                 } else {
                     throw new ghostdriver.VariableResourceNotFound(req);
                 }

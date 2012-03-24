@@ -8,6 +8,23 @@ ghostdriver.RequestHandler = function() {
         _decorateResponse(response);
     },
 
+    _reroute = function(request, response, prefixToRemove) {
+        // Store the original URL before re-routing in 'request.urlOriginal':
+        // This is done only for requests never re-routed.
+        // We don't want to override the original URL during a second re-routing.
+        if (typeof(request.urlOriginal) === "undefined") {
+            request.urlOriginal = request.url;
+        }
+
+        // Rebase the "url" to start from AFTER the given prefix to remove
+        request.url = request.urlParsed.source.substr((prefixToRemove).length);
+        // Re-decorate the Request object
+        _decorateRequest(request);
+
+        // Handle the re-routed request
+        this.handle(request, response);
+    },
+
     _decorateRequest = function(request) {
         request.urlParsed = parseUri(request.url);
     },
@@ -33,6 +50,7 @@ ghostdriver.RequestHandler = function() {
     // public:
     return {
         handle : _handle,
+        reroute : _reroute,
         buildResponseBody : _buildResponseBody,
         buildSuccessResponseBody : _buildSuccessResponseBody,
         decorateRequest : _decorateRequest,

@@ -16,9 +16,9 @@ function parseUri (str) {
         if ($1) uri[o.q.name][$1] = $2;
     });
 
-    uri["pathChunks"] = (uri["path"].charAt(0) === '/')
-        ? uri["path"].substr(1).split('/')
-        : uri["path"].split('/');
+    uri["chunks"] = (uri["source"].charAt(0) === '/')
+        ? uri["source"].substr(1).split('/')
+        : uri["source"].split('/');
 
     return uri;
 };
