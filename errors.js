@@ -43,3 +43,17 @@ ghostdriver.MissingCommandParameters = function(req) {
     }
 };
 ghostdriver.MissingCommandParameters.prototype = Error.prototype;
+
+// No Such Element
+ghostdriver.NoSuchElement = function(msg) {
+    this.name = "NoSuchElement";
+    this.message = (typeof(msg) === "object") ? JSON.stringify(msg) : msg || "";
+};
+ghostdriver.NoSuchElement.prototype = Error.prototype;
+
+// XPath Lookup Error
+ghostdriver.XPathLookupError = function(msg) {
+    this.name = "XPathLookupError";
+    this.message = (typeof(msg) === "object") ? JSON.stringify(msg) : msg || "";
+};
+ghostdriver.XPathLookupError.prototype = Error.prototype;

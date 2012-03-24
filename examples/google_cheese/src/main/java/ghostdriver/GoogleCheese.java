@@ -37,7 +37,7 @@ public class GoogleCheese {
         System.out.println("Found.");
 
         // Enter something to search for
-        System.out.println("Sending keys 'Cheese!'");
+        System.out.println("Sending keys 'Cheese!...'");
         element.sendKeys("Cheese!");
         System.out.println("Sent.");
 
