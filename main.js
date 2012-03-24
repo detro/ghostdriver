@@ -11,7 +11,9 @@ phantom.injectJs("request_handlers/request_handler.js");
 phantom.injectJs("request_handlers/status_request_handler.js");
 phantom.injectJs("request_handlers/session_manager_request_handler.js");
 phantom.injectJs("request_handlers/session_request_handler.js");
+phantom.injectJs("request_handlers/webelement_request_handler.js");
 phantom.injectJs("request_handlers/router_request_handler.js");
+phantom.injectJs("webelementlocator.js");
 
 // Enable "strict mode" for the 'parseUri' library
 parseUri.options.strictMode = true;
