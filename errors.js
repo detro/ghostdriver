@@ -57,3 +57,17 @@ ghostdriver.XPathLookupError = function(msg) {
     this.message = (typeof(msg) === "object") ? JSON.stringify(msg) : msg || "";
 };
 ghostdriver.XPathLookupError.prototype = Error.prototype;
+
+// Stale Element Reference
+ghostdriver.StaleElementReference = function(msg) {
+    this.name = "StaleElementReference";
+    this.message = (typeof(msg) === "object") ? JSON.stringify(msg) : msg || "";
+};
+ghostdriver.StaleElementReference.prototype = Error.prototype;
+
+// Element Not Visible
+ghostdriver.ElementNotVisible = function(msg) {
+    this.name = "ElementNotVisible";
+    this.message = (typeof(msg) === "object") ? JSON.stringify(msg) : msg || "";
+};
+ghostdriver.ElementNotVisible.prototype = Error.prototype;
