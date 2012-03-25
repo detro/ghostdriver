@@ -34,32 +34,37 @@ ghostdriver.WebElementLocator = function(session) {
             // TODO ... lots to do...
 
             if (locator.using === _const.NAME) { //< locate WebElement by the Attribute 'name'
-                elementId = _session.getPage().evaluateWithParams(function(nameToSearch) {
-                    var el = document.querySelector("[name='"+nameToSearch+"']");
-                    if (el) {
-                        if (!el.id) {
-                            el.id = "gd-" + new Date().getTime();
-                        }
-
-                        return el.id;
-                    }
-                    return null;
-                }, locator.value);
-
-                // If an element was found, we now have its "id"
-                if (elementId) {
-                    // Create and Store a new WebElement if it doesn't exist yet
-                    if (typeof(_elements[elementId]) === "undefined") {
-                        _elements[elementId] = new ghostdriver.WebElementReqHand(elementId, _session);
-                    }
-                    return _elements[elementId];
-                }
-            }
+                return _locateElementByName(locator.value);
+            } // else ...
 
             // TODO ... lots to do...
         }
 
         // Not found because of invalid Locator
+        return null;
+    },
+
+    _locateElementByName = function(name) {
+        var elementId = _session.getPage().evaluateWithParams(function(nameToSearch) {
+            var el = document.querySelector("[name='"+nameToSearch+"']");
+            if (el) {
+                if (!el.id) {
+                    el.id = "gd-" + new Date().getTime();
+                }
+
+                return el.id;
+            }
+            return null;
+        }, name);
+
+        // If an element was found, we now have its "id"
+        if (elementId) {
+            // Create and Store a new WebElement if it doesn't exist yet
+            if (typeof(_elements[elementId]) === "undefined") {
+                _elements[elementId] = new ghostdriver.WebElementReqHand(elementId, _session);
+            }
+            return _elements[elementId];
+        }
         return null;
     },
 

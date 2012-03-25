@@ -65,6 +65,7 @@ ghostdriver.SessionReqHand = function(session) {
             } else {
                 throw new ghostdriver.VariableResourceNotFound(req);
             }
+            return;
         }
 
         throw new ghostdriver.InvalidCommandMethod(req);
