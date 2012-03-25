@@ -6,15 +6,32 @@ This aims at providing a Remote WebDriver that uses PhantomJS as back-end.
 **It's still highly experimental: don't use (yet) in production!**
 
 ## How to use it
-**TODO**
+
+There is plenty to do before this is usable, but if you can't wait to try PhantomJS's speed when it acts as a RemoteWebDriver Server, do the following:
+
+1. Start GhostDriver on a terminal:
+
+    $> phantomjs ghostdriver/main.js
+    Ghost Driver running on port 8080
+
+2. Build and Launch the first Java-based example from:
+
+    $> ghostdriver/examples/google_cheese/
+
+3. Enjoy
 
 ## Reasoning: pros and cons
 
 ### Pros of using an Headless browser for your Selenium testing
-**TODO**
+* Speed
+* Speed makes development faster
+* Speed makes THE developer happier
+* Speed makes leaves more time for beer, video-games, cycling or whatever you fancy
+* ...
 
 ### Cons of using an Headless browser for your Selenium testing
-**TODO**
+* PhantomJS is not a "Real" Browser, just very very close to it
+* ...
 
 ## Contributions
 
