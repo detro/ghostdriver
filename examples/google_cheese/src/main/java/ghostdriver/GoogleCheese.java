@@ -10,10 +10,12 @@ import org.openqa.selenium.firefox.FirefoxDriver;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Date;
 
 
 public class GoogleCheese {
     public static void main( String[] args ) throws MalformedURLException {
+        Date start = new Date();
         // Ask for a JavaScript-enabled browser
         DesiredCapabilities capabilities = new DesiredCapabilities();
         capabilities.setJavascriptEnabled(true);
@@ -49,5 +51,7 @@ public class GoogleCheese {
         // Check the title of the page
         System.out.println("Page title is: " + driver.getTitle());
         driver.close();
+        
+        System.out.println("Time elapsed (ms): " + (new Date().getTime() - start.getTime()));
     }
 }
