@@ -11,14 +11,44 @@ There is plenty to do before this is usable, but if you can't wait to try Phanto
 
 1. Start GhostDriver on a terminal:
 
+    ```bash
     $> phantomjs ghostdriver/main.js
     Ghost Driver running on port 8080
+    ```
 
-2. Build and Launch the first Java-based example from:
+2. Build and Launch the first Java-based example ([Maven](http://maven.apache.org/) required):
 
-    $> ghostdriver/examples/google_cheese/
+    ```bash
+    $> cd ghostdriver/examples/google_cheese/
+    $> ./mvnexec.sh
+    ...
+    [INFO] Building ghostdriver 1.0
+    [INFO] ------------------------------------------------------------------------
+    [INFO]
+    [INFO] >>> exec-maven-plugin:1.2.1:java (default-cli) @ google_cheese >>>
+    [INFO]
+    [INFO] <<< exec-maven-plugin:1.2.1:java (default-cli) @ google_cheese <<<
+    [INFO]
+    [INFO] --- exec-maven-plugin:1.2.1:java (default-cli) @ google_cheese ---
+    *** USING GHOSTDRIVER ***
+    Loading 'http://www.google.com'...
+    Loaded. Current URL is: 'http://www.google.co.uk/'
+    Finding an Element via [name='q']...
+    Found.
+    Sending keys 'Cheese!...'
+    Sent.
+    Submitting Element...
+    Submitted.
+    Page title is: Cheese! - Google Search
+    Time elapsed (ms): 1531
+    [INFO] ------------------------------------------------------------------------
+    [INFO] BUILD SUCCESS
+    ...
+    ```
 
 3. Enjoy
+
+For a quick speed comparison with other WebDriver implementations, try passing the parameter `firefox` or `chrome` to the `./mvnexec.sh` script.
 
 ## Reasoning: pros and cons
 

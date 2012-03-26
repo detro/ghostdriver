@@ -14,19 +14,53 @@ import java.util.Date;
 
 
 public class GoogleCheese {
+    private static final int USE_GHOSTDRIVER = 0;
+    private static final int USE_FIREFOX_DRIVER = 1;
+    private static final int USE_CHROME_DRIVER = 2;
+
     public static void main( String[] args ) throws MalformedURLException {
+        int use = USE_GHOSTDRIVER;
+
+        if (args.length == 1) {
+            if (args[0].toLowerCase().equals("firefox")) {
+                use = USE_FIREFOX_DRIVER;
+            } else if (args[0].toLowerCase().equals("chrome")) {
+                use = USE_CHROME_DRIVER;
+            }
+        }
+
         Date start = new Date();
         // Ask for a JavaScript-enabled browser
         DesiredCapabilities capabilities = new DesiredCapabilities();
         capabilities.setJavascriptEnabled(true);
 
-        // Get a handle to the driver. This will throw an exception if a matching driver cannot be located
-        WebDriver driver = new RemoteWebDriver(new URL("http://localhost:8080"), capabilities);
-//        WebDriver driver = new FirefoxDriver(capabilities);
+        WebDriver driver = null;
+        Capabilities actualCapabilities = null;
 
-        // Query the driver to find out more information
-        Capabilities actualCapabilities = ((RemoteWebDriver) driver).getCapabilities();
-//        Capabilities actualCapabilities = ((FirefoxDriver) driver).getCapabilities();
+        switch (use) {
+            case USE_FIREFOX_DRIVER: {
+                System.out.println("*** USING FIREFOX DRIVER ***");
+                // Get a handle to the driver. This will throw an exception if a matching driver cannot be located
+                driver = new FirefoxDriver(capabilities);
+                // Query the driver to find out more information
+                actualCapabilities = ((FirefoxDriver) driver).getCapabilities();
+                break;
+            }
+            case USE_CHROME_DRIVER: {
+                System.out.println("*** USING CHROME DRIVER ***");
+                System.err.println("Chrome Driver part of this test not implemented yet");
+                System.exit(1);
+                break;
+            }
+            case USE_GHOSTDRIVER: default: {
+                System.out.println("*** USING GHOSTDRIVER ***");
+                // Get a handle to the driver. This will throw an exception if a matching driver cannot be located
+                driver = new RemoteWebDriver(new URL("http://localhost:8080"), capabilities);
+                // Query the driver to find out more information
+                actualCapabilities = ((RemoteWebDriver) driver).getCapabilities();
+                break;
+            }
+        }
 
         // And now use this to visit Google
         System.out.println("Loading 'http://www.google.com'...");
