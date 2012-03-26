@@ -45,7 +45,7 @@ ghostdriver.WebElementLocator = function(session) {
     },
 
     _locateElementByName = function(name) {
-        var elementId = _session.getPage().evaluateWithParams(function(nameToSearch) {
+        var elementId = _session.getCurrentWindow().evaluateWithParams(function(nameToSearch) {
             var el = document.querySelector("[name='"+nameToSearch+"']");
             if (el) {
                 if (!el.id) {

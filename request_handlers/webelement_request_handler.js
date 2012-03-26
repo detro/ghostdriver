@@ -43,7 +43,7 @@ ghostdriver.WebElementReqHand = function(id, session) {
 
             // For every String in the "value" array...
             for (i = 0, ilen = postObj.value.length; i < ilen; ++i) {
-                _getSession().getPage().evaluateWithParams(function(elementId, valueToAppend) {
+                _getSession().getCurrentWindow().evaluateWithParams(function(elementId, valueToAppend) {
                     document.querySelector("#"+elementId).value += valueToAppend;
                 }, _getId(), postObj.value[i]);
             }
@@ -60,17 +60,19 @@ ghostdriver.WebElementReqHand = function(id, session) {
         if (!_isAttachedToDOM())
             throw new ghostdriver.StaleElementReference(JSON.stringify(req));
 
-        _getSession().getPage().onLoadFinished = function(status) {
+        // Listen for the page to Finish Loading after the submit
+        _getSession().getCurrentWindow().onLoadFinished = function(status) {
             if (status === "success") {
                 res.statusCode = 200;
                 res.closeGracefully();
             }
 
             // TODO - what do we do if this fails?
+            // TODO - clear thing up after we are done waiting
         };
 
         // Submit element: either it's a form or an element in a form
-        _getSession().getPage().evaluateWithParams(function(elementId) {
+        _getSession().getCurrentWindow().evaluateWithParams(function(elementId) {
             var el = document.getElementById(elementId);
             if (el.tagName === "FORM") {
                 el.submit();
@@ -81,7 +83,7 @@ ghostdriver.WebElementReqHand = function(id, session) {
     },
 
     _isAttachedToDOM = function() {
-        return _getSession().getPage().evaluateWithParams(function(elementId) {
+        return _getSession().getCurrentWindow().evaluateWithParams(function(elementId) {
             if (document.querySelector("#"+elementId))
                 return true;
             return false;
@@ -92,7 +94,7 @@ ghostdriver.WebElementReqHand = function(id, session) {
         if (!_isAttachedToDOM())
             return false;
 
-        return _getSession().getPage().evaluateWithParams(function(elementId) {
+        return _getSession().getCurrentWindow().evaluateWithParams(function(elementId) {
             var el = document.querySelector("#"+elementId);
             if (el && el.style.visibility !== "hidden" && el.style.width >= 0 && el.style.height >= 0)
                 return true;
