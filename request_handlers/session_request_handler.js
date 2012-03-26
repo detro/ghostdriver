@@ -26,7 +26,7 @@ ghostdriver.SessionReqHand = function(session) {
         if (req.urlParsed.file === _const.URL) {                                         //< ".../url"
             if (req.method === "GET") {
                 // Get the URL at which the Page currently is
-                url = _session.getPage().evaluate(function() { return location.toString(); });
+                url = _session.getCurrentWindow().evaluate(function() { return location.toString(); });
                 res.statusCode = 200;
                 res.writeJSON(_protoParent.buildSuccessResponseBody.call(this, _session.getId(), url));
                 res.close();
@@ -35,7 +35,7 @@ ghostdriver.SessionReqHand = function(session) {
                 postObj = JSON.parse(req.post);
                 if (typeof(postObj) === "object" && postObj.url) {
                     // Open the given URL and, when done, return "HTTP 200 OK"
-                    _session.getPage().open(postObj.url, function(status) {
+                    _session.getCurrentWindow().open(postObj.url, function(status) {
                         if (status === "success") {
                             res.statusCode = 200;
                             res.closeGracefully();
@@ -52,16 +52,14 @@ ghostdriver.SessionReqHand = function(session) {
             // Get the current Page title
             _titleCommand(req, res);
             return;
-        } else if (req.urlParsed.file === _const.WINDOW) {       //< ".../window"
+        } else if (req.urlParsed.file === _const.WINDOW) {                              //< ".../window"
             if (req.method === "DELETE") {
-                // TODO - How can the session delete itself? Maybe can just delete the page and create a new one?
-                res.statusCode = 200;
-                res.closeGracefully();
+                _windowCloseCommand(req, res);
             } else if (req.method === "POST") {
-                // TODO
+                _windowChangeFocusToCommand(req, res);
             }
             return;
-        } else if (req.urlParsed.file === _const.ELEMENT && req.method === "POST") {     //< ".../element"
+        } else if (req.urlParsed.file === _const.ELEMENT && req.method === "POST") {    //< ".../element"
             _elementCommand(req, res);
             return;
         } else if (req.urlParsed.directory === _const.ELEMENT_DIR) {                    //< ".../element/:elementId" or ".../element/active"
@@ -80,8 +78,18 @@ ghostdriver.SessionReqHand = function(session) {
         throw new ghostdriver.InvalidCommandMethod(req);
     },
 
+    _windowCloseCommand = function(req, res) {
+        _session.closeCurrentWindow();
+        res.statusCode = 200;
+        res.closeGracefully();
+    },
+
+    _windowChangeFocusToCommand = function(req, res) {
+        // TODO
+    },
+
     _titleCommand = function(req, res) {
-        var result = _session.getPage().evaluate(function() { return document.title; });
+        var result = _session.getCurrentWindow().evaluate(function() { return document.title; });
         res.statusCode = 200;
         res.writeJSON(_protoParent.buildSuccessResponseBody.call(this, _session.getId(), result));
         res.close();
