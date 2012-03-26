@@ -11,16 +11,16 @@ ghostdriver.SessionManagerReqHand = function() {
         _protoParent.handle.call(this, req, res);
 
         if (req.urlParsed.file === "session" && req.method === "POST") {
-            _createAndRedirectToNewSession(req, res);
+            _createAndRedirectToNewSessionCommand(req, res);
             return;
         } else if (req.urlParsed.file === "sessions" && req.method === "GET") {
-            _listActiveSessions(req, res);
+            _listActiveSessionsCommand(req, res);
             return;
         } else if (req.urlParsed.directory === "/session/") {
             if (req.method === "GET") {
-                _getSessionCapabilities(req, res);
+                _getSessionCapabilitiesCommand(req, res);
             } else if (req.method === "DELETE") {
-                _deleteSession(req, res);
+                _deleteSessionCommand(req, res);
             }
             return;
         }
@@ -28,7 +28,7 @@ ghostdriver.SessionManagerReqHand = function() {
         throw new ghostdriver.InvalidCommandMethod(req);
     },
 
-    _createAndRedirectToNewSession = function(req, res) {
+    _createAndRedirectToNewSessionCommand = function(req, res) {
         var desiredCapabilities,
             newSession;
 
@@ -47,7 +47,7 @@ ghostdriver.SessionManagerReqHand = function() {
         res.closeGracefully();
     },
 
-    _listActiveSessions = function(req, res) {
+    _listActiveSessionsCommand = function(req, res) {
         var activeSessions = [],
             sessionId;
 
@@ -65,18 +65,24 @@ ghostdriver.SessionManagerReqHand = function() {
         res.close();
     },
 
-    _deleteSession = function(req, res) {
+    _deleteSession = function(sessionId) {
+        if (typeof(_sessions[sessionId]) !== "undefined") {
+            // Prepare the session to be deleted
+            _sessions[sessionId].aboutToDelete();
+            // Delete the session and the handler
+            delete _sessions[sessionId];
+            delete _sessionRHs[sessionId];
+        }
+    },
+
+    _deleteSessionCommand = function(req, res) {
         var sId = req.urlParsed.file;
 
         if (sId === "")
             throw new ghostdriver.MissingCommandParameters(req);
 
         if (typeof(_sessions[sId]) !== "undefined") {
-            // Release resources associated with the page
-            _sessions[sId].getPage().release();
-            // Delete the session
-            delete _sessions[sId];
-
+            _deleteSession(sId);
             res.statusCode = 200;
             res.closeGracefully();
         } else {
@@ -84,7 +90,7 @@ ghostdriver.SessionManagerReqHand = function() {
         }
     },
 
-    _getSessionCapabilities = function(req, res) {
+    _getSessionCapabilitiesCommand = function(req, res) {
         var sId = req.urlParsed.file,
             session;
 
@@ -117,7 +123,26 @@ ghostdriver.SessionManagerReqHand = function() {
             return _sessionRHs[sessionId];
         }
         return null;
+    },
+
+    _cleanupWindowlessSessions = function() {
+        var sId;
+
+        // Do this cleanup only if there are sessions
+        if (Object.keys(_sessions).length > 0) {
+            console.log("Asynchronous Sessions cleanup phase starting NOW");
+            for (sId in _sessions) {
+                if (_sessions[sId].getWindowsCount() === 0) {
+                    console.log("About to delete Session '"+sId+"', because windowless...");
+                    _deleteSession(sId);
+                    console.log("... deleted!");
+                }
+            }
+        }
     };
+
+    // Regularly cleanup un-used sessions
+    setInterval(_cleanupWindowlessSessions, 60000); //< every 60s
 
     // public:
     return {
