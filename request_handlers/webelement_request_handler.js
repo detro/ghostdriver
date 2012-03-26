@@ -7,7 +7,8 @@ ghostdriver.WebElementReqHand = function(id, session) {
     _session = session,
     _protoParent = ghostdriver.WebElementReqHand.prototype,
     _const = {
-        VALUE               : "value"
+        VALUE           : "value",
+        SUBMIT          : "submit"
     },
 
     _handle = function(req, res) {
@@ -17,6 +18,9 @@ ghostdriver.WebElementReqHand = function(id, session) {
 
         if (req.urlParsed.file === _const.VALUE && req.method === "POST") {
             _valueCommand(req, res);
+            return;
+        } else if (req.urlParsed.file === _const.SUBMIT && req.method === "POST") {
+            _submitCommand(req, res);
             return;
         } // else ...
 
@@ -50,6 +54,30 @@ ghostdriver.WebElementReqHand = function(id, session) {
         }
 
         throw new ghostdriver.MissingCommandParameters(req);
+    },
+
+    _submitCommand = function(req, res) {
+        if (!_isAttachedToDOM())
+            throw new ghostdriver.StaleElementReference(JSON.stringify(req));
+
+        _getSession().getPage().onLoadFinished = function(status) {
+            if (status === "success") {
+                res.statusCode = 200;
+                res.closeGracefully();
+            }
+
+            // TODO - what do we do if this fails?
+        };
+
+        // Submit element: either it's a form or an element in a form
+        _getSession().getPage().evaluateWithParams(function(elementId) {
+            var el = document.getElementById(elementId);
+            if (el.tagName === "FORM") {
+                el.submit();
+            } else if (el.form) {
+                el.form.submit();
+            }
+        }, _getId());
     },
 
     _isAttachedToDOM = function() {
