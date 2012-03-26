@@ -10,7 +10,8 @@ ghostdriver.SessionReqHand = function(session) {
         URL             : "url",
         ELEMENT         : "element",
         ELEMENT_DIR     : "/element/",
-        TITLE           : "title"
+        TITLE           : "title",
+        WINDOW          : "window"
     },
 
     _handle = function(req, res) {
@@ -50,6 +51,15 @@ ghostdriver.SessionReqHand = function(session) {
         } else if (req.urlParsed.file === _const.TITLE && req.method === "GET") {       //< ".../title"
             // Get the current Page title
             _titleCommand(req, res);
+            return;
+        } else if (req.urlParsed.file === _const.WINDOW) {       //< ".../window"
+            if (req.method === "DELETE") {
+                // TODO - How can the session delete itself? Maybe can just delete the page and create a new one?
+                res.statusCode = 200;
+                res.closeGracefully();
+            } else if (req.method === "POST") {
+                // TODO
+            }
             return;
         } else if (req.urlParsed.file === _const.ELEMENT && req.method === "POST") {     //< ".../element"
             _elementCommand(req, res);

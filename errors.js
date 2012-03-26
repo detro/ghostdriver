@@ -71,3 +71,10 @@ ghostdriver.ElementNotVisible = function(msg) {
     this.message = (typeof(msg) === "object") ? JSON.stringify(msg) : msg || "";
 };
 ghostdriver.ElementNotVisible.prototype = Error.prototype;
+
+// No Such Window
+ghostdriver.NoSuchWindow = function(msg) {
+    this.name = "NoSuchWindow";
+    this.message = (typeof(msg) === "object") ? JSON.stringify(msg) : msg || "";
+};
+ghostdriver.NoSuchWindow.prototype = Error.prototype;
