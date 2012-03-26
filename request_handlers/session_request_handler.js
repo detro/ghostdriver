@@ -9,7 +9,8 @@ ghostdriver.SessionReqHand = function(session) {
     _const = {
         URL             : "url",
         ELEMENT         : "element",
-        ELEMENT_DIR     : "/element/"
+        ELEMENT_DIR     : "/element/",
+        TITLE           : "title"
     },
 
     _handle = function(req, res) {
@@ -46,14 +47,12 @@ ghostdriver.SessionReqHand = function(session) {
                 }
             }
             return;
+        } else if (req.urlParsed.file === _const.TITLE && req.method === "GET") {       //< ".../title"
+            // Get the current Page title
+            _titleCommand(req, res);
+            return;
         } else if (req.urlParsed.file === _const.ELEMENT && req.method === "POST") {     //< ".../element"
-            // Search for an Element on the Page
-            element = _locator.locateElement(JSON.parse(req.post));
-            if (element) {
-                res.statusCode = 200;
-                res.writeJSON(_protoParent.buildSuccessResponseBody.call(this, _session.getId(), element.getJSON()));
-                res.close();
-            }
+            _elementCommand(req, res);
             return;
         } else if (req.urlParsed.directory === _const.ELEMENT_DIR) {                    //< ".../element/:elementId" or ".../element/active"
             // TODO
@@ -69,6 +68,26 @@ ghostdriver.SessionReqHand = function(session) {
         }
 
         throw new ghostdriver.InvalidCommandMethod(req);
+    },
+
+    _titleCommand = function(req, res) {
+        var result = _session.getPage().evaluate(function() { return document.title; });
+        res.statusCode = 200;
+        res.writeJSON(_protoParent.buildSuccessResponseBody.call(this, _session.getId(), result));
+        res.close();
+    },
+
+    _elementCommand = function(req, res) {
+        // Search for a WebElement on the Page
+        var element = _locator.locateElement(JSON.parse(req.post));
+        if (element) {
+            res.statusCode = 200;
+            res.writeJSON(_protoParent.buildSuccessResponseBody.call(this, _session.getId(), element.getJSON()));
+            res.close();
+            return;
+        }
+
+        throw new ghostdriver.VariableResourceNotFound(req);
     };
 
     // public:
