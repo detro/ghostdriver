@@ -5,3 +5,4 @@ Makefile*
 .idea
 *.iml
 target/
+chromedriver.log
