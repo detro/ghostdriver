@@ -1,3 +1,3 @@
 #!/bin/bash
 ARGS=$@
-mvn exec:java -Dexec.mainClass="ghostdriver.GoogleCheese" -Dexec.args="${ARGS}"
+mvn -o exec:java -Dexec.mainClass="ghostdriver.GoogleCheese" -Dexec.args="${ARGS}"
