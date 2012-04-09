@@ -1,8 +1,13 @@
 ** * * * * * * * * * * * * **
+
 **PLEASE NOTE**
+
 **1 - It's still experimental**
+
 **2 - Not ready for Production**
+
 **3 - Only 13 of the >90 WireProtocol Commands implemented**
+
 ** * * * * * * * * * * * * **
 
 # Ghost Driver
