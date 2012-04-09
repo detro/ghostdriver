@@ -2,11 +2,15 @@
 
 **PLEASE NOTE**
 
+**0 - IT'S NOT DONE! The only commands implemented are the one used by the `examples/google_cheese/` directory**
+
 **1 - It's still experimental**
 
 **2 - Not ready for Production**
 
 **3 - Only 13 of the >90 WireProtocol Commands implemented**
+
+**4 - I released it to get people interested in contributing. Not to provide a solution: it's not ready yet!**
 
 ** * * * * * * * * * * * * **
 
