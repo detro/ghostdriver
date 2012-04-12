@@ -19,6 +19,11 @@
 Ghost Driver is a pure JavaScript implementation of the [WebDriver Wire Protocol](http://code.google.com/p/selenium/wiki/JsonWireProtocol) for [PhantomJS](http://phantomjs.org/).
 This aims at providing a Remote WebDriver that uses PhantomJS as back-end.
 
+## Requirements
+
+* PhantomJS version `>= 1.6`
+* Maven 3 (optional - makes it easy to build & run the examples)
+
 ## How to use it
 
 There is plenty to do before this is usable, but if you can't wait to try PhantomJS's speed when it acts as a RemoteWebDriver Server, do the following:
