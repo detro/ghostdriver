@@ -1,5 +1,6 @@
 # Important
 
+* PhantomJS "res.write()" doesn't set the 'Content-Length' header automatically :(
 * Implement all the commands :)
     * "/session/:sessionid/element" and "/session/:sessionid/elements" need to be handled into 1 (++gracefulness)
 * Typing simulation: I want to use something like [jquery autotype](https://github.com/mmonteleone/jquery.autotype/blob/master/jquery.autotype.js)
