@@ -1,0 +1,30 @@
+task wrapper(type: Wrapper) {
+    gradleVersion "1.0-rc-1"
+}
+
+apply plugin: "java"
+
+repositories {
+    mavenCentral()
+}
+
+ext.seleniumVersion = "2.20.0"
+
+dependencies {
+    ["selenium-java", "selenium-remote-driver", "selenium-server"].each {
+        compile "org.seleniumhq.selenium:$it:$seleniumVersion"
+    }
+}
+
+tasks.withType(JavaExec) {
+    classpath = configurations.compile + sourceSets.main.output
+    args project.hasProperty("args") ? project.args.split("\\s") : []
+}
+
+task exec(type: JavaExec) {
+    main "ghostdriver.GoogleCheese"
+}
+
+task execServer(type: JavaExec) {
+    main "ghostdriver.GoogleCheeseServerOnly"
+}
