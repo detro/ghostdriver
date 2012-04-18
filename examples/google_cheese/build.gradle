@@ -21,10 +21,12 @@ tasks.withType(JavaExec) {
     args project.hasProperty("args") ? project.args.split("\\s") : []
 }
 
+// ./gradlew exec [-Pargs="chrome"]
 task exec(type: JavaExec) {
     main "ghostdriver.GoogleCheese"
 }
 
+// ./gradlew execServer [-Pargs="chrome"]
 task execServer(type: JavaExec) {
     main "ghostdriver.GoogleCheeseServerOnly"
 }
