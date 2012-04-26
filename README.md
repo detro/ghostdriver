@@ -88,4 +88,4 @@ You can contribute testing it and reporting bugs and issues, or submitting Pull 
 _Any help is more than welcome!!!_
 
 ## License
-**TODO**
+GhostDriver is distributed under [BSD License](http://www.opensource.org/licenses/BSD-2-Clause).
