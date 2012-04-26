@@ -1,0 +1,17 @@
+# Builds all the Atoms that will later be imported in PhantomJS Driver
+
+js_deps(name = "build_atoms",
+  deps = [ 
+    "//javascript/webdriver/atoms:clear",
+    "//javascript/webdriver/atoms:click",
+    "//javascript/webdriver/atoms:type",
+    "//javascript/webdriver/atoms:execute_async_script",
+    "//javascript/webdriver/atoms:execute_script",
+    "//javascript/webdriver/atoms:find_element",
+    "//javascript/webdriver/atoms:find_elements",
+    "//javascript/webdriver/atoms:get_attribute",
+    "//javascript/webdriver/atoms:get_location",
+    "//javascript/webdriver/atoms:get_size",
+    "//javascript/webdriver/atoms:get_text",
+    "//javascript/webdriver/atoms:submit"
+  ])
