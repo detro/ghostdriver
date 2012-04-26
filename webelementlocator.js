@@ -34,7 +34,9 @@ ghostdriver.WebElementLocator = function(session) {
             // TODO ... lots to do...
 
             if (locator.using === _const.NAME) { //< locate WebElement by the Attribute 'name'
-                return _locateElementByName(locator.value);
+                return _locateElementByCSSSelector("[name='" + locator.value + "']");
+            } else if (locator.using == _const.CSS_SELECTOR) {
+                return _locateElementByCSSSelector(locator.value);
             } // else ...
 
             // TODO ... lots to do...
@@ -44,9 +46,9 @@ ghostdriver.WebElementLocator = function(session) {
         return null;
     },
 
-    _locateElementByName = function(name) {
-        var elementId = _session.getCurrentWindow().evaluateWithParams(function(nameToSearch) {
-            var el = document.querySelector("[name='"+nameToSearch+"']");
+    _locateElementByCSSSelector = function(selector) {
+        var elementId = _session.getCurrentWindow().evaluateWithParams(function(selector) {
+            var el = document.querySelector(selector);
             if (el) {
                 if (!el.id) {
                     el.id = "gd-" + new Date().getTime();
@@ -55,7 +57,7 @@ ghostdriver.WebElementLocator = function(session) {
                 return el.id;
             }
             return null;
-        }, name);
+        }, selector);
 
         // If an element was found, we now have its "id"
         if (elementId) {
