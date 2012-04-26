@@ -11,7 +11,9 @@ ghostdriver.SessionReqHand = function(session) {
         ELEMENT         : "element",
         ELEMENT_DIR     : "/element/",
         TITLE           : "title",
-        WINDOW          : "window"
+        WINDOW          : "window",
+        FORWARD         : "forward",
+        BACK            : "back"
     },
 
     _handle = function(req, res) {
@@ -21,6 +23,15 @@ ghostdriver.SessionReqHand = function(session) {
             element;
 
         _protoParent.handle.call(this, req, res);
+
+        var responseAfterLoadFinished = function (func) {
+            _session.getCurrentWindow().onLoadFinished = function () {
+                res.writeJSON(_protoParent.buildSuccessResponseBody.call(this, _session.getId()));
+                res.statusCode = 200;
+                res.closeGracefully();
+            };
+            _session.getCurrentWindow().evaluate(func);
+        };
 
         // Handle "/url" GET and POST
         if (req.urlParsed.file === _const.URL) {                                         //< ".../url"
@@ -72,6 +83,12 @@ ghostdriver.SessionReqHand = function(session) {
             } else {
                 throw new ghostdriver.VariableResourceNotFound(req);
             }
+            return;
+        } else if (req.urlParsed.file === _const.FORWARD) {
+            responseAfterLoadFinished(function () { history.forward() });
+            return;
+        } else if (req.urlParsed.file === _const.BACK) {
+            responseAfterLoadFinished(function () { history.back() });
             return;
         }
 
