@@ -31,7 +31,7 @@ There is plenty to do before this is usable, but if you can't wait to try Phanto
 1. Start GhostDriver on a terminal:
 
     ```bash
-    $> phantomjs ghostdriver/main.js
+    $> phantomjs ghostdriver/src/main.js
     Ghost Driver running on port 8080
     ```
 

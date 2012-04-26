@@ -1,5 +1,6 @@
-// parseUri 1.2.2
+// parseUri 1.3
 // (c) Steven Levithan <stevenlevithan.com>
+// (c) Ivan De Marino <ivan.de.marino@gmail.com> (modified for PhantomJS Driver)
 // MIT License
 // URL: http://blog.stevenlevithan.com/archives/parseuri
 

@@ -4,7 +4,7 @@ var ghostdriver = ghostdriver || {},
     system = require('system'),
     server = require('webserver').create(),
     router;
-phantom.injectJs("utils/parseuri.js");
+phantom.injectJs("third_party/parseuri.js");
 phantom.injectJs("errors.js");
 phantom.injectJs("session.js");
 phantom.injectJs("request_handlers/request_handler.js");
