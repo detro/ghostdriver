@@ -53,7 +53,7 @@ ghostdriver.RequestHandler = function() {
     },
 
     _decorateRequest = function(request) {
-        request.urlParsed = parseUri(request.url);
+        request.urlParsed = require("./third_party/parseuri.js").parse(request.url);
     },
 
     _decorateResponse = function(response) {
