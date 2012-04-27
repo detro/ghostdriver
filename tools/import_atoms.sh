@@ -43,6 +43,17 @@ do
     fi
 done
 
+# Import only the Atoms/Inject JavaScript files
+JS_LIST=./build/javascript/webdriver/atoms/inject/*.js
+for JS in $JS_LIST
+do
+    if [[ $JS != *_exports.js ]]
+    then
+        echo "Importing Atom: $JS"
+        cp $JS $DESTINATION_DIRECTORY
+    fi
+done
+
 # Save the current timestamp to remember when this was generated
 date +"%Y-%m-%d %H:%M:%S" > $LASTUPDATE_FILE
 echo "" >> $LASTUPDATE_FILE
