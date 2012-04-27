@@ -1,7 +1,7 @@
-2012-04-26 17:05:55
+2012-04-28 00:22:56
 
 ------------------------------------------------------------------------
-r16704 | andreastt@opera.com | 2012-04-24 14:20:36 +0100 (Tue, 24 Apr 2012) | 1 line
+r16734 | luke.semerau@gmail.com | 2012-04-26 18:29:28 +0100 (Thu, 26 Apr 2012) | 1 line
 
-AndreasTolfTolfsen: Avoiding code duplication of port numbers in case you want to change one of them in Jetty7AppServer
+LukeIS: adding GET orientation to iOS, but it doesn't like to work off the bat, seems you must change your orientation and then it'll start working as expected
 ------------------------------------------------------------------------
