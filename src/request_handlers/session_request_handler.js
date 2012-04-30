@@ -112,10 +112,10 @@ ghostdriver.SessionReqHand = function(session) {
             }
             return;
         } else if (req.urlParsed.file === _const.FORWARD) {
-            responseAfterLoadFinished(function () { history.forward() });
+            responseAfterLoadFinished(require("./webdriver_atoms.js").get("forward"));
             return;
         } else if (req.urlParsed.file === _const.BACK) {
-            responseAfterLoadFinished(function () { history.back() });
+            responseAfterLoadFinished(require("./webdriver_atoms.js").get("back"));
             return;
         }
 

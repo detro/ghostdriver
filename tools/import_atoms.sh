@@ -33,18 +33,7 @@ pushd $SELENIUM_REPO_PATH
 ./go //javascript/$TEMP_BUILD_DIR_NAME:$ATOMS_BUILD_TARGET
 
 # Import only the Atoms JavaScript files
-JS_LIST=./build/javascript/webdriver/atoms/*.js
-for JS in $JS_LIST
-do
-    if [[ $JS != *_exports.js ]]
-    then
-        echo "Importing Atom: $JS"
-        cp $JS $DESTINATION_DIRECTORY
-    fi
-done
-
-# Import only the Atoms/Inject JavaScript files
-JS_LIST=./build/javascript/webdriver/atoms/inject/*.js
+JS_LIST="./build/javascript/webdriver/atoms/*.js ./build/javascript/webdriver/atoms/inject/*.js ./build/javascript/phantomjs-driver/*.js"
 for JS in $JS_LIST
 do
     if [[ $JS != *_exports.js ]]
