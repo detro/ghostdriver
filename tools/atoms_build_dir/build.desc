@@ -2,7 +2,6 @@
 
 js_deps(name = "build_atoms",
   deps = [
-    "//javascript/webdriver/atoms:type",
     "//javascript/webdriver/atoms:execute_async_script",
     "//javascript/webdriver/atoms:execute_script",
     "//javascript/webdriver/atoms:get_attribute",
@@ -14,6 +13,7 @@ js_deps(name = "build_atoms",
     "//javascript/webdriver/atoms:get_current_position",
     "//javascript/webdriver/atoms:is_online",
 
+    "//javascript/webdriver/atoms/inject:type",
     "//javascript/webdriver/atoms/inject:set_local_storage_item",
     "//javascript/webdriver/atoms/inject:get_local_storage_item",
     "//javascript/webdriver/atoms/inject:get_local_storage_keys",

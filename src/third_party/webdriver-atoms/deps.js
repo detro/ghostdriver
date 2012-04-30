@@ -120,27 +120,28 @@ bot.action.focusOnElement = function(element) {
 /**
  * Types keys on the given {@code element} with a virtual keyboard.
  *
- * <p>Callers can pass in either strings or members of bot.Keyboard.Key. If a
- * modifier key is provided, it is pressed but not released, until it is either
- * is listed again or the function ends.
+ * <p>Callers can pass in a string, a key in bot.Keyboard.Key, or an array
+ * of strings or keys. If a modifier key is provided, it is pressed but not
+ * released, until it is either is listed again or the function ends.
  *
  * <p>Example:
- *   bot.keys.type(element, 'ab', bot.Keyboard.Key.LEFT,
- *                 bot.Keyboard.Key.DELETE, bot.Keyboard.Key.SHIFT, 'cd');
+ *   bot.keys.type(element, ['ab', bot.Keyboard.Key.LEFT,
+ *                           bot.Keyboard.Key.SHIFT, 'cd']);
  *
  * @param {!Element} element The element receiving the event.
- * @param {...(string|!bot.Keyboard.Key)} var_args Values to type on the
- *    element, either strings or members of bot.Keyboard.Key.
+ * @param {(string|!bot.Keyboard.Key|!Array.<(string|!bot.Keyboard.Key)>)}
+ *    values Value or values to type on the element.
+ * @param {bot.Keyboard=} opt_keyboard Keyboard to use; if not provided,
+ *    constructs one.
  * @throws {bot.Error} If the element cannot be interacted with.
  */
-bot.action.type = function(element, var_args) {
+bot.action.type = function(element, values, opt_keyboard) {
   bot.action.checkShown_(element);
   bot.action.checkInteractable_(element);
-  var keyboard = new bot.Keyboard();
+  var keyboard = opt_keyboard || new bot.Keyboard();
   keyboard.moveCursor(element);
 
-  var values = goog.array.slice(arguments, 1);
-  goog.array.forEach(values, function(value) {
+  function typeValue(value) {
     if (goog.isString(value)) {
       goog.array.forEach(value.split(''), function(ch) {
         var keyShiftPair = bot.Keyboard.Key.fromChar(ch);
@@ -163,7 +164,13 @@ bot.action.type = function(element, var_args) {
       keyboard.pressKey(value);
       keyboard.releaseKey(value);
     }
-  });
+  }
+
+  if (goog.isArray(values)) {
+    goog.array.forEach(values, typeValue);
+  } else {
+    typeValue(values);
+  }
 
   // Release all the modifier keys.
   goog.array.forEach(bot.Keyboard.MODIFIERS, function(key) {
@@ -203,7 +210,9 @@ bot.action.submit = function(element) {
  * @throws {bot.Error} If the element cannot be interacted with.
  */
 bot.action.moveMouse = function(element, opt_coords, opt_mouse) {
-  bot.action.moveAndReturnMouse_(element, opt_coords, opt_mouse);
+  var coords = bot.action.prepareToInteractWith_(element, opt_coords);
+  var mouse = opt_mouse || new bot.Mouse();
+  mouse.move(element, coords);
 };
 
 
@@ -217,8 +226,11 @@ bot.action.moveMouse = function(element, opt_coords, opt_mouse) {
  * @throws {bot.Error} If the element cannot be interacted with.
  */
 bot.action.click = function(element, opt_coords, opt_mouse) {
-  var mouse = bot.action.moveAndReturnMouse_(element, opt_coords, opt_mouse);
-  bot.action.pressAndReleaseButton_(mouse, element, bot.Mouse.Button.LEFT);
+  var coords = bot.action.prepareToInteractWith_(element, opt_coords);
+  var mouse = opt_mouse || new bot.Mouse();
+  mouse.move(element, coords);
+  mouse.pressButton(bot.Mouse.Button.LEFT);
+  mouse.releaseButton();
 };
 
 
@@ -232,8 +244,11 @@ bot.action.click = function(element, opt_coords, opt_mouse) {
  * @throws {bot.Error} If the element cannot be interacted with.
  */
 bot.action.rightClick = function(element, opt_coords, opt_mouse) {
-  var mouse = bot.action.moveAndReturnMouse_(element, opt_coords, opt_mouse);
-  bot.action.pressAndReleaseButton_(mouse, element, bot.Mouse.Button.RIGHT);
+  var coords = bot.action.prepareToInteractWith_(element, opt_coords);
+  var mouse = opt_mouse || new bot.Mouse();
+  mouse.move(element, coords);
+  mouse.pressButton(bot.Mouse.Button.RIGHT);
+  mouse.releaseButton();
 };
 
 
@@ -247,9 +262,13 @@ bot.action.rightClick = function(element, opt_coords, opt_mouse) {
  * @throws {bot.Error} If the element cannot be interacted with.
  */
 bot.action.doubleClick = function(element, opt_coords, opt_mouse) {
-  var mouse = bot.action.moveAndReturnMouse_(element, opt_coords, opt_mouse);
-  bot.action.pressAndReleaseButton_(mouse, element, bot.Mouse.Button.LEFT);
-  bot.action.pressAndReleaseButton_(mouse, element, bot.Mouse.Button.LEFT);
+  var coords = bot.action.prepareToInteractWith_(element, opt_coords);
+  var mouse = opt_mouse || new bot.Mouse();
+  mouse.move(element, coords);
+  mouse.pressButton(bot.Mouse.Button.LEFT);
+  mouse.releaseButton();
+  mouse.pressButton(bot.Mouse.Button.LEFT);
+  mouse.releaseButton();
 };
 
 
@@ -257,13 +276,17 @@ bot.action.doubleClick = function(element, opt_coords, opt_mouse) {
  * Scrolls the mouse wheel on the given {@code element} with a virtual mouse.
  *
  * @param {!Element} element The element to scroll the mouse wheel on.
+ * @param {number} ticks Number of ticks to scroll the mouse wheel; a positive
+ *   number scrolls down and a negative scrolls up.
  * @param {goog.math.Coordinate=} opt_coords Mouse position relative to the
  *   element.
  * @param {bot.Mouse=} opt_mouse Mouse to use; if not provided, constructs one.
  * @throws {bot.Error} If the element cannot be interacted with.
  */
 bot.action.scrollMouse = function(element, ticks, opt_coords, opt_mouse) {
-  var mouse = bot.action.moveAndReturnMouse_(element, opt_coords, opt_mouse);
+  var coords = bot.action.prepareToInteractWith_(element, opt_coords);
+  var mouse = opt_mouse || new bot.Mouse();
+  mouse.move(element, coords);
   mouse.scroll(ticks);
 };
 
@@ -280,19 +303,20 @@ bot.action.scrollMouse = function(element, ticks, opt_coords, opt_mouse) {
  * @throws {bot.Error} If the element cannot be interacted with.
  */
 bot.action.drag = function(element, dx, dy, opt_coords, opt_mouse) {
-  var mouse = bot.action.moveAndReturnMouse_(element, opt_coords);
+  var coords = bot.action.prepareToInteractWith_(element, opt_coords);
+  var mouse = opt_mouse || new bot.Mouse();
+  mouse.move(element, coords);
   mouse.pressButton(bot.Mouse.Button.LEFT);
 
   // Fire two mousemoves (middle and destination) to trigger a drag action.
   var initPos = goog.style.getClientPosition(element);
-  var midXY = new goog.math.Coordinate(opt_coords.x + Math.floor(dx / 2),
-                                       opt_coords.y + Math.floor(dy / 2));
+  var midXY = new goog.math.Coordinate(coords.x + Math.floor(dx / 2),
+                                       coords.y + Math.floor(dy / 2));
   mouse.move(element, midXY);
 
   var midPos = goog.style.getClientPosition(element);
-  var finalXY = new goog.math.Coordinate(
-      initPos.x + opt_coords.x + dx - midPos.x,
-      initPos.y + opt_coords.y + dy - midPos.y);
+  var finalXY = new goog.math.Coordinate(initPos.x + coords.x + dx - midPos.x,
+                                         initPos.y + coords.y + dy - midPos.y);
   mouse.move(element, finalXY);
 
   mouse.releaseButton();
@@ -300,20 +324,192 @@ bot.action.drag = function(element, dx, dy, opt_coords, opt_mouse) {
 
 
 /**
- * A helper function which prepares a virtual mouse for an action on the given
- * {@code element}. It checks if the the element is shown, scrolls the element
- * into view, and moves the mouse to the given {@code opt_coords} if provided;
- * if not provided, the mouse is moved to the center of the element.
+ * Taps on the given {@code element} with a virtual touch screen.
  *
- * @param {!Element} element The element to click.
- * @param {goog.math.Coordinate=} opt_coords Mouse position relative to the
+ * @param {!Element} element The element to tap.
+ * @param {goog.math.Coordinate=} opt_coords Finger position relative to the
  *   target.
- * @param {bot.Mouse=} opt_mouse Mouse to use; if not provided, constructs one.
- * @return {!bot.Mouse} The mouse object used for the click.
+ * @param {bot.Touchscreen=} opt_touchscreen Touchscreen to use; if not
+ *    provided, constructs one.
+ * @throws {bot.Error} If the element cannot be interacted with.
+ */
+bot.action.tap = function(element, opt_coords, opt_touchscreen) {
+  var coords = bot.action.prepareToInteractWith_(element, opt_coords);
+  var touchscreen = opt_touchscreen || new bot.Touchscreen();
+  touchscreen.move(element, coords);
+  touchscreen.press();
+  touchscreen.release();
+};
+
+
+/**
+ * Swipes the given {@code element} by (dx, dy) with a virtual touch screen.
+ *
+ * @param {!Element} element The element to swipe.
+ * @param {number} dx Increment in x coordinate.
+ * @param {number} dy Increment in y coordinate.
+ * @param {goog.math.Coordinate=} opt_coords Swipe start position relative to
+ *   the element.
+ * @param {bot.Touchscreen=} opt_touchscreen Touchscreen to use; if not
+ *    provided, constructs one.
+ * @throws {bot.Error} If the element cannot be interacted with.
+ */
+bot.action.swipe = function(element, dx, dy, opt_coords, opt_touchscreen) {
+  var coords = bot.action.prepareToInteractWith_(element, opt_coords);
+  var touchscreen = opt_touchscreen || new bot.Touchscreen();
+  touchscreen.move(element, coords);
+  touchscreen.press();
+
+  // Fire two touchmoves (middle and destination) to trigger a drag action.
+  var initPos = goog.style.getClientPosition(element);
+  var midXY = new goog.math.Coordinate(coords.x + Math.floor(dx / 2),
+                                       coords.y + Math.floor(dy / 2));
+  touchscreen.move(element, midXY);
+
+  var midPos = goog.style.getClientPosition(element);
+  var finalXY = new goog.math.Coordinate(initPos.x + coords.x + dx - midPos.x,
+                                         initPos.y + coords.y + dy - midPos.y);
+  touchscreen.move(element, finalXY);
+
+  touchscreen.release();
+};
+
+
+/**
+ * Pinches the given {@code element} by the given distance with a virtual touch
+ * screen. A positive distance moves two fingers inward toward each and a
+ * negative distances spreds them outward. The optional coordinate is the point
+ * the fingers move towards (for positive distances) or away from (for negative
+ * distances); and if not provided, defaults to the center of the element.
+ *
+ * @param {!Element} element The element to pinch.
+ * @param {number} distance The distance by which to pinch the element.
+ * @param {goog.math.Coordinate=} opt_coords Position relative to the element
+ *   at the center of the pinch.
+ * @param {bot.Touchscreen=} opt_touchscreen Touchscreen to use; if not
+ *    provided, constructs one.
+ * @throws {bot.Error} If the element cannot be interacted with.
+ */
+bot.action.pinch = function(element, distance, opt_coords, opt_touchscreen) {
+  if (distance == 0) {
+    throw new bot.Error(bot.ErrorCode.UNKNOWN_ERROR,
+                        'Cannot pinch by a distance of zero.');
+  }
+  function startSoThatEndsAtMax(offsetVec) {
+    if (distance < 0) {
+      var magnitude = offsetVec.magnitude();
+      offsetVec.scale(magnitude ? (magnitude + distance) / magnitude : 0);
+    }
+  }
+  var halfDistance = distance / 2;
+  function scaleByHalfDistance(offsetVec) {
+    var magnitude = offsetVec.magnitude();
+    offsetVec.scale(magnitude ? (magnitude - halfDistance) / magnitude : 0);
+  }
+  bot.action.multiTouchAction_(element,
+                               startSoThatEndsAtMax,
+                               scaleByHalfDistance,
+                               opt_coords,
+                               opt_touchscreen);
+};
+
+
+/**
+ * Rotates the given {@code element} by the given angle with a virtual touch
+ * screen. A positive angle moves two fingers clockwise and a negative angle
+ * moves them counter-clockwise. The optional coordinate is the point to
+ * rotate around; and if not provided, defaults to the center of the element.
+ *
+ * @param {!Element} element The element to rotate.
+ * @param {number} angle The angle by which to rotate the element.
+ * @param {goog.math.Coordinate=} opt_coords Position relative to the element
+ *   at the center of the rotation.
+ * @param {bot.Touchscreen=} opt_touchscreen Touchscreen to use; if not
+ *    provided, constructs one.
+ * @throws {bot.Error} If the element cannot be interacted with.
+ */
+bot.action.rotate = function(element, angle, opt_coords, opt_touchscreen) {
+  if (angle == 0) {
+    throw new bot.Error(bot.ErrorCode.UNKNOWN_ERROR,
+                        'Cannot rotate by an angle of zero.');
+  }
+  function startHalfwayToMax(offsetVec) {
+    offsetVec.scale(0.5);
+  }
+  var halfRadians = Math.PI * (angle / 180) / 2;
+  function rotateByHalfAngle(offsetVec) {
+    offsetVec.rotate(halfRadians);
+  }
+  bot.action.multiTouchAction_(element,
+                               startHalfwayToMax,
+                               rotateByHalfAngle,
+                               opt_coords,
+                               opt_touchscreen);
+};
+
+
+/**
+ * Performs a multi-touch action with two fingers on the given element. This
+ * helper function works by manipulating an "offsetVector", which is the vector
+ * away from the center of the interaction at which the fingers are positioned.
+ * It computes the maximum offset vector and passes it to transformStart to
+ * find the starting position of the fingers; it then passes it to transformHalf
+ * twice to find the midpoint and final position of the fingers.
+ *
+ * @param {!Element} element Element to interact with.
+ * @param {function(goog.math.Vec2)} transformStart Function to transform the
+ *   maximum offset vector to the starting offset vector.
+ * @param {function(goog.math.Vec2)} transformHalf Function to transform the
+ *   offset vector halfway to its destination.
+ * @param {goog.math.Coordinate=} opt_coords Position relative to the element
+ *   at the center of the pinch.
+ * @param {bot.Touchscreen=} opt_touchscreen Touchscreen to use; if not
+ *    provided, constructs one.
+ * @private
+ */
+bot.action.multiTouchAction_ = function(element, transformStart, transformHalf,
+                                        opt_coords, opt_touchscreen) {
+  var center = bot.action.prepareToInteractWith_(element, opt_coords);
+  var size = bot.action.getInteractableSize_(element);
+  var offsetVec = new goog.math.Vec2(
+      Math.min(center.x, size.width - center.x),
+      Math.min(center.y, size.height - center.y));
+
+  var touchScreen = opt_touchscreen || new bot.Touchscreen();
+  transformStart(offsetVec);
+  var start1 = goog.math.Vec2.sum(center, offsetVec);
+  var start2 = goog.math.Vec2.difference(center, offsetVec);
+  touchScreen.move(element, start1, start2);
+  touchScreen.press(/*Two Finger Press*/ true);
+
+  var initPos = goog.style.getClientPosition(element);
+  transformHalf(offsetVec);
+  var mid1 = goog.math.Vec2.sum(center, offsetVec);
+  var mid2 = goog.math.Vec2.difference(center, offsetVec);
+  touchScreen.move(element, mid1, mid2);
+
+  var movedVec = goog.math.Vec2.difference(
+      goog.style.getClientPosition(element), initPos);
+  transformHalf(offsetVec);
+  var end1 = goog.math.Vec2.sum(center, offsetVec).subtract(movedVec);
+  var end2 = goog.math.Vec2.difference(center, offsetVec).subtract(movedVec);
+  touchScreen.move(element, end1, end2);
+  touchScreen.release();
+};
+
+
+/**
+ * Prepares to interact with the given {@code element}. It checks if the the
+ * element is shown, scrolls the element into view, and returns the coordinates
+ * of the interaction, which if not provided, is the center of the element.
+ *
+ * @param {!Element} element The element to be interacted with.
+ * @param {goog.math.Coordinate=} opt_coords Position relative to the target.
+ * @return {!goog.math.Vec2} Coordinates at the center of the interaction.
  * @throws {bot.Error} If the element cannot be interacted with.
  * @private
  */
-bot.action.moveAndReturnMouse_ = function(element, opt_coords, opt_mouse) {
+bot.action.prepareToInteractWith_ = function(element, opt_coords) {
   bot.action.checkShown_(element);
 
   // Unlike element.scrollIntoView(), this scrolls the minimal amount
@@ -330,186 +526,26 @@ bot.action.moveAndReturnMouse_ = function(element, opt_coords, opt_mouse) {
   // (2) Elements with children styled as position:absolute will often not have
   // a bounding box that surrounds all of their children, but it is useful for
   // the user to be able to interact with this parent element as if it does.
-  if (!opt_coords) {
-    var size = goog.style.getSize(element);
-    opt_coords = new goog.math.Coordinate(size.width / 2, size.height / 2);
+  if (opt_coords) {
+    return goog.math.Vec2.fromCoordinate(opt_coords);
+  } else {
+    var size = bot.action.getInteractableSize_(element);
+    return new goog.math.Vec2(size.width / 2, size.height / 2);
   }
-
-  var mouse = opt_mouse || new bot.Mouse();
-  mouse.move(element, opt_coords);
-  return mouse;
 };
 
 
 /**
- * A helper function which triggers a mouse press and mouse release.
+ * Returns the interactable size of an element.
  *
- * @param {!bot.Mouse} mouse The object which is used to trigger the mouse
- * events.
- * @param {!Element} element The element to click.
- * @param {!bot.Mouse.Button} button The mouse button.
- * {@code element}.
+ * @param {!Element} elem Element.
+ * @return {!goog.math.Size} size Size of the element.
  * @private
  */
-bot.action.pressAndReleaseButton_ = function(mouse, element, button) {
-  mouse.pressButton(button);
-  mouse.releaseButton();
-};
-
-
-/**
- * Taps on the given {@code element} with a virtual touch screen.
- *
- * @param {!Element} element The element to tap.
- * @param {goog.math.Coordinate=} opt_coords Finger position relative to the
- *   target.
- * @throws {bot.Error} If the element cannot be interacted with.
- */
-bot.action.tap = function(element, opt_coords) {
-  bot.action.checkShown_(element);
-
-  var touchScreen = new bot.Touchscreen();
-  if (!opt_coords) {
-    var size = goog.style.getSize(element);
-    opt_coords = new goog.math.Coordinate(size.width / 2, size.height / 2);
-  }
-  touchScreen.move(element, opt_coords);
-  touchScreen.press();
-  touchScreen.release();
-};
-
-
-/**
- * Swipes the given {@code element} by (dx, dy) with a virtual touch screen.
- *
- * @param {!Element} element The element to swipe.
- * @param {number} dx Increment in x coordinate.
- * @param {number} dy Increment in y coordinate.
- * @param {goog.math.Coordinate=} opt_coords swipe start position relative to
- *   the element.
- * @throws {bot.Error} If the element cannot be interacted with.
- */
-bot.action.swipe = function(element, dx, dy, opt_coords) {
-  bot.action.checkInteractable_(element);
-
-  var touchScreen = new bot.Touchscreen();
-  if (!opt_coords) {
-    var size = goog.style.getSize(element);
-    opt_coords = new goog.math.Coordinate(size.width / 2, size.height / 2);
-  }
-  touchScreen.move(element, opt_coords);
-  touchScreen.press();
-
-  // Fire two touchmoves (middle and destination) to trigger a drag action.
-  var initPos = goog.style.getClientPosition(element);
-  var midXY = new goog.math.Coordinate(opt_coords.x + Math.floor(dx / 2),
-                                       opt_coords.y + Math.floor(dy / 2));
-  touchScreen.move(element, midXY);
-
-  var midPos = goog.style.getClientPosition(element);
-  var finalXY = new goog.math.Coordinate(
-      initPos.x + opt_coords.x + dx - midPos.x,
-      initPos.y + opt_coords.y + dy - midPos.y);
-  touchScreen.move(element, finalXY);
-
-  touchScreen.release();
-};
-
-
-/**
- * Helper function that has common logic needing for the pinch and zoom actions.
- *
- * @param {!Element} element The element to scale.
- * @param {boolean} isZoom Whether or not to zoom.
- * @private
- */
-bot.action.scale_ = function(element, isZoom) {
-  bot.action.checkInteractable_(element);
-  var size = goog.style.getSize(element);
-  var center = new goog.math.Vec2(size.width / 2, size.height / 2);
-  // To choose the default coordinate, we imagine a circle centered on the
-  // element's center. The first finger coordinate is the top of this circle
-  // i.e. the 12 o'clock mark and the second finger is at 6 o'clock.
-  var outer1 = new goog.math.Coordinate(size.width / 2, 0);
-  var outer2 = new goog.math.Coordinate(size.width / 2, size.height);
-  var mid1 = new goog.math.Coordinate(size.width / 2, size.height);
-  var mid2 = new goog.math.Coordinate(size.width / 2, 3 * size.height / 4);
-
-  // For zoom, start from the center and go outwards and vice versa for pinch.
-  var start1 = isZoom ? center : outer1;
-  var start2 = isZoom ? center : outer2;
-  var end1 = isZoom ? outer1 : center;
-  var end2 = isZoom ? outer2 : center;
-
-  var touchScreen = new bot.Touchscreen();
-  touchScreen.move(element, start1, start2);
-  touchScreen.press(/*Two Finger Press*/ true);
-  touchScreen.move(element, mid1, mid2);
-  touchScreen.move(element, end1, end2);
-  touchScreen.release();
-};
-
-
-/**
- * Pinches the given {@code element} (moves fingers inward to its center) with a
- * virtual touch screen.
- *
- * @param {!Element} element The element to pinch.
- * @throws {bot.Error} If the element cannot be interacted with.
- */
-bot.action.pinch = function(element) {
-  bot.action.scale_(element, /* isZoom */ false);
-};
-
-
-/**
- * Zooms the given {@code element} (moves fingers outward to its edge) with a
- * virtual touch screen.
- *
- * @param {!Element} element The element to zoom.
- * @throws {bot.Error} If the element cannot be interacted with.
- */
-bot.action.zoom = function(element) {
-  bot.action.scale_(element, /* isZoom */ true);
-};
-
-
-/**
- * Rotates the given {@code element} (moves fingers along a circular arc) with a
- * virtual touch screen by the given rotation {@code angle}.
- *
- * @param {!Element} element The element to rotate.
- * @param {number} angle The degrees of rotation between -180 and 180.  A
- *   positve number indicates a clockwise rotation.
- * @throws {bot.Error} If the element cannot be interacted with.
- */
-bot.action.rotate = function(element, angle) {
-  bot.action.checkInteractable_(element);
-  var size = goog.style.getSize(element);
-  var center = new goog.math.Vec2(size.width / 2, size.height / 2);
-  // To choose the default coordinate, we imagine a circle centered on the
-  // element's center. The first finger coordinate is the top of this circle
-  // i.e. the 12 o'clock mark and the second finger is at 6 o'clock.
-  var coords1 = new goog.math.Vec2(size.width / 2, 0);
-  var coords2 = new goog.math.Vec2(size.width / 2, size.height);
-
-  // Convert the degrees to radians.
-  var halfRadians = Math.PI * (angle / 180) / 2;
-
-  var touchScreen = new bot.Touchscreen();
-  touchScreen.move(element, coords1, coords2);
-  touchScreen.press(/*Two Finger Press*/ true);
-
-  // Complete the rotation in two steps.
-  var mid1 = goog.math.Vec2.rotateAroundPoint(coords1, center, halfRadians);
-  var mid2 = goog.math.Vec2.rotateAroundPoint(coords2, center, halfRadians);
-  touchScreen.move(element, mid1, mid2);
-
-  var end1 = goog.math.Vec2.rotateAroundPoint(mid1, center, halfRadians);
-  var end2 = goog.math.Vec2.rotateAroundPoint(mid2, center, halfRadians);
-  touchScreen.move(element, end1, end2);
-
-  touchScreen.release();
+bot.action.getInteractableSize_ = function(elem) {
+  var size = goog.style.getSize(elem);
+  return ((size.width > 0 && size.height > 0) || !elem.offsetParent) ? size :
+      bot.action.getInteractableSize_(elem.offsetParent);
 };
 
 
@@ -711,6 +747,8 @@ goog.provide('bot.Device');
 goog.require('bot');
 goog.require('bot.dom');
 goog.require('bot.userAgent');
+goog.require('goog.userAgent');
+goog.require('goog.userAgent.product');
 
 
 
@@ -972,7 +1010,7 @@ bot.Device.prototype.clickElement = function(coord, button) {
   // FORM(action) No    Yes    Yes    Yes
   var targetLink = null;
   var targetButton = null;
-  if (bot.Device.MUST_MANUALLY_FOLLOW_LINKS_) {
+  if (bot.Device.EXPLICIT_FOLLOW_LINK_) {
     for (var e = this.element_; e; e = e.parentNode) {
       if (bot.dom.isElement(e, goog.dom.TagName.A)) {
         targetLink = /**@type {!Element}*/ (e);
@@ -1090,17 +1128,29 @@ bot.Device.prototype.focusOnElement = function() {
 
 
 /**
- * Whether links must be manually followed when clicking (because firing click
- * events doesn't follow them).
- *
+ * Whether extra handling needs to be considered when clicking on a link or a
+ * submit button.
  *
  * @type {boolean}
  * @private
  * @const
  */
-bot.Device.MUST_MANUALLY_FOLLOW_LINKS_ =
-    !(goog.userAgent.WEBKIT || goog.userAgent.OPERA ||
-      (bot.userAgent.FIREFOX_EXTENSION && bot.userAgent.isProductVersion(3.6)));
+bot.Device.EXPLICIT_FOLLOW_LINK_ = goog.userAgent.IE ||
+    // Normal firefox
+    (goog.userAgent.GECKO && !bot.userAgent.FIREFOX_EXTENSION) ||
+    // Firefox extension prior to Firefox 4
+    (bot.userAgent.FIREFOX_EXTENSION && !bot.userAgent.isProductVersion(4));
+
+
+/**
+ * Whether synthesized events are trusted to trigger click actions.
+ *
+ * @type {boolean}
+ * @private
+ * @const
+ */
+bot.Device.CAN_SYNTHESISED_EVENTS_FOLLOW_LINKS_ =
+    bot.userAgent.FIREFOX_EXTENSION && bot.userAgent.isProductVersion(4);
 
 
 /**
@@ -1160,7 +1210,7 @@ bot.Device.shouldFollowHref_ = function(element) {
     return true;
   }
 
-  if (!bot.Device.MUST_MANUALLY_FOLLOW_LINKS_) {
+  if (bot.Device.CAN_SYNTHESISED_EVENTS_FOLLOW_LINKS_) {
     return false;
   }
 
@@ -1219,8 +1269,10 @@ bot.Device.prototype.toggleOption_ = function(wasSelected) {
     return;
   }
   this.element_.selected = !wasSelected;
-  // Only WebKit fires the change event itself and only for multi-selects.
-  if (!(goog.userAgent.WEBKIT && select.multiple)) {
+  // Only WebKit fires the change event itself and only for multi-selects,
+  // except for Android versions >= 4.0.
+  if (!(goog.userAgent.WEBKIT && select.multiple) ||
+      (goog.userAgent.product.ANDROID && bot.userAgent.isProductVersion(4))) {
     bot.events.fire(select, bot.events.EventType.CHANGE);
   }
 };
@@ -1987,9 +2039,8 @@ bot.dom.getCascadedStyle_ = function(elem, styleName) {
 /**
  * @param {!Element} element The element to use.
  * @return {!goog.math.Size} The dimensions of the element.
- * @private
  */
-bot.dom.getElementSize_ = function(element) {
+bot.dom.getElementSize = function(element) {
   if (goog.isFunction(element['getBBox'])) {
     try {
       var bb = element['getBBox']();
@@ -2108,7 +2159,7 @@ bot.dom.isShown = function(elem, opt_ignoreOpacity) {
 
   // Any element without positive size dimensions is not shown.
   function positiveSize(e) {
-    var size = bot.dom.getElementSize_(e);
+    var size = bot.dom.getElementSize(e);
     if (size.height > 0 && size.width > 0) {
       return true;
     }
@@ -2124,16 +2175,15 @@ bot.dom.isShown = function(elem, opt_ignoreOpacity) {
   }
 
   // Elements should be hidden if their parent has a fixed size AND has the style
-  // overflow:hidden AND the element's location is not within the fixed size 
+  // overflow:hidden AND the element's location is not within the fixed size
   // of the parent
   function isOverflowHiding(e) {
     var parent = bot.dom.getParentElement(e);
     if (parent && bot.dom.getEffectiveStyle(parent, 'overflow') == 'hidden') {
-      var sizeOfParent = bot.dom.getElementSize_(parent); 
+      var sizeOfParent = bot.dom.getElementSize(parent);
       var locOfParent = goog.style.getClientPosition(parent);
       var locOfElement = goog.style.getClientPosition(e);
-
-      if (locOfParent.x + sizeOfParent.width < locOfElement.x) {
+         if (locOfParent.x + sizeOfParent.width < locOfElement.x) {
         return false;
       }
       if (locOfParent.y + sizeOfParent.height < locOfElement.y) {
@@ -2330,7 +2380,7 @@ bot.dom.appendVisibleTextLinesFromTextNode_ = function(textNode, lines,
  * @return {number} Opacity between 0 and 1.
  */
 bot.dom.getOpacity = function(elem) {
-  // TODO: BobS: Does this need to deal with rgba colors?
+  // TODO(BobS): Does this need to deal with rgba colors?
   if (!goog.userAgent.IE) {
     return bot.dom.getOpacityNonIE_(elem);
   } else {
@@ -3546,20 +3596,11 @@ goog.provide('bot.inject.cache');
 goog.require('bot');
 goog.require('bot.Error');
 goog.require('bot.ErrorCode');
+goog.require('bot.json');
 goog.require('goog.array');
 goog.require('goog.dom');
 goog.require('goog.dom.NodeType');
-goog.require('goog.events');
-goog.require('goog.json');
 goog.require('goog.object');
-
-
-/**
- * WebDriver wire protocol definition of a command response.
- * @typedef {{status:bot.ErrorCode, value:*}}
- * @see http://code.google.com/p/selenium/wiki/JsonWireProtocol#Responses
- */
-bot.inject.Response;
 
 
 /**
@@ -3746,7 +3787,7 @@ bot.inject.recompileFunction_ = function(fn, theWindow) {
  *     serialized JSON string.
  * @param {!Window=} opt_window The window in whose context the function should
  *     be invoked; defaults to the current window.
- * @return {!(string|bot.inject.Response)} The response object. If
+ * @return {!(string|bot.response.ResponseObject)} The response object. If
  *     opt_stringify is true, the result will be serialized and returned in
  *     string format.
  */
@@ -3757,11 +3798,11 @@ bot.inject.executeScript = function(fn, args, opt_stringify, opt_window) {
     fn = bot.inject.recompileFunction_(fn, win);
     var unwrappedArgs = (/**@type {Object}*/bot.inject.unwrapValue_(args,
         win.document));
-    ret = bot.inject.wrapResponse_(fn.apply(null, unwrappedArgs));
+    ret = bot.inject.wrapResponse(fn.apply(null, unwrappedArgs));
   } catch (ex) {
-    ret = bot.inject.wrapError_(ex);
+    ret = bot.inject.wrapError(ex);
   }
-  return opt_stringify ? goog.json.serialize(ret) : ret;
+  return opt_stringify ? bot.json.stringify(ret) : ret;
 };
 
 
@@ -3769,7 +3810,7 @@ bot.inject.executeScript = function(fn, args, opt_stringify, opt_window) {
  * Executes an injected script, which is expected to finish asynchronously
  * before the given {@code timeout}. When the script finishes or an error
  * occurs, the given {@code onDone} callback will be invoked. This callback
- * will have a single argument, a {@code bot.inject.Response} object.
+ * will have a single argument, a {@link bot.response.ResponseObject} object.
  *
  * The script signals its completion by invoking a supplied callback given
  * as its last argument. The callback may be invoked with a single value.
@@ -3790,33 +3831,37 @@ bot.inject.executeScript = function(fn, args, opt_stringify, opt_window) {
  *     the WebDriver wire protocol.
  * @param {number} timeout The amount of time, in milliseconds, the script
  *     should be permitted to run; must be non-negative.
- * @param {function(string)|function(!bot.inject.Response)} onDone
+ * @param {function(string)|function(!bot.response.ResponseObject)} onDone
  *     The function to call when the given {@code fn} invokes its callback,
  *     or when an exception or timeout occurs. This will always be called.
  * @param {boolean=} opt_stringify Whether the result should be returned as a
  *     serialized JSON string.
  * @param {!Window=} opt_window The window to synchronize the script with;
  *     defaults to the current window.
- * @return {null} Doesn't return anything, but will call "onDone".
  */
 bot.inject.executeAsyncScript = function(fn, args, timeout, onDone,
                                          opt_stringify, opt_window) {
   var win = opt_window || window;
-  var timeoutId, onunloadKey;
+  var timeoutId;
   var responseSent = false;
 
   function sendResponse(status, value) {
     if (!responseSent) {
-      goog.events.unlistenByKey(onunloadKey);
+      if (win.removeEventListener) {
+        win.removeEventListener('unload', onunload, true);
+      } else {
+        win.detachEvent('onunload', onunload);
+      }
+
       win.clearTimeout(timeoutId);
       if (status != bot.ErrorCode.SUCCESS) {
         var err = new bot.Error(status, value.message || value + '');
         err.stack = value.stack;
-        value = bot.inject.wrapError_(err);
+        value = bot.inject.wrapError(err);
       } else {
-        value = bot.inject.wrapResponse_(value);
+        value = bot.inject.wrapResponse(value);
       }
-      onDone(opt_stringify ? goog.json.serialize(value) : value);
+      onDone(opt_stringify ? bot.json.stringify(value) : value);
       responseSent = true;
     }
   }
@@ -3831,12 +3876,11 @@ bot.inject.executeAsyncScript = function(fn, args, timeout, onDone,
   args = /** @type {Array.<*>} */bot.inject.unwrapValue_(args, win.document);
   args.push(goog.partial(sendResponse, bot.ErrorCode.SUCCESS));
 
-  onunloadKey = goog.events.listen(win, goog.events.EventType.UNLOAD,
-      function() {
-        sendResponse(bot.ErrorCode.UNKNOWN_ERROR,
-            Error('Detected a page unload event; asynchronous script ' +
-                  'execution does not work across page loads.'));
-      }, true);
+  if (win.addEventListener) {
+    win.addEventListener('unload', onunload, true);
+  } else {
+    win.attachEvent('onunload', onunload);
+  }
 
   var startTime = goog.now();
   try {
@@ -3853,6 +3897,12 @@ bot.inject.executeAsyncScript = function(fn, args, timeout, onDone,
   } catch (ex) {
     sendResponse(ex.code || bot.ErrorCode.UNKNOWN_ERROR, ex);
   }
+
+  function onunload() {
+    sendResponse(bot.ErrorCode.UNKNOWN_ERROR,
+        Error('Detected a page unload event; asynchronous script ' +
+              'execution does not work across page loads.'));
+  }
 };
 
 
@@ -3863,9 +3913,8 @@ bot.inject.executeAsyncScript = function(fn, args, timeout, onDone,
  * @param {*} value The script result.
  * @return {{status:bot.ErrorCode,value:*}} The wrapped value.
  * @see http://code.google.com/p/selenium/wiki/JsonWireProtocol#Responses
- * @private
  */
-bot.inject.wrapResponse_ = function(value) {
+bot.inject.wrapResponse = function(value) {
   return {
     'status': bot.ErrorCode.SUCCESS,
     'value': bot.inject.wrapValue(value)
@@ -3879,9 +3928,8 @@ bot.inject.wrapResponse_ = function(value) {
  * @param {Error} err The error to wrap.
  * @return {{status:bot.ErrorCode,value:*}} The wrapped error object.
  * @see http://code.google.com/p/selenium/wiki/JsonWireProtocol#Failed_Commands
- * @private
  */
-bot.inject.wrapError_ = function(err) {
+bot.inject.wrapError = function(err) {
   // TODO(user): Parse stackTrace
   return {
     'status': goog.object.containsKey(err, 'code') ?
@@ -4003,6 +4051,69 @@ bot.inject.cache.getElement = function(key, opt_doc) {
       'Element is no longer attached to the DOM');
 };
 
+// Copyright 2012 WebDriver committers
+// Copyright 2012 Google Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * @fileoverview Provides JSON utilities that uses native JSON parsing where
+ * possible (a feature not currently offered by Closure).
+ */
+
+goog.provide('bot.json');
+
+goog.require('bot.userAgent');
+goog.require('goog.json');
+goog.require('goog.userAgent');
+
+
+/**
+ * Whether the current browser supports the native JSON interface.
+ * @type {boolean}
+ * @const
+ * @see http://caniuse.com/#search=JSON
+ * @private
+ */
+bot.json.NATIVE_JSON_ =
+    // List WebKit and Opera first since every supported version of these
+    // browsers supports native JSON (and we can compile away large chunks of
+    // code for individual fragments by setting the appropriate compiler flags).
+    goog.userAgent.WEBKIT || goog.userAgent.OPERA ||
+        (goog.userAgent.GECKO && bot.userAgent.isEngineVersion(3.5)) ||
+        (goog.userAgent.IE && bot.userAgent.isEngineVersion(8));
+
+
+/**
+ * Converts a JSON object to its string representation.
+ * @param {*} jsonObj The input object.
+ * @param {?(function(string, *): *)=} opt_replacer A replacer function called
+ *     for each (key, value) pair that determines how the value should be
+ *     serialized. By default, this just returns the value and allows default
+ *     serialization to kick in.
+ * @return {string} A JSON string representation of the input object.
+ */
+bot.json.stringify = bot.json.NATIVE_JSON_ ? JSON.stringify :
+    goog.json.serialize;
+
+
+/**
+ * Parses a JSON string and returns the result.
+ * @param {string} jsonStr The string to parse.
+ * @return {*} The JSON object.
+ * @throws {Error} If the input string is an invalid JSON string.
+ */
+bot.json.parse = bot.json.NATIVE_JSON_ ? JSON.parse : goog.json.parse;
 // Copyright 2010 WebDriver committers
 // Copyright 2010 Google Inc.
 //
@@ -4924,30 +5035,40 @@ bot.Mouse.prototype.move = function(element, coords) {
   var pos = goog.style.getClientPosition(element);
   this.clientXY_.x = coords.x + pos.x;
   this.clientXY_.y = coords.y + pos.y;
+  var fromElement = this.getElement();
 
-  if (element != this.getElement()) {
-    // For the first mouse interaction on a page, if the mouse was over the
-    // browser window, the browser will pass null as the relatedTarget for the
-    // mousever event. For subsequent interactions, it will pass the
-    // last-focused element. Unfortunately, we don't have anywhere to keep the
-    // state of which elements have been focused across Mouse instances, so we
-    // treat every Mouse initially positioned over the documentElement or body
-    // as if it's on a new page. Accordingly, for complex actions (e.g.
-    // drag-and-drop), a single Mouse instance should be used for the whole
-    // action, to ensure the correct relatedTargets are fired for any events.
-    var isRootElement =
-        this.getElement() === bot.getDocument().documentElement ||
-        this.getElement() === bot.getDocument().body;
-    var prevElement =
-        (!this.hasEverInteracted_ && isRootElement) ? null : this.getElement();
+  if (element != fromElement) {
+    // If the window of fromElement is closed, set fromElement to null as a flag
+    // to skip the mouseout event and so relatedTarget of the mouseover is null.
+    try {
+      if (goog.dom.getWindow(goog.dom.getOwnerDocument(fromElement)).closed) {
+        fromElement = null;
+      }
+    } catch (ignore) {
+      // Sometimes accessing a window that no longer exists causes an error.
+      fromElement = null;
+    }
 
-    this.fireMouseEvent_(bot.events.EventType.MOUSEOUT, element);
+    if (fromElement) {
+      // For the first mouse interaction on a page, if the mouse was over the
+      // browser window, the browser will pass null as the relatedTarget for the
+      // mouseover event. For subsequent interactions, it will pass the
+      // last-focused element. Unfortunately, we don't have anywhere to keep the
+      // state of which elements have been focused across Mouse instances, so we
+      // treat every Mouse initially positioned over the documentElement or body
+      // as if it's on a new page. Accordingly, for complex actions (e.g.
+      // drag-and-drop), a single Mouse instance should be used for the whole
+      // action, to ensure the correct relatedTargets are fired for any events.
+      var isRoot = fromElement === bot.getDocument().documentElement ||
+                   fromElement === bot.getDocument().body;
+      fromElement = (!this.hasEverInteracted_ && isRoot) ? null : fromElement;
+      this.fireMouseEvent_(bot.events.EventType.MOUSEOUT, element);
+    }
     this.setElement(element);
-    this.fireMouseEvent_(bot.events.EventType.MOUSEOVER, prevElement);
+    this.fireMouseEvent_(bot.events.EventType.MOUSEOVER, fromElement);
   }
 
   this.fireMouseEvent_(bot.events.EventType.MOUSEMOVE);
-
   this.nextClickIsDoubleClick_ = false;
 };
 
@@ -5021,8 +5142,7 @@ bot.Mouse.prototype.getButtonValue_ = function(eventType) {
   }
   return buttonValue;
 };
-// Copyright 2010 WebDriver committers
-// Copyright 2010 Google Inc.
+// Copyright 2011 Software Freedom Conservancy. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -5036,97 +5156,98 @@ bot.Mouse.prototype.getButtonValue_ = function(eventType) {
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-goog.provide('bot.script');
+/**
+ * @fileoverview Utilities for working with WebDriver response objects.
+ * See: http://code.google.com/p/selenium/wiki/JsonWireProtocol#Responses
+ */
+
+goog.provide('bot.response');
+goog.provide('bot.response.ResponseObject');
 
 goog.require('bot.Error');
 goog.require('bot.ErrorCode');
-goog.require('goog.events');
-goog.require('goog.events.EventType');
 
 
 /**
- * Executes a random snippet of JavaScript that defines the body of a function
- * to invoke.  When executing asynchronous scripts, all timeouts will be
- * scheduled with the window in whose context the script is invoked (this
- * ensures timeouts are in sync with that window's event queue).  Furthermore,
- * asynchronous scripts do not work across new page loads (since the JavaScript
- * context is lost); if an "unload" event is fired while an asynchronous script
- * is executing, the script will be aborted and the {@code onFailure} callback
- * will be invoked.
- *
- * @param {string} script A string defining the body of the function
- *     to invoke.
- * @param {!Array.<*>} args The list of arguments to pass to the script.
- * @param {number} timeout The amount of time, in milliseconds, the script
- *     should be permitted to run. If {@code timeout < 0}, the script will
- *     be considered synchronous and expetected to immediately return a result.
- * @param {function(*)} onSuccess The function to call if the script
- *     succeeds. The function should take a single argument: the script
- *     result.
- * @param {function(!bot.Error)} onFailure The function to call if the script
- *     fails. The function should take a single argument: a bot.Error object
- *     describing the failure.
- * @param {Window=} opt_window The window to execute the script in; defaults
- *     to the current window. Asynchronous scripts will have their timeouts
- *     scheduled with this window. Furthermore, asynchronous scripts will
- *     be aborted if this window fires an unload event.
+ * Type definition for a response object, as defined by the JSON wire protocol.
+ * @typedef {{status: bot.ErrorCode, value: (*|{message: string})}}
+ * @see http://code.google.com/p/selenium/wiki/JsonWireProtocol#Responses
  */
-bot.script.execute = function(script, args, timeout, onSuccess, onFailure,
-                              opt_window) {
-  var timeoutId, onunloadKey;
-  var win = opt_window || window;
-  var responseSent = false;
+bot.response.ResponseObject;
 
-  function sendResponse(status, value) {
-    if (!responseSent) {
-      responseSent = true;
-      goog.events.unlistenByKey(onunloadKey);
-      win.clearTimeout(timeoutId);
-      if (status != bot.ErrorCode.SUCCESS) {
-        var err = new bot.Error(status, value.message);
-        err.stack = value.stack;
-        onFailure(err);
-      } else {
-        onSuccess(value);
-      }
+
+/**
+ * @param {*} value The value to test.
+ * @return {boolean} Whether the given value is a response object.
+ */
+bot.response.isResponseObject = function(value) {
+  return goog.isObject(value) && goog.isNumber(value['status']);
+};
+
+
+/**
+ * Creates a new success response object with the provided value.
+ * @param {*} value The response value.
+ * @return {!bot.response.ResponseObject} The new response object.
+ */
+bot.response.createResponse = function(value) {
+  if (bot.response.isResponseObject(value)) {
+    return (/** @type {!bot.response.ResponseObject} */value);
+  }
+  return {
+    'status': bot.ErrorCode.SUCCESS,
+    'value': value
+  };
+};
+
+
+/**
+ * Converts an error value into its JSON representation as defined by the
+ * WebDriver wire protocol.
+ * @param {(bot.Error|Error|*)} error The error value to convert.
+ * @return {!bot.response.ResponseObject} The new response object.
+ */
+bot.response.createErrorResponse = function(error) {
+  if (bot.response.isResponseObject(error)) {
+    return (/** @type {!bot.response.ResponseObject} */error);
+  }
+
+  var statusCode = error && goog.isNumber(error.code) ? error.code :
+      bot.ErrorCode.UNKNOWN_ERROR;
+  return {
+    'status': (/** @type {bot.ErrorCode} */statusCode),
+    'value': {
+      'message': (error && error.message || error) + ''
     }
+  };
+};
+
+
+/**
+ * Checks that a response object does not specify an error as defined by the
+ * WebDriver wire protocol. If the response object defines an error, it will
+ * be thrown. Otherwise, the response will be returned as is.
+ * @param {!bot.response.ResponseObject} responseObj The response object to
+ *     check.
+ * @return {!bot.response.ResponseObject} The checked response object.
+ * @throws {bot.Error} If the response describes an error.
+ * @see http://code.google.com/p/selenium/wiki/JsonWireProtocol#Failed_Commands
+ */
+bot.response.checkResponse = function(responseObj) {
+  var status = responseObj['status'];
+  if (status == bot.ErrorCode.SUCCESS) {
+    return responseObj;
   }
 
-  function onUnload() {
-    sendResponse(bot.ErrorCode.JAVASCRIPT_ERROR,
-                 Error('Detected a page unload event; asynchronous script ' +
-                       'execution does not work across apge loads.'));
+  // If status is not defined, assume an unknown error.
+  status = status || bot.ErrorCode.UNKNOWN_ERROR;
+
+  var value = responseObj['value'];
+  if (!value || !goog.isObject(value)) {
+    throw new bot.Error(status, value + '');
   }
 
-  function onTimeout(startTime) {
-    sendResponse(bot.ErrorCode.SCRIPT_TIMEOUT,
-                 Error('Timed out waiting for asynchronous script result ' +
-                       'after ' + (goog.now() - startTime) + 'ms'));
-  }
-
-  var isAsync = timeout >= 0;
-
-  if (isAsync) {
-    args.push(function(value) {
-      sendResponse(bot.ErrorCode.SUCCESS, value);
-    });
-    onunloadKey = goog.events.listen(win, goog.events.EventType.UNLOAD,
-        onUnload, true);
-  }
-
-  var startTime = goog.now();
-  try {
-    // Try to use the Function type belonging to the window, where available.
-    var functionType = win['Function'] || Function;
-    var result = new functionType(script).apply(win, args);
-    if (isAsync) {
-      timeoutId = win.setTimeout(goog.partial(onTimeout, startTime), timeout);
-    } else {
-      sendResponse(bot.ErrorCode.SUCCESS, result);
-    }
-  } catch (ex) {
-    sendResponse(ex.code || bot.ErrorCode.JAVASCRIPT_ERROR, ex);
-  }
+  throw new bot.Error(status, value['message'] + '');
 };
 // Copyright 2011 WebDriver committers
 // Copyright 2011 Google Inc.
@@ -5423,10 +5544,10 @@ bot.userAgent.isProductVersion = function(version) {
  * and returns whether the version of Gecko we are on is the same or higher
  * than the given version. When we are not in a Firefox extension, this is null.
  *
- * @type {?function((string|number)): boolean}
+ * @type {(undefined|function((string|number)): boolean)}
  * @private
  */
-bot.userAgent.FIREFOX_EXTENSION_IS_ENGINE_VERSION_ = null;
+bot.userAgent.FIREFOX_EXTENSION_IS_ENGINE_VERSION_;
 
 
 /**
@@ -5434,10 +5555,11 @@ bot.userAgent.FIREFOX_EXTENSION_IS_ENGINE_VERSION_ = null;
  * and returns whether the version of Firefox we are on is the same or higher
  * than the given version. When we are not in a Firefox extension, this is null.
  *
- * @type {?function((string|number)): boolean}
+ * @type {(undefined|function((string|number)): boolean)}
+ *
  * @private
  */
-bot.userAgent.FIREFOX_EXTENSION_IS_PRODUCT_VERSION_ = null;
+bot.userAgent.FIREFOX_EXTENSION_IS_PRODUCT_VERSION_;
 
 
 /**
@@ -5509,16 +5631,16 @@ bot.userAgent.MOBILE = bot.userAgent.IOS || goog.userAgent.product.ANDROID;
  * Android Operating System Version.
  *
  * @const
- * @type {number}
+ * @type {string}
  * @private
  */
 bot.userAgent.ANDROID_VERSION_ = (function() {
   if (goog.userAgent.product.ANDROID) {
     var userAgentString = goog.userAgent.getUserAgentString();
     var match = /Android\s+([0-9\.]+)/.exec(userAgentString);
-    return match ? Number(match[1]) : 0;
+    return match ? match[1] : '0';
   } else {
-    return 0;
+    return '0';
   }
 })();
 
@@ -7179,7 +7301,7 @@ bot.storage.Storage.prototype.setItem = function(key, value) {
  */
 bot.storage.Storage.prototype.getItem = function(key) {
   var value = this.storageMap_.getItem(key);
-  return  /** @type {string} */ value;
+  return  /** @type {?string} */ value;
 };
 
 
@@ -7202,10 +7324,10 @@ bot.storage.Storage.prototype.keySet = function() {
  * Removes an item with a given key.
  *
  * @param {string} key The key item of the key/value pair.
- * @return {*} The removed value if present, otherwise null.
+ * @return {?string} The removed value if present, otherwise null.
  */
 bot.storage.Storage.prototype.removeItem = function(key) {
-  var value = this.storageMap_.getItem(key);
+  var value = this.getItem(key);
   this.storageMap_.removeItem(key);
   return value;
 };
@@ -7521,13 +7643,18 @@ webdriver.atoms.element.getText = function(element) {
  *
  * @param {!Element} element The element to type upon.
  * @param {!Array.<string>} keys The keys to type on the element.
+ * @param {bot.Keyboard=} opt_keyboard Keyboard to use; if not provided,
+ *    constructs one.
  * @see bot.action.type
  * @see http://code.google.com/p/selenium/wiki/JsonWireProtocol
  */
-webdriver.atoms.element.type = function(element, keys) {
+webdriver.atoms.element.type = function(element, keys, opt_keyboard) {
   // Convert to bot.Keyboard.Key values.
-  var convertedSequences = [], current;
-  convertedSequences.push(current = []);
+  /** @type {!Array.<!Array.<(string|!bot.Keyboard.Key)>>} */
+  var convertedSequences = [];
+  /** @type {!Array.<(string|!bot.Keyboard.Key)>} */
+  var current = [];
+  convertedSequences.push(current);
 
   goog.array.forEach(keys, function(sequence) {
     goog.array.forEach(sequence.split(''), function(key) {
@@ -7563,8 +7690,7 @@ webdriver.atoms.element.type = function(element, keys) {
   });
 
   goog.array.forEach(convertedSequences, function(sequence) {
-    var args = goog.array.concat(element, sequence);
-    bot.action.type.apply(null, args);
+    bot.action.type(element, sequence, opt_keyboard);
   });
 
   function isWebDriverKey(c) {
@@ -7638,6 +7764,113 @@ goog.scope(function() {
   map[key.F12] = botKey.F12;
   map[key.META] = botKey.META;
 });
+// Copyright 2012 WebDriver committers
+// Copyright 2012 Software Freedom Conservancy
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+
+/**
+* @fileoverview Synthetic events for fun and profit.
+*/
+
+goog.provide('webdriver.atoms.inputs');
+
+goog.require('bot.Keyboard');
+goog.require('bot.Mouse');
+goog.require('bot.action');
+goog.require('bot.userAgent');
+goog.require('goog.array');
+goog.require('goog.string');
+
+
+/**
+* Examines the opt_keyboard parameter, and returns either that or a new
+* keyboard instance, which is stored on the document for later use.
+*
+* @param {bot.Keyboard=} opt_keyboard A mouse to use.
+* @return {!bot.Keyboard} A mouse instance.
+*/
+webdriver.atoms.inputs.getKeyboard_ = function (opt_keyboard) {
+    if (opt_keyboard) {
+        return opt_keyboard;
+    }
+
+    if (!bot.userAgent.FIREFOX_EXTENSION && document['__webdriver_keyboard']) {
+        return document['__webdriver_keyboard'];
+    }
+
+    var keyboard = new bot.Keyboard();
+    if (!bot.userAgent.FIREFOX_EXTENSION) {
+        document['__webdriver_keyboard'] = keyboard;
+    }
+
+    return keyboard;
+};
+
+
+/**
+* Examines the opt_mouse parameter, and returns either that or a new mouse
+* instance, which is stored on the document for later use.
+*
+* @param {bot.Mouse=} opt_mouse A mouse to use.
+* @return {!bot.Mouse} A mouse instance.
+*/
+webdriver.atoms.inputs.getMouse_ = function (opt_mouse) {
+    if (opt_mouse) {
+        return opt_mouse;
+    }
+
+    if (!bot.userAgent.FIREFOX_EXTENSION && document['__webdriver_mouse']) {
+        return document['__webdriver_mouse'];
+    }
+
+    var mouse = new bot.Mouse();
+    if (!bot.userAgent.FIREFOX_EXTENSION) {
+        document['__webdriver_mouse'] = mouse;
+    }
+
+    return mouse;
+};
+
+
+/**
+*
+* @param {!Element} element The element to send the keyboard input to.
+* @param {...(string|!Array.<string>)} var_args What to type.
+* @param {bot.Keyboard=} opt_keyboard The keyboard to use, or construct one.
+*/
+webdriver.atoms.inputs.sendKeys = function (
+    element, var_args, opt_keyboard) {
+    var keyboard = webdriver.atoms.inputs.getKeyboard_(opt_keyboard);
+    var to_type = goog.array.slice(arguments, 2);
+    var flattened = goog.array.flatten(values);
+
+    bot.action.type(element, flattened, keyboard);
+};
+
+
+/**
+* Click on an element.
+*
+* @param {!Element} element The element to click.
+* @param {bot.Mouse=} opt_mouse The mouse to use, or constructs one.
+*/
+webdriver.atoms.inputs.click = function (element, opt_mouse) {
+    var mouse = webdriver.atoms.inputs.getMouse_(opt_mouse);
+
+    bot.action.click(element, null, mouse);
+};
 // Copyright 2011 WebDriver committers
 // Copyright 2011 Google Inc.
 //
@@ -7662,15 +7895,30 @@ goog.provide('webdriver.atoms.inject.action');
 goog.require('bot.action');
 goog.require('bot.inject');
 goog.require('goog.dom.selection');
+goog.require('webdriver.atoms.element');
+
+
+/**
+ * Sends key events to simulating typing on an element.
+ *
+ * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to submit.
+ * @param {!Array.<string>} keys The keys to type.
+ * @return {string} A stringified {@link bot.response.ResponseObject}.
+ */
+webdriver.atoms.inject.action.type = function(element, keys) {
+  return bot.inject.executeScript(webdriver.atoms.element.type,
+      [element, keys], true);
+};
 
 
 /**
  * Submits the form containing the given element.
  *
  * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to submit.
+ * @return {string} A stringified {@link bot.response.ResponseObject}.
  */
 webdriver.atoms.inject.action.submit = function(element) {
-  bot.inject.executeScript(bot.action.submit, [element], true);
+  return bot.inject.executeScript(bot.action.submit, [element], true);
 };
 
 
@@ -7678,10 +7926,11 @@ webdriver.atoms.inject.action.submit = function(element) {
  * Clear an element.
  *
  * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to clear.
+ * @return {string} A stringified {@link bot.response.ResponseObject}.
  * @see bot.action.clear
  */
 webdriver.atoms.inject.action.clear = function(element) {
-  bot.inject.executeScript(bot.action.clear, [element], true);
+  return bot.inject.executeScript(bot.action.clear, [element], true);
 };
 
 
@@ -7689,10 +7938,11 @@ webdriver.atoms.inject.action.clear = function(element) {
  * Click an element.
  *
  * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to click.
+ * @return {string} A stringified {@link bot.response.ResponseObject}.
  * @see bot.action.click
  */
 webdriver.atoms.inject.action.click = function(element) {
-  bot.inject.executeScript(bot.action.click, [element], true);
+  return bot.inject.executeScript(bot.action.click, [element], true);
 };
 
 // Copyright 2012 WebDriver committers
@@ -7807,7 +8057,7 @@ webdriver.atoms.inject.dom.getAttributeValue = function(element, attribute) {
  *     defined by the wire protocol.
  */
 webdriver.atoms.inject.dom.getSize = function(element) {
-  return bot.inject.executeScript(bot.dom.getElementSize_, [element], true);
+  return bot.inject.executeScript(bot.dom.getElementSize, [element], true);
 };
 
 
@@ -7877,7 +8127,7 @@ goog.require('bot.inject.cache');
  * @param {Array.<*>} args Array of arguments to pass to fn.
  * @param {{bot.inject.WINDOW_KEY:string}=} opt_window The serialized window
  *     object to be read from the cache.
- * @return {!(string|bot.inject.Response)} The response object. If
+ * @return {!(string|bot.response.ResponseObject)} The response object. If
  *     opt_stringify is true, the result will be serialized and returned in
  *     string format.
  */
@@ -7894,7 +8144,7 @@ webdriver.atoms.inject.executeScript = function(fn, args, opt_window) {
  * @param {int} timeout The timeout to wait up to in millis.
  * @param {{bot.inject.WINDOW_KEY:string}=} opt_window The serialized window
  *     object to be read from the cache.
- * @return {!(string|bot.inject.Response)} The response object. If
+ * @return {!(string|bot.response.ResponseObject)} The response object. If
  *     opt_stringify is true, the result will be serialized and returned in
  *     string format.
  */
@@ -8094,7 +8344,7 @@ goog.require('webdriver.atoms.storage.local');
  *
  * @param {string} key The key of the item.
  * @param {*} value The value of the item.
- * @return {!bot.inject.Response} The result wrapped according
+ * @return {!bot.response.ResponseObject} The result wrapped according
  *     to the wire protocol.
  */
 webdriver.atoms.inject.storage.local.setItem = function(key, value) {
@@ -8107,7 +8357,7 @@ webdriver.atoms.inject.storage.local.setItem = function(key, value) {
  * Gets an item from the local storage.
  *
  * @param {string} key The key of the item.
- * @return {!bot.inject.Response} The result wrapped according
+ * @return {!bot.response.ResponseObject} The result wrapped according
  *     to the wire protocol.
  */
 webdriver.atoms.inject.storage.local.getItem = function(key) {
@@ -8119,7 +8369,7 @@ webdriver.atoms.inject.storage.local.getItem = function(key) {
 /**
  * Gets the key set of the entries.
  *
- * @return {!bot.inject.Response} The result wrapped according
+ * @return {!bot.response.ResponseObject} The result wrapped according
  *     to the wire protocol.
  */
 webdriver.atoms.inject.storage.local.keySet = function() {
@@ -8132,7 +8382,7 @@ webdriver.atoms.inject.storage.local.keySet = function() {
  * Removes an item in the local storage.
  *
  * @param {string} key The key of the item.
- * @return {!bot.inject.Response} The result wrapped according
+ * @return {!bot.response.ResponseObject} The result wrapped according
  *     to the wire protocol.
  */
 webdriver.atoms.inject.storage.local.removeItem = function(key) {
@@ -8144,7 +8394,7 @@ webdriver.atoms.inject.storage.local.removeItem = function(key) {
 /**
  * Clears the local storage.
  *
- * @return {!bot.inject.Response} The result wrapped according
+ * @return {!bot.response.ResponseObject} The result wrapped according
  *     to the wire protocol.
  */
 webdriver.atoms.inject.storage.local.clear = function() {
@@ -8156,7 +8406,7 @@ webdriver.atoms.inject.storage.local.clear = function() {
 /**
  * Gets the size of the local storage.
  *
- * @return {!bot.inject.Response} The result wrapped according
+ * @return {!bot.response.ResponseObject} The result wrapped according
  *     to the wire protocol.
  */
 webdriver.atoms.inject.storage.local.size = function() {
@@ -8193,7 +8443,7 @@ goog.require('webdriver.atoms.storage.session');
  *
  * @param {string} key The key of the item.
  * @param {*} value The value of the item.
- * @return {!bot.inject.Response} The result wrapped according
+ * @return {!bot.response.ResponseObject} The result wrapped according
  *     to the wire protocol.
  */
 webdriver.atoms.inject.storage.session.setItem = function(key, value) {
@@ -8206,7 +8456,7 @@ webdriver.atoms.inject.storage.session.setItem = function(key, value) {
  * Gets an item from the session storage.
  *
  * @param {string} key The key of the item.
- * @return {!bot.inject.Response} The result wrapped according
+ * @return {!bot.response.ResponseObject} The result wrapped according
  *     to the wire protocol.
  */
 webdriver.atoms.inject.storage.session.getItem = function(key) {
@@ -8218,7 +8468,7 @@ webdriver.atoms.inject.storage.session.getItem = function(key) {
 /**
  * Gets the key set of the entries.
  *
- * @return {!bot.inject.Response} The result wrapped according
+ * @return {!bot.response.ResponseObject} The result wrapped according
  *     to the wire protocol.
  */
 webdriver.atoms.inject.storage.session.keySet = function() {
@@ -8231,7 +8481,7 @@ webdriver.atoms.inject.storage.session.keySet = function() {
  * Removes an item in the session storage.
  *
  * @param {string} key The key of the item.
- * @return {!bot.inject.Response} The result wrapped according
+ * @return {!bot.response.ResponseObject} The result wrapped according
  *     to the wire protocol.
  */
 webdriver.atoms.inject.storage.session.removeItem = function(key) {
@@ -8243,7 +8493,7 @@ webdriver.atoms.inject.storage.session.removeItem = function(key) {
 /**
  * Clears the session storage.
  *
- * @return {!bot.inject.Response} The result wrapped according
+ * @return {!bot.response.ResponseObject} The result wrapped according
  *     to the wire protocol.
  */
 webdriver.atoms.inject.storage.session.clear = function() {
@@ -8255,7 +8505,7 @@ webdriver.atoms.inject.storage.session.clear = function() {
 /**
  * Gets the size of the session storage.
  *
- * @return {!bot.inject.Response} The result wrapped according
+ * @return {!bot.response.ResponseObject} The result wrapped according
  *     to the wire protocol.
  */
 webdriver.atoms.inject.storage.session.size = function() {
@@ -8563,15 +8813,30 @@ goog.provide('webdriver.atoms.inject.action');
 goog.require('bot.action');
 goog.require('bot.inject');
 goog.require('goog.dom.selection');
+goog.require('webdriver.atoms.element');
+
+
+/**
+ * Sends key events to simulating typing on an element.
+ *
+ * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to submit.
+ * @param {!Array.<string>} keys The keys to type.
+ * @return {string} A stringified {@link bot.response.ResponseObject}.
+ */
+webdriver.atoms.inject.action.type = function(element, keys) {
+  return bot.inject.executeScript(webdriver.atoms.element.type,
+      [element, keys], true);
+};
 
 
 /**
  * Submits the form containing the given element.
  *
  * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to submit.
+ * @return {string} A stringified {@link bot.response.ResponseObject}.
  */
 webdriver.atoms.inject.action.submit = function(element) {
-  bot.inject.executeScript(bot.action.submit, [element], true);
+  return bot.inject.executeScript(bot.action.submit, [element], true);
 };
 
 
@@ -8579,10 +8844,11 @@ webdriver.atoms.inject.action.submit = function(element) {
  * Clear an element.
  *
  * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to clear.
+ * @return {string} A stringified {@link bot.response.ResponseObject}.
  * @see bot.action.clear
  */
 webdriver.atoms.inject.action.clear = function(element) {
-  bot.inject.executeScript(bot.action.clear, [element], true);
+  return bot.inject.executeScript(bot.action.clear, [element], true);
 };
 
 
@@ -8590,10 +8856,11 @@ webdriver.atoms.inject.action.clear = function(element) {
  * Click an element.
  *
  * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to click.
+ * @return {string} A stringified {@link bot.response.ResponseObject}.
  * @see bot.action.click
  */
 webdriver.atoms.inject.action.click = function(element) {
-  bot.inject.executeScript(bot.action.click, [element], true);
+  return bot.inject.executeScript(bot.action.click, [element], true);
 };
 
 // Copyright 2012 WebDriver committers
@@ -8708,7 +8975,7 @@ webdriver.atoms.inject.dom.getAttributeValue = function(element, attribute) {
  *     defined by the wire protocol.
  */
 webdriver.atoms.inject.dom.getSize = function(element) {
-  return bot.inject.executeScript(bot.dom.getElementSize_, [element], true);
+  return bot.inject.executeScript(bot.dom.getElementSize, [element], true);
 };
 
 
@@ -8778,7 +9045,7 @@ goog.require('bot.inject.cache');
  * @param {Array.<*>} args Array of arguments to pass to fn.
  * @param {{bot.inject.WINDOW_KEY:string}=} opt_window The serialized window
  *     object to be read from the cache.
- * @return {!(string|bot.inject.Response)} The response object. If
+ * @return {!(string|bot.response.ResponseObject)} The response object. If
  *     opt_stringify is true, the result will be serialized and returned in
  *     string format.
  */
@@ -8795,7 +9062,7 @@ webdriver.atoms.inject.executeScript = function(fn, args, opt_window) {
  * @param {int} timeout The timeout to wait up to in millis.
  * @param {{bot.inject.WINDOW_KEY:string}=} opt_window The serialized window
  *     object to be read from the cache.
- * @return {!(string|bot.inject.Response)} The response object. If
+ * @return {!(string|bot.response.ResponseObject)} The response object. If
  *     opt_stringify is true, the result will be serialized and returned in
  *     string format.
  */
@@ -8995,7 +9262,7 @@ goog.require('webdriver.atoms.storage.local');
  *
  * @param {string} key The key of the item.
  * @param {*} value The value of the item.
- * @return {!bot.inject.Response} The result wrapped according
+ * @return {!bot.response.ResponseObject} The result wrapped according
  *     to the wire protocol.
  */
 webdriver.atoms.inject.storage.local.setItem = function(key, value) {
@@ -9008,7 +9275,7 @@ webdriver.atoms.inject.storage.local.setItem = function(key, value) {
  * Gets an item from the local storage.
  *
  * @param {string} key The key of the item.
- * @return {!bot.inject.Response} The result wrapped according
+ * @return {!bot.response.ResponseObject} The result wrapped according
  *     to the wire protocol.
  */
 webdriver.atoms.inject.storage.local.getItem = function(key) {
@@ -9020,7 +9287,7 @@ webdriver.atoms.inject.storage.local.getItem = function(key) {
 /**
  * Gets the key set of the entries.
  *
- * @return {!bot.inject.Response} The result wrapped according
+ * @return {!bot.response.ResponseObject} The result wrapped according
  *     to the wire protocol.
  */
 webdriver.atoms.inject.storage.local.keySet = function() {
@@ -9033,7 +9300,7 @@ webdriver.atoms.inject.storage.local.keySet = function() {
  * Removes an item in the local storage.
  *
  * @param {string} key The key of the item.
- * @return {!bot.inject.Response} The result wrapped according
+ * @return {!bot.response.ResponseObject} The result wrapped according
  *     to the wire protocol.
  */
 webdriver.atoms.inject.storage.local.removeItem = function(key) {
@@ -9045,7 +9312,7 @@ webdriver.atoms.inject.storage.local.removeItem = function(key) {
 /**
  * Clears the local storage.
  *
- * @return {!bot.inject.Response} The result wrapped according
+ * @return {!bot.response.ResponseObject} The result wrapped according
  *     to the wire protocol.
  */
 webdriver.atoms.inject.storage.local.clear = function() {
@@ -9057,7 +9324,7 @@ webdriver.atoms.inject.storage.local.clear = function() {
 /**
  * Gets the size of the local storage.
  *
- * @return {!bot.inject.Response} The result wrapped according
+ * @return {!bot.response.ResponseObject} The result wrapped according
  *     to the wire protocol.
  */
 webdriver.atoms.inject.storage.local.size = function() {
@@ -9094,7 +9361,7 @@ goog.require('webdriver.atoms.storage.session');
  *
  * @param {string} key The key of the item.
  * @param {*} value The value of the item.
- * @return {!bot.inject.Response} The result wrapped according
+ * @return {!bot.response.ResponseObject} The result wrapped according
  *     to the wire protocol.
  */
 webdriver.atoms.inject.storage.session.setItem = function(key, value) {
@@ -9107,7 +9374,7 @@ webdriver.atoms.inject.storage.session.setItem = function(key, value) {
  * Gets an item from the session storage.
  *
  * @param {string} key The key of the item.
- * @return {!bot.inject.Response} The result wrapped according
+ * @return {!bot.response.ResponseObject} The result wrapped according
  *     to the wire protocol.
  */
 webdriver.atoms.inject.storage.session.getItem = function(key) {
@@ -9119,7 +9386,7 @@ webdriver.atoms.inject.storage.session.getItem = function(key) {
 /**
  * Gets the key set of the entries.
  *
- * @return {!bot.inject.Response} The result wrapped according
+ * @return {!bot.response.ResponseObject} The result wrapped according
  *     to the wire protocol.
  */
 webdriver.atoms.inject.storage.session.keySet = function() {
@@ -9132,7 +9399,7 @@ webdriver.atoms.inject.storage.session.keySet = function() {
  * Removes an item in the session storage.
  *
  * @param {string} key The key of the item.
- * @return {!bot.inject.Response} The result wrapped according
+ * @return {!bot.response.ResponseObject} The result wrapped according
  *     to the wire protocol.
  */
 webdriver.atoms.inject.storage.session.removeItem = function(key) {
@@ -9144,7 +9411,7 @@ webdriver.atoms.inject.storage.session.removeItem = function(key) {
 /**
  * Clears the session storage.
  *
- * @return {!bot.inject.Response} The result wrapped according
+ * @return {!bot.response.ResponseObject} The result wrapped according
  *     to the wire protocol.
  */
 webdriver.atoms.inject.storage.session.clear = function() {
@@ -9156,7 +9423,7 @@ webdriver.atoms.inject.storage.session.clear = function() {
 /**
  * Gets the size of the session storage.
  *
- * @return {!bot.inject.Response} The result wrapped according
+ * @return {!bot.response.ResponseObject} The result wrapped according
  *     to the wire protocol.
  */
 webdriver.atoms.inject.storage.session.size = function() {

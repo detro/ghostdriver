@@ -1,7 +1,10 @@
-2012-04-28 00:22:56
+2012-04-30 19:23:17
 
 ------------------------------------------------------------------------
-r16734 | luke.semerau@gmail.com | 2012-04-26 18:29:28 +0100 (Thu, 26 Apr 2012) | 1 line
+r16753 | jmleyba@gmail.com | 2012-04-30 19:14:05 +0100 (Mon, 30 Apr 2012) | 4 lines
 
-LukeIS: adding GET orientation to iOS, but it doesn't like to work off the bat, seems you must change your orientation and then it'll start working as expected
+JasonLeyba: Defining a bot.inject.executeScript wrapped fragment for
+webdriver.atoms.element.type.
+
+
 ------------------------------------------------------------------------
