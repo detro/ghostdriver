@@ -104,9 +104,9 @@ ghostdriver.SessionReqHand = function(session) {
             // TODO
         } else if (req.urlParsed.path.indexOf(_const.ELEMENT_DIR) === 0) {              //< ".../element/:elementId/COMMAND"
             // Get the WebElementRH and, if found, re-route request to it
-            element = _locator.getElement(req.urlParsed.chunks[1]);
+            element = _locator.getElement(decodeURIComponent(req.urlParsed.chunks[1]));
             if (element !== null) {
-                _protoParent.reroute.call(element, req, res, _const.ELEMENT_DIR + element.getId());
+                _protoParent.reroute.call(element, req, res, _const.ELEMENT_DIR + req.urlParsed.chunks[1]);
             } else {
                 throw new ghostdriver.VariableResourceNotFound(req);
             }
