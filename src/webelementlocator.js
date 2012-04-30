@@ -53,47 +53,36 @@ ghostdriver.WebElementLocator = function(session) {
     _session = session,
 
     _locateElement = function(locator) {
-        var elementId;
+        var elementId,
+            findElementAtom = require("./webdriver_atoms.js").get("find_element"),
+            findElementRes;
 
         if (locator && locator.using && locator.value               //< if well-formed input
             && _supportedStrategies.indexOf(locator.using) >= 0) {  //< and if strategy is recognized
 
-            // TODO ... lots to do...
+            // Use Atom "find_result" to search for element in the page
+            findElementRes = _session.getCurrentWindow().evaluate(findElementAtom, locator.using, locator.value);
 
-            if (locator.using === _const.NAME) { //< locate WebElement by the Attribute 'name'
-                return _locateElementByCSSSelector("[name='" + locator.value + "']");
-            } else if (locator.using == _const.CSS_SELECTOR) {
-                return _locateElementByCSSSelector(locator.value);
-            } // else ...
+            // De-serialise the result of the Atom execution
+            try {
+                findElementRes = JSON.parse(findElementRes);
+            } catch (e) {
+                console.error("Invalid locator received: "+JSON.stringify(locator));
+                return null;
+            }
 
-            // TODO ... lots to do...
+            // If the Element is found, create a relative WebElement Request Handler and return it
+            if (typeof(findElementRes.status) !== "undefined" && findElementRes.status === 0) {
+                elementId = findElementRes.value["ELEMENT"];
+                // Create and Store a new WebElement if it doesn't exist yet
+                if (typeof(_elements[elementId]) === "undefined") {
+                    _elements[elementId] = new ghostdriver.WebElementReqHand(elementId, _session);
+                }
+                return _elements[elementId];
+            }
         }
 
         // Not found because of invalid Locator
-        return null;
-    },
-
-    _locateElementByCSSSelector = function(selector) {
-        var elementId = _session.getCurrentWindow().evaluateWithParams(function(selector) {
-            var el = document.querySelector(selector);
-            if (el) {
-                if (!el.id) {
-                    el.id = "gd-" + new Date().getTime();
-                }
-
-                return el.id;
-            }
-            return null;
-        }, selector);
-
-        // If an element was found, we now have its "id"
-        if (elementId) {
-            // Create and Store a new WebElement if it doesn't exist yet
-            if (typeof(_elements[elementId]) === "undefined") {
-                _elements[elementId] = new ghostdriver.WebElementReqHand(elementId, _session);
-            }
-            return _elements[elementId];
-        }
         return null;
     },
 
