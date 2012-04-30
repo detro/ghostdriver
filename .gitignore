@@ -6,3 +6,6 @@ Makefile*
 *.iml
 target/
 chromedriver.log
+build
+*.log
+.gradle
