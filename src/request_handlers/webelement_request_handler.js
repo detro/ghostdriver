@@ -58,22 +58,16 @@ ghostdriver.WebElementReqHand = function(id, session) {
 
     _valueCommand = function(req, res) {
         var i, ilen,
-            postObj = JSON.parse(req.post);
+            postObj = JSON.parse(req.post),
+            typeAtom = require("./webdriver_atoms.js").get("type"),
+            typeRes;
 
         // Ensure all required parameters are available
         if (typeof(postObj) === "object" && typeof(postObj.value) === "object") {
-            if (!_isAttachedToDOM())
-                throw new ghostdriver.StaleElementReference(JSON.stringify(req));
+            // Execute the "type" atom
+            typeRes = _getSession().getCurrentWindow().evaluate(typeAtom, _getJSON(), postObj.value);
 
-            if (!_isVisible())
-                throw new ghostdriver.ElementNotVisible(JSON.stringify(req));
-
-            // For every String in the "value" array...
-            for (i = 0, ilen = postObj.value.length; i < ilen; ++i) {
-                _getSession().getCurrentWindow().evaluateWithParams(function(elementId, valueToAppend) {
-                    document.querySelector("#"+elementId).value += valueToAppend;
-                }, _getId(), postObj.value[i]);
-            }
+            // TODO - Error handling based on the value of "typeRes"
 
             res.statusCode = 200;
             res.closeGracefully();
@@ -84,8 +78,8 @@ ghostdriver.WebElementReqHand = function(id, session) {
     },
 
     _submitCommand = function(req, res) {
-        if (!_isAttachedToDOM())
-            throw new ghostdriver.StaleElementReference(JSON.stringify(req));
+        var submitRes,
+            submitAtom = require("./webdriver_atoms.js").get("submit");
 
         // Listen for the page to Finish Loading after the submit
         _getSession().getCurrentWindow().onLoadFinished = function(status) {
@@ -98,35 +92,9 @@ ghostdriver.WebElementReqHand = function(id, session) {
             // TODO - clear thing up after we are done waiting
         };
 
-        // Submit element: either it's a form or an element in a form
-        _getSession().getCurrentWindow().evaluateWithParams(function(elementId) {
-            var el = document.getElementById(elementId);
-            if (el.tagName === "FORM") {
-                el.submit();
-            } else if (el.form) {
-                el.form.submit();
-            }
-        }, _getId());
-    },
+        submitRes = _getSession().getCurrentWindow().evaluate(submitAtom, _getJSON());
 
-    _isAttachedToDOM = function() {
-        return _getSession().getCurrentWindow().evaluateWithParams(function(elementId) {
-            if (document.querySelector("#"+elementId))
-                return true;
-            return false;
-        }, _getId());
-    },
-
-    _isVisible = function() {
-        if (!_isAttachedToDOM())
-            return false;
-
-        return _getSession().getCurrentWindow().evaluateWithParams(function(elementId) {
-            var el = document.querySelector("#"+elementId);
-            if (el && el.style.visibility !== "hidden" && el.style.width >= 0 && el.style.height >= 0)
-                return true;
-            return false;
-        }, _getId());
+        // TODO - Error handling based on the value of "submitRes"
     },
 
     _getJSON = function() {
@@ -143,9 +111,9 @@ ghostdriver.WebElementReqHand = function(id, session) {
         handle : _handle,
         getId : _getId,
         getJSON : _getJSON,
-        getSession : _getSession,
-        isAttachedToDOM : _isAttachedToDOM,
-        isVisible : _isVisible
+        getSession : _getSession//,
+        // isAttachedToDOM : _isAttachedToDOM,
+        // isVisible : _isVisible
     };
 };
 // prototype inheritance:
