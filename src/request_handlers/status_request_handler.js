@@ -31,7 +31,7 @@ ghostdriver.StatusReqHand = function() {
     // private:
     var
     _protoParent = ghostdriver.StatusReqHand.prototype,
-    _statusObj = {
+    _statusObj = {               //< TODO Report real status
         "build" : {
             "version" : "0.1a",
             "revision" : "none",

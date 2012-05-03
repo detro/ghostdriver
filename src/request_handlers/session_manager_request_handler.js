@@ -56,14 +56,13 @@ ghostdriver.SessionManagerReqHand = function() {
     },
 
     _createAndRedirectToNewSessionCommand = function(req, res) {
-        var desiredCapabilities,
+        var desiredCapabilities = req.post || {},
             newSession;
 
-        if (typeof(req.post) === "object") {
-            desiredCapabilities = req.post;
-        } else {
-            desiredCapabilities = JSON.parse(req.post);
+        if (typeof(desiredCapabilities) !== "object") {
+            desiredCapabilities = JSON.parse(desiredCapabilities);
         }
+
         // Create and store a new Session
         newSession = new ghostdriver.Session(desiredCapabilities);
         _sessions[newSession.getId()] = newSession;
@@ -72,6 +71,8 @@ ghostdriver.SessionManagerReqHand = function() {
         res.statusCode = 303; //< "303 See Other"
         res.setHeader("Location", "/session/"+newSession.getId());
         res.closeGracefully();
+
+        // TODO Capabilities not provided - Handle error case
     },
 
     _listActiveSessionsCommand = function(req, res) {

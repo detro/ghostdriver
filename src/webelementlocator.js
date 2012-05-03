@@ -63,6 +63,8 @@ ghostdriver.WebElementLocator = function(session) {
             // Use Atom "find_result" to search for element in the page
             findElementRes = _session.getCurrentWindow().evaluate(findElementAtom, locator.using, locator.value);
 
+            // TODO Handle Missing Elements and XPath errors
+
             // De-serialise the result of the Atom execution
             try {
                 findElementRes = JSON.parse(findElementRes);
@@ -76,6 +78,7 @@ ghostdriver.WebElementLocator = function(session) {
                 elementId = findElementRes.value["ELEMENT"];
                 // Create and Store a new WebElement if it doesn't exist yet
                 if (typeof(_elements[elementId]) === "undefined") {
+                    // TODO There is no need to store elements here and have them wrapped in WebElementReqHand
                     _elements[elementId] = new ghostdriver.WebElementReqHand(elementId, _session);
                 }
                 return _elements[elementId];

@@ -36,6 +36,7 @@ ghostdriver.SessionReqHand = function(session) {
     _const = {
         URL             : "url",
         ELEMENT         : "element",
+        ELEMENTS        : "elements",
         ELEMENT_DIR     : "/element/",
         TITLE           : "title",
         WINDOW          : "window",
@@ -75,6 +76,7 @@ ghostdriver.SessionReqHand = function(session) {
                     // Open the given URL and, when done, return "HTTP 200 OK"
                     _session.getCurrentWindow().open(postObj.url, function(status) {
                         if (status === "success") {
+                            // TODO Handle situation where loading doesn't work
                             res.statusCode = 200;
                             res.closeGracefully();
                         } else {
@@ -111,10 +113,10 @@ ghostdriver.SessionReqHand = function(session) {
                 throw new ghostdriver.VariableResourceNotFound(req);
             }
             return;
-        } else if (req.urlParsed.file === _const.FORWARD) {
+        } else if (req.urlParsed.file === _const.FORWARD && req.method === "POST") {
             responseAfterLoadFinished(require("./webdriver_atoms.js").get("forward"));
             return;
-        } else if (req.urlParsed.file === _const.BACK) {
+        } else if (req.urlParsed.file === _const.BACK && req.method === "POST") {
             responseAfterLoadFinished(require("./webdriver_atoms.js").get("back"));
             return;
         }
@@ -123,6 +125,7 @@ ghostdriver.SessionReqHand = function(session) {
     },
 
     _windowCloseCommand = function(req, res) {
+        // TODO An optional JSON parameter "name" might be given
         _session.closeCurrentWindow();
         res.statusCode = 200;
         res.closeGracefully();
@@ -130,6 +133,7 @@ ghostdriver.SessionReqHand = function(session) {
 
     _windowChangeFocusToCommand = function(req, res) {
         // TODO
+        // TODO An optional JSON parameter "name" might be given
     },
 
     _titleCommand = function(req, res) {
