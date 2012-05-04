@@ -62,16 +62,16 @@ ghostdriver.RequestHandler = function() {
         response.writeJSON = function(obj) { this.write(JSON.stringify(obj)); };
     },
 
-    _buildResponseBody = function(sessionId, statusCode, value) {
+    _buildResponseBody = function(sessionId, value, statusCode) {
         return {
             "sessionId" : sessionId || null,
-            "status" : statusCode || ghostdriver.ResponseStatusCodes.SUCCESS,
+            "status" : statusCode || 0, //< '0' is Success
             "value" : value || {}
         };
     },
 
     _buildSuccessResponseBody = function(sessionId, value) {
-        return _buildResponseBody(sessionId, ghostdriver.ResponseStatusCodes.SUCCESS, value);
+        return _buildResponseBody(sessionId, value, 0); //< '0' is Success
     };
 
     // public:

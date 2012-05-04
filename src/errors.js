@@ -94,89 +94,76 @@ exports.createInvalidReqMissingCommandParameterEH = function(req) {
 
 //-------------------------------------------------------- Failed Command Errors
 //------ http://code.google.com/p/selenium/wiki/JsonWireProtocol#Failed_Commands
-exports.createFailedCommandEH = function(errorName, errorMsg, req, session) {
+exports.FAILED_CMD_STATUS = {
+    "SUCCESS"                       : "Success",
+    "NO_SUCH_ELEMENT"               : "NoSuchElement",
+    "NO_SUCH_FRAME"                 : "NoSuchFrame",
+    "UNKNOWN_COMMAND"               : "UnknownCommand",
+    "STALE_ELEMENT_REFERENCE"       : "StaleElementReference",
+    "ELEMENT_NOT_VISIBLE"           : "ElementNotVisible",
+    "INVALID_ELEMENT_STATE"         : "InvalidElementState",
+    "UNKNOWN_ERROR"                 : "UnknownError",
+    "ELEMENT_IS_NOT_SELECTABLE"     : "ElementIsNotSelectable",
+    "JAVA_SCRIPT_ERROR"             : "JavaScriptError",
+    "XPATH_LOOKUP_ERROR"            : "XPathLookupError",
+    "TIMEOUT"                       : "Timeout",
+    "NO_SUCH_WINDOW"                : "NoSuchWindow",
+    "INVALID_COOKIE_DOMAIN"         : "InvalidCookieDomain",
+    "UNABLE_TO_SET_COOKIE"          : "UnableToSetCookie",
+    "UNEXPECTED_ALERT_OPEN"         : "UnexpectedAlertOpen",
+    "NO_ALERT_OPEN_ERROR"           : "NoAlertOpenError",
+    "SCRIPT_TIMEOUT"                : "ScriptTimeout",
+    "INVALID_ELEMENT_COORDINATES"   : "InvalidElementCoordinates",
+    "IME_NOT_AVAILABLE"             : "IMENotAvailable",
+    "IME_ENGINE_ACTIVATION_FAILED"  : "IMEEngineActivationFailed",
+    "INVALID_SELECTOR"              : "InvalidSelector"
+};
+exports.FAILED_CMD_STATUS_CODES = {
+    "Success"                   : 0,
+    "NoSuchElement"             : 7,
+    "NoSuchFrame"               : 8,
+    "UnknownCommand"            : 9,
+    "StaleElementReference"     : 10,
+    "ElementNotVisible"         : 11,
+    "InvalidElementState"       : 12,
+    "UnknownError"              : 13,
+    "ElementIsNotSelectable"    : 15,
+    "JavaScriptError"           : 17,
+    "XPathLookupError"          : 19,
+    "Timeout"                   : 21,
+    "NoSuchWindow"              : 23,
+    "InvalidCookieDomain"       : 24,
+    "UnableToSetCookie"         : 25,
+    "UnexpectedAlertOpen"       : 26,
+    "NoAlertOpenError"          : 27,
+    "ScriptTimeout"             : 28,
+    "InvalidElementCoordinates" : 29,
+    "IMENotAvailable"           : 30,
+    "IMEEngineActivationFailed" : 31,
+    "InvalidSelector"           : 32
+};
 
+exports.createFailedCommandEH = function(errorName, errorMsg, req, session, className) {
+    var e = new Error();
+
+    e.name = errorName;
+    e.message = "Error Message => " + errorMsg + "\n" + "Request => " + JSON.stringify(req);
+    e.handle = function(reqHand, res) {
+        // Generate response body
+        var body = reqHand.buildResponseBody(
+            session.getId(),
+            {
+                "message" : this.message,
+                "screen" : "",  //< TODO I need a renderToBase64() in PhantomJS
+                "class" : className || "unknown"
+            },
+            exports.FAILED_CMD_STATUS_CODES[this.errorName]);
+
+        // Send it
+        res.writeJSON(body);
+        res.close();
+    };
 };
 
 
 
-// var ghostdriver = ghostdriver || {};
-
-// // Invalid Command Method
-// ghostdriver.InvalidCommandMethod = function(req) {
-//     this.name = "InvalidCommandMethod";
-//     if (typeof(req) === "object") {
-//         this.message = "Request = "+JSON.stringify(req);
-//     } else {
-//         this.message = req || "";
-//     }
-// };
-// ghostdriver.InvalidCommandMethod.prototype = Error.prototype;
-
-// // Unknown Command
-// ghostdriver.UnknownCommand = function(req) {
-//     this.name = "UnknownCommand";
-//     if (typeof(req) === "object") {
-//         this.message = "Request = "+JSON.stringify(req);
-//     } else {
-//         this.message = req || "";
-//     }
-// };
-// ghostdriver.UnknownCommand.prototype = Error.prototype;
-
-// // Variable Resource Not Found
-// ghostdriver.VariableResourceNotFound = function(req) {
-//     this.name = "VariableResourceNotFound";
-//     if (typeof(req) === "object") {
-//         this.message = "Request = "+JSON.stringify(req);
-//     } else {
-//         this.message = req || "";
-//     }
-// };
-// ghostdriver.VariableResourceNotFound.prototype = Error.prototype;
-
-// // Missing Command Parameters
-// ghostdriver.MissingCommandParameters = function(req) {
-//     this.name = "MissingCommandParameters";
-//     if (typeof(req) === "object") {
-//         this.message = "Request = "+JSON.stringify(req);
-//     } else {
-//         this.message = req || "";
-//     }
-// };
-// ghostdriver.MissingCommandParameters.prototype = Error.prototype;
-
-// // No Such Element
-// ghostdriver.NoSuchElement = function(msg) {
-//     this.name = "NoSuchElement";
-//     this.message = (typeof(msg) === "object") ? JSON.stringify(msg) : msg || "";
-// };
-// ghostdriver.NoSuchElement.prototype = Error.prototype;
-
-// // XPath Lookup Error
-// ghostdriver.XPathLookupError = function(msg) {
-//     this.name = "XPathLookupError";
-//     this.message = (typeof(msg) === "object") ? JSON.stringify(msg) : msg || "";
-// };
-// ghostdriver.XPathLookupError.prototype = Error.prototype;
-
-// // Stale Element Reference
-// ghostdriver.StaleElementReference = function(msg) {
-//     this.name = "StaleElementReference";
-//     this.message = (typeof(msg) === "object") ? JSON.stringify(msg) : msg || "";
-// };
-// ghostdriver.StaleElementReference.prototype = Error.prototype;
-
-// // Element Not Visible
-// ghostdriver.ElementNotVisible = function(msg) {
-//     this.name = "ElementNotVisible";
-//     this.message = (typeof(msg) === "object") ? JSON.stringify(msg) : msg || "";
-// };
-// ghostdriver.ElementNotVisible.prototype = Error.prototype;
-
-// // No Such Window
-// ghostdriver.NoSuchWindow = function(msg) {
-//     this.name = "NoSuchWindow";
-//     this.message = (typeof(msg) === "object") ? JSON.stringify(msg) : msg || "";
-// };
-// ghostdriver.NoSuchWindow.prototype = Error.prototype;
