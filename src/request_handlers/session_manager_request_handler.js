@@ -33,6 +33,7 @@ ghostdriver.SessionManagerReqHand = function() {
     _protoParent = ghostdriver.SessionManagerReqHand.prototype,
     _sessions = {}, //< will store key/value pairs like 'SESSION_ID : SESSION_OBJECT'
     _sessionRHs = {},
+    _errors = require("./errors.js"),
 
     _handle = function(req, res) {
         _protoParent.handle.call(this, req, res);
@@ -52,7 +53,7 @@ ghostdriver.SessionManagerReqHand = function() {
             return;
         }
 
-        throw new ghostdriver.InvalidCommandMethod(req);
+        throw _errors.createInvalidReqInvalidCommandMethodEH(req);
     },
 
     _createAndRedirectToNewSessionCommand = function(req, res) {
@@ -107,14 +108,14 @@ ghostdriver.SessionManagerReqHand = function() {
         var sId = req.urlParsed.file;
 
         if (sId === "")
-            throw new ghostdriver.MissingCommandParameters(req);
+            throw _errors.createInvalidReqMissingCommandParameterEH(req);
 
         if (typeof(_sessions[sId]) !== "undefined") {
             _deleteSession(sId);
             res.statusCode = 200;
             res.closeGracefully();
         } else {
-            throw new VariableResourceNotFound(req);
+            throw _errors.createInvalidReqVariableResourceNotFoundEH(req);
         }
     },
 
@@ -123,7 +124,7 @@ ghostdriver.SessionManagerReqHand = function() {
             session;
 
         if (sId === "")
-            throw new ghostdriver.MissingCommandParameters(req);
+            throw _errors.createInvalidReqMissingCommandParameterEH(req);
 
         session = _getSession(sId);
         if (session !== null) {
@@ -131,7 +132,7 @@ ghostdriver.SessionManagerReqHand = function() {
             res.writeJSON(_protoParent.buildSuccessResponseBody.call(this, sId, _sessions[sId].getCapabilities()));
             res.close();
         } else {
-            throw new ghostdriver.VariableResourceNotFound(req);
+            throw _errors.createInvalidReqVariableResourceNotFoundEH(req);
         }
     },
 

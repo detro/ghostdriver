@@ -43,6 +43,7 @@ ghostdriver.SessionReqHand = function(session) {
         FORWARD         : "forward",
         BACK            : "back"
     },
+    _errors = require("./errors.js"),
 
     _handle = function(req, res) {
         var postObj,
@@ -80,11 +81,11 @@ ghostdriver.SessionReqHand = function(session) {
                             res.statusCode = 200;
                             res.closeGracefully();
                         } else {
-                            throw new ghostdriver.InvalidCommandMethod(req);
+                            throw _errors.createInvalidReqInvalidCommandMethodEH(req);
                         }
                     });
                 } else {
-                    throw new ghostdriver.MissingCommandParameters(req);
+                    throw _errors.createInvalidReqMissingCommandParameterEH(req);
                 }
             }
             return;
@@ -110,7 +111,7 @@ ghostdriver.SessionReqHand = function(session) {
             if (element !== null) {
                 _protoParent.reroute.call(element, req, res, _const.ELEMENT_DIR + req.urlParsed.chunks[1]);
             } else {
-                throw new ghostdriver.VariableResourceNotFound(req);
+                throw _errors.createInvalidReqVariableResourceNotFoundEH(req);
             }
             return;
         } else if (req.urlParsed.file === _const.FORWARD && req.method === "POST") {
@@ -121,7 +122,7 @@ ghostdriver.SessionReqHand = function(session) {
             return;
         }
 
-        throw new ghostdriver.InvalidCommandMethod(req);
+        throw _errors.createInvalidReqInvalidCommandMethodEH(req);
     },
 
     _windowCloseCommand = function(req, res) {
@@ -153,7 +154,7 @@ ghostdriver.SessionReqHand = function(session) {
             return;
         }
 
-        throw new ghostdriver.VariableResourceNotFound(req);
+        throw _errors.createInvalidReqVariableResourceNotFoundEH(req);
     };
 
     // public:

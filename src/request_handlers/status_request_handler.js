@@ -54,8 +54,8 @@ ghostdriver.StatusReqHand = function() {
             return;
         }
 
-        throw new ghostdriver.InvalidCommandMethod(req);
-    }
+        throw require("./errors.js").createInvalidReqInvalidCommandMethodEH(req);
+    };
 
     // public:
     return {

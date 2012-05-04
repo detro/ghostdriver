@@ -37,6 +37,7 @@ ghostdriver.WebElementReqHand = function(id, session) {
         VALUE           : "value",
         SUBMIT          : "submit"
     },
+    _errors = require("./errors.js"),
 
     _handle = function(req, res) {
         _protoParent.handle.call(this, req, res);
@@ -53,7 +54,7 @@ ghostdriver.WebElementReqHand = function(id, session) {
 
         // TODO lots to do...
 
-        throw new ghostdriver.InvalidCommandMethod(req);
+        throw _errors.createInvalidReqInvalidCommandMethodEH(req);
     },
 
     _valueCommand = function(req, res) {
@@ -74,7 +75,7 @@ ghostdriver.WebElementReqHand = function(id, session) {
             return;
         }
 
-        throw new ghostdriver.MissingCommandParameters(req);
+        throw _errors.createInvalidReqMissingCommandParameterEH(req);
     },
 
     _submitCommand = function(req, res) {

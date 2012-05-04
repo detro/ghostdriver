@@ -39,7 +39,6 @@ phantom.injectJs("third_party/patch_require.js"); //< TODO - Remove as soon as '
 parseURI = require("./third_party/parseuri.js");
 parseURI.options.strictMode = true;
 
-phantom.injectJs("errors.js");
 phantom.injectJs("session.js");
 phantom.injectJs("request_handlers/request_handler.js");
 phantom.injectJs("request_handlers/status_request_handler.js");

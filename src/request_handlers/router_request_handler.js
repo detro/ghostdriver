@@ -42,6 +42,7 @@ ghostdriver.RouterReqHand = function() {
         SESSIONS        : "sessions",
         SESSION_DIR     : "/session/"
     },
+    _errors = require("./errors.js"),
 
     _handle = function(req, res) {
         var session,
@@ -55,9 +56,9 @@ ghostdriver.RouterReqHand = function() {
         try {
             if (req.urlParsed.file === _const.STATUS) {                             // GET '/status'
                 _statusRH.handle(req, res);
-            } else if (req.urlParsed.file === _const.SESSION                        // POST '/session'
-                || req.urlParsed.file === _const.SESSIONS                           // GET '/sessions'
-                || req.urlParsed.directory === _const.SESSION_DIR) {                // GET or DELETE '/session/:id'
+            } else if (req.urlParsed.file === _const.SESSION ||                     // POST '/session'
+                req.urlParsed.file === _const.SESSIONS ||                           // GET '/sessions'
+                req.urlParsed.directory === _const.SESSION_DIR) {                   // GET or DELETE '/session/:id'
                 _sessionManRH.handle(req, res);
             } else if (req.urlParsed.path.indexOf(_const.SESSION_DIR) === 0) {      // GET, POST or DELETE '/session/:id/...'
                 // Retrieve session
@@ -68,18 +69,24 @@ ghostdriver.RouterReqHand = function() {
                     sessionRH = _sessionManRH.getSessionReqHand(req.urlParsed.chunks[1]);
                     _protoParent.reroute.call(sessionRH, req, res, _const.SESSION_DIR + session.getId());
                 } else {
-                    throw new ghostdriver.VariableResourceNotFound(req);
+                    throw _errors.createInvalidReqVariableResourceNotFoundEH(req);
                 }
             } else {
-                throw new ghostdriver.UnknownCommand(req);
+                throw _errors.createInvalidReqUnknownCommandEH(req);
             }
         } catch (e) {
             // Don't know where to Route this!
-            res.statusCode = 404; //< "404 Not Found"
-            res.setHeader("Content-Type", "text/plain");
-            res.write(e.name + " - " + e.message);
-            res.close();
-            console.error("ERROR: " + e);
+            if (typeof(e.handle) === "function") {
+                e.handle(res);
+            } else {
+                // This should never happen, if we handle all the possible error scenario
+                res.statusCode = 404; //< "404 Not Found"
+                res.setHeader("Content-Type", "text/plain");
+                res.write(e.name + " - " + e.message);
+                res.close();
+            }
+
+            console.error("ERROR: " + JSON.stringify(e));
         }
     };
 
