@@ -57,8 +57,8 @@ ghostdriver.WebElementLocator = function(session) {
             findElementAtom = require("./webdriver_atoms.js").get("find_element"),
             findElementRes;
 
-        if (locator && locator.using && locator.value               //< if well-formed input
-            && _supportedStrategies.indexOf(locator.using) >= 0) {  //< and if strategy is recognized
+        if (locator && locator.using && locator.value &&              //< if well-formed input
+            _supportedStrategies.indexOf(locator.using) >= 0) {  //< and if strategy is recognized
 
             // Use Atom "find_result" to search for element in the page
             findElementRes = _session.getCurrentWindow().evaluate(findElementAtom, locator.using, locator.value);

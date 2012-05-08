@@ -86,7 +86,7 @@ ghostdriver.RouterReqHand = function() {
                 res.close();
             }
 
-            console.error("ERROR: " + JSON.stringify(e));
+            console.error("Error => " + JSON.stringify(e, null, '  '));
         }
     };
 

@@ -56,7 +56,6 @@ var _invalidReqHandle = function(res) {
     res.write(this.name + " - " + this.message);
     res.close();
 };
-
 exports.createInvalidReqEH = function(errorName, req) {
     var e = new Error();
 
@@ -143,26 +142,34 @@ exports.FAILED_CMD_STATUS_CODES = {
     "InvalidSelector"           : 32
 };
 
+var _failedCommandHandle = function(res) {
+    // Generate response body
+    var body = {
+        "sessionId" : this.errorSessionId,
+        "status" : this.errorStatusCode,
+        "value" : {
+            "message" : this.message,
+            //"screen" : "",  //< TODO I need a renderToBase64() in PhantomJS
+            "class" : this.errorClassName
+        }
+    };
+
+    // Send it
+    res.statusCode = 500; //< 500 Internal Server Error
+    res.writeJSON(body);
+    res.close();
+};
 exports.createFailedCommandEH = function(errorName, errorMsg, req, session, className) {
     var e = new Error();
 
     e.name = errorName;
-    e.message = "Error Message => " + errorMsg + "\n" + "Request => " + JSON.stringify(req);
-    e.handle = function(reqHand, res) {
-        // Generate response body
-        var body = reqHand.buildResponseBody(
-            session.getId(),
-            {
-                "message" : this.message,
-                "screen" : "",  //< TODO I need a renderToBase64() in PhantomJS
-                "class" : className || "unknown"
-            },
-            exports.FAILED_CMD_STATUS_CODES[this.errorName]);
+    e.message = "Error Message => '" + errorMsg + "'\n" + " caused by Request => " + JSON.stringify(req);
+    e.errorStatusCode = exports.FAILED_CMD_STATUS_CODES[errorName] || 13; //< '13' Unkown Error
+    e.errorSessionId = session.getId() || null;
+    e.errorClassName = className || "unknown";
+    e.handle = _failedCommandHandle;
 
-        // Send it
-        res.writeJSON(body);
-        res.close();
-    };
+    return e;
 };
 
 
