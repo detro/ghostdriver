@@ -56,6 +56,8 @@ var _invalidReqHandle = function(res) {
     res.write(this.name + " - " + this.message);
     res.close();
 };
+
+// Invalid Request Error Handler
 exports.createInvalidReqEH = function(errorName, req) {
     var e = new Error();
 
@@ -65,30 +67,58 @@ exports.createInvalidReqEH = function(errorName, req) {
 
     return e;
 };
+exports.handleInvalidReqEH = function(errorName, req, res) {
+    exports.createInvalidReqEH(errorName, req).handle(res);
+};
+
+// Invalid Request Unknown Command Error Handler
 exports.createInvalidReqUnknownCommandEH = function(req) {
     return exports.createInvalidReqEH (
         exports.INVALID_REQ.UNKNOWN_COMMAND,
         req);
 };
+exports.handleInvalidReqUnknownCommandEH = function(req, res) {
+    exports.createInvalidReqUnknownCommandEH(req).handle(res);
+};
+
+// Invalid Request Unimplemented Command Error Handler
 exports.createInvalidReqUnimplementedCommandEH = function(req) {
     return exports.createInvalidReqEH (
         exports.INVALID_REQ.UNIMPLEMENTED_COMMAND,
         req);
 };
+exports.handleInvalidReqUnimplementedCommandEH = function(req, res) {
+    exports.createInvalidReqUnimplementedCommandEH(req).handle(res);
+};
+
+// Invalid Request Variable Resource Not Found Error Handler
 exports.createInvalidReqVariableResourceNotFoundEH = function(req) {
     return exports.createInvalidReqEH (
         exports.INVALID_REQ.VARIABLE_RESOURCE_NOT_FOUND,
         req);
 };
+exports.handleInvalidReqVariableResourceNotFoundEH = function(req, res) {
+    exports.createInvalidReqVariableResourceNotFoundEH(req).handle(res);
+};
+
+// Invalid Request Invalid Command Method Error Handler
 exports.createInvalidReqInvalidCommandMethodEH = function(req) {
     return exports.createInvalidReqEH (
         exports.INVALID_REQ.INVALID_COMMAND_METHOD,
         req);
 };
+exports.handleInvalidReqInvalidCommandMethodEH = function(req, res) {
+    exports.createInvalidReqInvalidCommandMethodEH(req).handle(res);
+};
+
+// Invalid Request Missing Command Parameter Error Handler
 exports.createInvalidReqMissingCommandParameterEH = function(req) {
     return exports.createInvalidReqEH (
         exports.INVALID_REQ.MISSING_COMMAND_PARAMETER,
         req);
+};
+exports.handleInvalidReqMissingCommandParameterEH = function(req, res) {
+    exports.createInvalidReqMissingCommandParameterEH(req).handle(res);
 };
 
 //-------------------------------------------------------- Failed Command Errors
@@ -159,6 +189,8 @@ var _failedCommandHandle = function(res) {
     res.writeJSON(body);
     res.close();
 };
+
+// Failed Command Error Handler
 exports.createFailedCommandEH = function(errorName, errorMsg, req, session, className) {
     var e = new Error();
 
@@ -171,6 +203,6 @@ exports.createFailedCommandEH = function(errorName, errorMsg, req, session, clas
 
     return e;
 };
-
-
-
+exports.handleFailedCommandEH = function(errorName, errorMsg, req, res, session, className) {
+    exports.createFailedCommandEH(errorName, errorMsg, req, session, className).handle(res);
+};
