@@ -29,11 +29,16 @@ and
 
 ## Requirements
 
-* PhantomJS version `>= 1.6`
+* PhantomJS [ghostdriver-dev branch](https://github.com/detro/phantomjs/tree/ghostdriver-dev),
+taken from my (Ivan De Marino) port: [github.com/detro/phantomjs](https://github.com/detro/phantomjs).
 
 ## How to use it
 
-There is plenty to do before this is usable, but if you can't wait to try PhantomJS's speed when it acts as a RemoteWebDriver Server, do the following:
+Check out the [ghostdriver-dev branch](https://github.com/detro/phantomjs/tree/ghostdriver-dev)
+of PhantomJS, and build it (I assume you know Git).
+
+There is plenty to do before this is usable, but if you can't wait to try
+PhantomJS's speed when it acts as a RemoteWebDriver Server, do the following:
 
 1. Start GhostDriver on a terminal:
 
