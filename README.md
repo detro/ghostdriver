@@ -1,24 +1,18 @@
-** * * * * * * * * * * * * **
-
-**PLEASE NOTE**
-
-**0 - IT'S NOT DONE! The only commands implemented are the one used by the `examples/google_cheese/` directory**
-
-**1 - It's still experimental**
-
-**2 - Not ready for Production**
-
-**3 - Only 13 of the >90 WireProtocol Commands implemented**
-
-**4 - I released it to get people interested in contributing. Not to provide a solution: it's not ready yet!**
-
-** * * * * * * * * * * * * **
-
 # Ghost Driver
 
-Ghost Driver is a pure JavaScript implementation of the [WebDriver Wire Protocol](http://code.google.com/p/selenium/wiki/JsonWireProtocol)
+Ghost Driver is a pure JavaScript implementation of the
+[WebDriver Wire Protocol](http://code.google.com/p/selenium/wiki/JsonWireProtocol)
 for [PhantomJS](http://phantomjs.org/).
-This aims at providing a Remote WebDriver that uses PhantomJS as back-end.
+It's going to be a Remote WebDriver that uses PhantomJS as back-end.
+
+## Status
+
+* Under development
+* Far from complete
+* Only **~20%** of the WireProtocol currently implemented
+* You can monitor development progress [at this Google Spreadsheet](https://docs.google.com/spreadsheet/ccc?key=0Am63grtxc7bDdGNqX1ZPX2VoZlE2ZHZhd09lNDkzbkE)
+* Core released to get people interested and get contributions
+* Don't raise BUGS: send PULL REQUESTS pleaase!
 
 ## Presentation and Slides
 
@@ -26,6 +20,12 @@ In April 2012 I presented GhostDriver at the [Selenium Conference](http://www.se
 [slides](http://detro.github.com/ghostdriver/slides/index.html)
 and
 [video](http://blog.ivandemarino.me/2012/05/01/Me-the-Selenium-Conference-2012).
+
+### Video
+
+<div style="text-align: center; ">
+<iframe width="640" height="360" src="http://www.youtube.com/embed/wqxkKIC2HDY" frameborder="0" allowfullscreen></iframe>
+</div>
 
 ## Requirements
 
@@ -37,7 +37,7 @@ taken from my (Ivan De Marino) port: [github.com/detro/phantomjs](https://github
 Check out the [ghostdriver-dev branch](https://github.com/detro/phantomjs/tree/ghostdriver-dev)
 of PhantomJS, and build it (I assume you know Git).
 
-There is plenty to do before this is usable, but if you can't wait to try
+There is **plenty to do before this is usable**, but if you can't wait to try
 PhantomJS's speed when it acts as a RemoteWebDriver Server, do the following:
 
 1. Start GhostDriver on a terminal:
