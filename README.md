@@ -16,13 +16,20 @@
 
 # Ghost Driver
 
-Ghost Driver is a pure JavaScript implementation of the [WebDriver Wire Protocol](http://code.google.com/p/selenium/wiki/JsonWireProtocol) for [PhantomJS](http://phantomjs.org/).
+Ghost Driver is a pure JavaScript implementation of the [WebDriver Wire Protocol](http://code.google.com/p/selenium/wiki/JsonWireProtocol)
+for [PhantomJS](http://phantomjs.org/).
 This aims at providing a Remote WebDriver that uses PhantomJS as back-end.
+
+## Presentation and Slides
+
+In April 2012 I presented GhostDriver at the [Selenium Conference](http://www.seleniumconf.org/speakers/#IDM):
+[slides](http://detro.github.com/ghostdriver/slides/index.html)
+and
+[video](http://blog.ivandemarino.me/2012/05/01/Me-the-Selenium-Conference-2012).
 
 ## Requirements
 
 * PhantomJS version `>= 1.6`
-* Maven 3 (optional - makes it easy to build & run the examples)
 
 ## How to use it
 
@@ -35,52 +42,25 @@ There is plenty to do before this is usable, but if you can't wait to try Phanto
     Ghost Driver running on port 8080
     ```
 
-2. Build and Launch the first Java-based example ([Maven](http://maven.apache.org/) required):
+2. Build and Launch the first Java-based example (to build we use [Gradle](http://www.gradle.org/), already included):
 
     ```bash
     $> cd ghostdriver/examples/google_cheese/
-    $> ./mvnexec.sh
-    ...
-    [INFO] Building ghostdriver 1.0
-    [INFO] ------------------------------------------------------------------------
-    [INFO]
-    [INFO] >>> exec-maven-plugin:1.2.1:java (default-cli) @ google_cheese >>>
-    [INFO]
-    [INFO] <<< exec-maven-plugin:1.2.1:java (default-cli) @ google_cheese <<<
-    [INFO]
-    [INFO] --- exec-maven-plugin:1.2.1:java (default-cli) @ google_cheese ---
-    *** USING GHOSTDRIVER ***
-    Loading 'http://www.google.com'...
-    Loaded. Current URL is: 'http://www.google.co.uk/'
-    Finding an Element via [name='q']...
-    Found.
-    Sending keys 'Cheese!...'
-    Sent.
-    Submitting Element...
-    Submitted.
-    Page title is: Cheese! - Google Search
-    Time elapsed (ms): 1531
-    [INFO] ------------------------------------------------------------------------
-    [INFO] BUILD SUCCESS
-    ...
+    $> ./gradlew execServer -Pargs="1 8080"
     ```
-
-3. Enjoy
 
 For a quick speed comparison with other WebDriver implementations, try passing the parameter `firefox` or `chrome` to the `./mvnexec.sh` script.
 
 ## Reasoning: pros and cons
 
 ### Pros of using an Headless browser for your Selenium testing
-* Speed
-* Speed makes development faster
-* Speed makes THE developer happier
-* Speed makes leaves more time for beer, video-games, cycling or whatever you fancy
+* Speed: makes development faster
+* Speed: makes THE developer happier
+* Speed: makes leaves more time for beer, video-games, cycling or whatever you fancy
 * ...
 
 ### Cons of using an Headless browser for your Selenium testing
-* PhantomJS is not a "Real" Browser, just very very close to it
-* ...
+* PhantomJS is not a "Real" Browser, but _"just"_ very very close to on
 
 ## Contributions
 
