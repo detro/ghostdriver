@@ -46,47 +46,16 @@ ghostdriver.SessionReqHand = function(session) {
     _errors = require("./errors.js"),
 
     _handle = function(req, res) {
-        var postObj,
-            url,
-            locator,
-            element;
+        var element;
 
         _protoParent.handle.call(this, req, res);
-
-        var responseAfterLoadFinished = function (func) {
-            _session.getCurrentWindow().onLoadFinished = function () {
-                res.writeJSON(_protoParent.buildSuccessResponseBody.call(this, _session.getId()));
-                res.statusCode = 200;
-                res.closeGracefully();
-            };
-            _session.getCurrentWindow().evaluate(func);
-        };
 
         // Handle "/url" GET and POST
         if (req.urlParsed.file === _const.URL) {                                         //< ".../url"
             if (req.method === "GET") {
-                // Get the URL at which the Page currently is
-                url = _session.getCurrentWindow().evaluate(function() { return location.toString(); });
-                res.statusCode = 200;
-                res.writeJSON(_protoParent.buildSuccessResponseBody.call(this, _session.getId(), url));
-                res.close();
+                _getUrlCommand(req, res);
             } else if (req.method === "POST") {
-                // Load the given URL in the Page
-                postObj = JSON.parse(req.post);
-                if (typeof(postObj) === "object" && postObj.url) {
-                    // Open the given URL and, when done, return "HTTP 200 OK"
-                    _session.getCurrentWindow().open(postObj.url, function(status) {
-                        if (status === "success") {
-                            // TODO Handle situation where loading doesn't work
-                            res.statusCode = 200;
-                            res.closeGracefully();
-                        } else {
-                            throw _errors.createInvalidReqInvalidCommandMethodEH(req);
-                        }
-                    });
-                } else {
-                    throw _errors.createInvalidReqMissingCommandParameterEH(req);
-                }
+                _postUrlCommand(req, res);
             }
             return;
         } else if (req.urlParsed.file === _const.TITLE && req.method === "GET") {       //< ".../title"
@@ -115,14 +84,82 @@ ghostdriver.SessionReqHand = function(session) {
             }
             return;
         } else if (req.urlParsed.file === _const.FORWARD && req.method === "POST") {
-            responseAfterLoadFinished(require("./webdriver_atoms.js").get("forward"));
+            _backCommand(req, res);
             return;
         } else if (req.urlParsed.file === _const.BACK && req.method === "POST") {
-            responseAfterLoadFinished(require("./webdriver_atoms.js").get("back"));
+            _forwardCommand(req, res);
             return;
         }
 
         throw _errors.createInvalidReqInvalidCommandMethodEH(req);
+    },
+
+    _backCommand = function(req, res) {
+        var onSuccess = function (status) {
+            res.statusCode = 200;
+            res.writeJSON(_protoParent.buildSuccessResponseBody.call(this, _session.getId()));
+            res.closeGracefully();
+        };
+
+        _session.getCurrentWindow().evaluateAndWaitForLoad(
+            require("./webdriver_atoms.js").get("back"),
+            onSuccess,
+            onSuccess); //< We don't care if 'forward' fails
+    },
+
+    _forwardCommand = function(req, res) {
+        var onSuccess = function (status) {
+            res.statusCode = 200;
+            res.writeJSON(_protoParent.buildSuccessResponseBody.call(this, _session.getId()));
+            res.closeGracefully();
+        };
+
+        _session.getCurrentWindow().evaluateAndWaitForLoad(
+            require("./webdriver_atoms.js").get("forward"),
+            onSuccess,
+            onSuccess); //< We don't care if 'forward' fails
+    },
+
+    _getUrlCommand = function(req, res) {
+        // Get the URL at which the Page currently is
+        var url = _session.getCurrentWindow().evaluate(function() { return location.toString(); });
+        res.statusCode = 200;
+        res.writeJSON(_protoParent.buildSuccessResponseBody.call(this, _session.getId(), url));
+        res.close();
+    },
+
+    _postUrlCommand = function(req, res) {
+        // Load the given URL in the Page
+        var postObj = JSON.parse(req.post),
+            maxWaitForOpen = 1000 * 60,     //< a website should take less than 1m to open
+            timer;
+
+        if (typeof(postObj) === "object" && postObj.url) {
+            // Open the given URL and, when done, return "HTTP 200 OK"
+            _session.getCurrentWindow().open(postObj.url, function(status) {
+                // Callback received: don't need the timer anymore
+                clearTimeout(timer);
+
+                if (status === "success") {
+                    res.statusCode = 200;
+                    res.closeGracefully();
+                } else {
+                    _errors.handleInvalidReqInvalidCommandMethodEH(req, res);
+                }
+            });
+            timer = setTimeout(function() {
+                // Command Failed (Timed-out)
+                _errors.handleFailedCommandEH(
+                    _errors.FAILED_CMD_STATUS.TIMEOUT,
+                    "URL '"+postObj.url+"' didn't load within "+maxWaitForOpen+"ms",
+                    req,
+                    res,
+                    _session,
+                    "SessionReqHand");
+            }, 1000 * 60);
+        } else {
+            throw _errors.createInvalidReqMissingCommandParameterEH(req);
+        }
     },
 
     _windowCloseCommand = function(req, res) {
