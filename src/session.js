@@ -59,9 +59,37 @@ ghostdriver.Session = function(desiredCapabilities) {
     _currentWindowHandle = null,
     _id = (++ghostdriver.Session.instanceCounter) + '', //< must be a string, even if I use progressive integers as unique ID
 
+    _evaluateAndWaitForLoad = function(evalFunc, onLoadFunc, onErrorFunc) {
+        var args = Array.prototype.splice.call(arguments, 0), //< 'arguments' to array
+            timer, maxTimeForPageToStartLoading = 3000;
+
+        // Separating arguments for the 'evaluate' call from the callback handlers
+        // NOTE: I'm also passing 'evalFunc' as first parameter for the 'evaluate' call
+        args.splice(0, 3, evalFunc, 0);
+
+        // Register event handlers
+        this.onLoadStarted = function() {
+            clearTimeout(timer);            //< Load Started: we want fo wait for "onLoadFinished" now
+        };
+        this.onLoadFinished = function() {
+            onLoadFunc();
+        };
+        this.onError = function() {         //< TODO Currently broken in PhantomJS, fixed by using "evaluateAsync"
+            console.log("Error, where it should be");
+            clearTimeout(timer);
+            onErrorFunc();
+        };
+        // Starting timer
+        timer = setTimeout(onErrorFunc, maxTimeForPageToStartLoading);
+
+        // We are ready to Eval
+        this.evaluateAsync.apply(this, args);
+    },
+
     _createNewWindow = function(page, newWindowHandle) {
         // Decorating...
         page.windowHandle = newWindowHandle;
+        page.evaluateAndWaitForLoad = _evaluateAndWaitForLoad;
 
         return page;
     },
