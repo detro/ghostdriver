@@ -21,12 +21,6 @@ In April 2012 I presented GhostDriver at the [Selenium Conference](http://www.se
 and
 [video](http://blog.ivandemarino.me/2012/05/01/Me-the-Selenium-Conference-2012).
 
-### Video
-
-<div style="text-align: center; ">
-<iframe width="640" height="360" src="http://www.youtube.com/embed/wqxkKIC2HDY" frameborder="0" allowfullscreen></iframe>
-</div>
-
 ## Requirements
 
 * PhantomJS [ghostdriver-dev branch](https://github.com/detro/phantomjs/tree/ghostdriver-dev),
