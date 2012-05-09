@@ -75,7 +75,8 @@ ghostdriver.RouterReqHand = function() {
                 throw _errors.createInvalidReqUnknownCommandEH(req);
             }
         } catch (e) {
-            // Don't know where to Route this!
+            console.error("Error => " + JSON.stringify(e, null, '  '));
+
             if (typeof(e.handle) === "function") {
                 e.handle(res);
             } else {
@@ -85,8 +86,6 @@ ghostdriver.RouterReqHand = function() {
                 res.write(e.name + " - " + e.message);
                 res.close();
             }
-
-            console.error("Error => " + JSON.stringify(e, null, '  '));
         }
     };
 
