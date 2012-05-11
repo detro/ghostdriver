@@ -171,6 +171,29 @@ exports.FAILED_CMD_STATUS_CODES = {
     "IMEEngineActivationFailed" : 31,
     "InvalidSelector"           : 32
 };
+exports.FAILED_CMD_STATUS_CODES_NAMES       = [];
+exports.FAILED_CMD_STATUS_CODES_NAMES[0]    = "Success";
+exports.FAILED_CMD_STATUS_CODES_NAMES[7]    = "NoSuchElement";
+exports.FAILED_CMD_STATUS_CODES_NAMES[8]    = "NoSuchFrame";
+exports.FAILED_CMD_STATUS_CODES_NAMES[9]    = "UnknownCommand";
+exports.FAILED_CMD_STATUS_CODES_NAMES[10]   = "StaleElementReference";
+exports.FAILED_CMD_STATUS_CODES_NAMES[11]   = "ElementNotVisible";
+exports.FAILED_CMD_STATUS_CODES_NAMES[12]   = "InvalidElementState";
+exports.FAILED_CMD_STATUS_CODES_NAMES[13]   = "UnknownError";
+exports.FAILED_CMD_STATUS_CODES_NAMES[15]   = "ElementIsNotSelectable";
+exports.FAILED_CMD_STATUS_CODES_NAMES[17]   = "JavaScriptError";
+exports.FAILED_CMD_STATUS_CODES_NAMES[19]   = "XPathLookupError";
+exports.FAILED_CMD_STATUS_CODES_NAMES[21]   = "Timeout";
+exports.FAILED_CMD_STATUS_CODES_NAMES[23]   = "NoSuchWindow";
+exports.FAILED_CMD_STATUS_CODES_NAMES[24]   = "InvalidCookieDomain";
+exports.FAILED_CMD_STATUS_CODES_NAMES[25]   = "UnableToSetCookie";
+exports.FAILED_CMD_STATUS_CODES_NAMES[26]   = "UnexpectedAlertOpen";
+exports.FAILED_CMD_STATUS_CODES_NAMES[27]   = "NoAlertOpenError";
+exports.FAILED_CMD_STATUS_CODES_NAMES[28]   = "ScriptTimeout";
+exports.FAILED_CMD_STATUS_CODES_NAMES[29]   = "InvalidElementCoordinates";
+exports.FAILED_CMD_STATUS_CODES_NAMES[30]   = "IMENotAvailable";
+exports.FAILED_CMD_STATUS_CODES_NAMES[31]   = "IMEEngineActivationFailed";
+exports.FAILED_CMD_STATUS_CODES_NAMES[32]   = "InvalidSelector";
 
 var _failedCommandHandle = function(res) {
     // Generate response body
