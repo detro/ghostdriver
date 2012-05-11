@@ -92,11 +92,21 @@ public class GoogleCheeseServerOnly {
         // Check the title of the page
         System.out.println("Page title is: " + driver.getTitle());
 
+        // Executing a Script, synchronously
+        System.out.println("Grabbing 'div#ires' container of the search results...");
+        WebElement e = (WebElement)((RemoteWebDriver) driver).executeScript("return document.getElementById(arguments[0])", "ires");
+//        e.isEnabled();
+//        e.isSelected();
+//        e.isDisplayed();
+//        System.out.println("Tag name is: " + e.getTagName());
+//        System.out.println("Tag text is: " + e.getText());
+
         // Navigate 'Back'
         System.out.println("Going back...");
         driver.navigate().back();
         System.out.println("After going back, page title is: " + driver.getTitle());
 
+        // Closing
         System.out.println("Closing...");
         driver.close();
         System.out.println("Closed");
