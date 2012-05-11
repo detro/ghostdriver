@@ -1,10 +1,7 @@
-2012-04-30 20:23:12
+2012-05-11 13:46:06
 
 ------------------------------------------------------------------------
-r16753 | jmleyba@gmail.com | 2012-04-30 19:14:05 +0100 (Mon, 30 Apr 2012) | 4 lines
+r16876 | andreastt@opera.com | 2012-05-11 10:45:23 +0100 (Fri, 11 May 2012) | 1 line
 
-JasonLeyba: Defining a bot.inject.executeScript wrapped fragment for
-webdriver.atoms.element.type.
-
-
+AndreasTolfTolfsen: google-protobuffers and commons-jxpath are needed for OperaDriver
 ------------------------------------------------------------------------

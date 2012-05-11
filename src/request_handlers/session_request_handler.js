@@ -42,7 +42,9 @@ ghostdriver.SessionReqHand = function(session) {
         WINDOW          : "window",
         FORWARD         : "forward",
         BACK            : "back",
-        REFRESH         : "refresh"
+        REFRESH         : "refresh",
+        EXECUTE         : "execute",
+        EXECUTE_ASYNC   : "execute_async"
     },
     _errors = require("./errors.js"),
 
@@ -93,6 +95,9 @@ ghostdriver.SessionReqHand = function(session) {
         } else if (req.urlParsed.file === _const.REFRESH && req.method === "POST") {
             _refreshCommand(req, res);
             return;
+        } else if (req.urlParsed.file === _const.EXECUTE && req.method === "POST") {
+            _executeCommand(req, res);
+            return;
         }
 
         throw _errors.createInvalidReqInvalidCommandMethodEH(req);
@@ -104,6 +109,45 @@ ghostdriver.SessionReqHand = function(session) {
             res.writeJSON(_protoParent.buildSuccessResponseBody.call(res, _session.getId()));
             res.closeGracefully();
         };
+    },
+
+    _respondBasedOnResult = function(req, res, result) {
+        // Convert string to JSON
+        if (typeof(result) === "string") {
+            try {
+                result = JSON.parse(result);
+            } catch (e) {
+                // In case the conversion fails, report and "Invalid Command Method" error
+                throw _erros.createInvalidReqInvalidCommandMethodEH(req);
+            }
+        }
+
+        // In case the JSON doesn't contain the expected fields
+        if (typeof(result) !== "object" ||
+            typeof(result.status) === "undefined" ||
+            typeof(result.value) === "undefined") {
+            throw _errors.createFailedCommandEH(
+                _errors.FAILED_CMD_STATUS.UNKNOWN_ERROR,
+                "Command failed without producing the expected error report",
+                req,
+                _session,
+                "SessionReqHand");
+        }
+
+        // An error occurred but we got an error report to use
+        if (result.status !== 0) {
+            throw _errors.createFailedCommandEH(
+                _errors.FAILED_CMD_STATUS_CODES_NAMES[result.status],
+                result.value.message,
+                req,
+                _session,
+                "SessionReqHand");
+        }
+
+        // If we arrive here, everything should be fine, birds are singing, the sky is blue
+        res.statusCode = 200;
+        res.writeJSON(_protoParent.buildSuccessResponseBody.call(this, _session.getId(), result.value));
+        res.close();
     },
 
     _refreshCommand = function(req, res) {
@@ -133,12 +177,30 @@ ghostdriver.SessionReqHand = function(session) {
             successHand); //< We don't care if 'forward' fails
     },
 
+    _executeCommand = function(req, res) {
+        var postObj = JSON.parse(req.post),
+            result;
+
+        if (typeof(postObj) === "object" && postObj.script && postObj.args) {
+            result = _session.getCurrentWindow().evaluate(
+                require("./webdriver_atoms.js").get("execute_script"),
+                postObj.script,
+                postObj.args);
+
+            _respondBasedOnResult(req, res, result);
+        } else {
+            throw _errors.createInvalidReqMissingCommandParameterEH(req);
+        }
+    },
+
     _getUrlCommand = function(req, res) {
         // Get the URL at which the Page currently is
-        var url = _session.getCurrentWindow().evaluate(function() { return location.toString(); });
-        res.statusCode = 200;
-        res.writeJSON(_protoParent.buildSuccessResponseBody.call(this, _session.getId(), url));
-        res.close();
+        var result = _session.getCurrentWindow().evaluate(
+            require("./webdriver_atoms.js").get("execute_script"),
+            "return location.toString()",
+            []);
+
+        _respondBasedOnResult(req, res, result);
     },
 
     _postUrlCommand = function(req, res) {
