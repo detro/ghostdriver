@@ -69,13 +69,15 @@ ghostdriver.Session = function(desiredCapabilities) {
 
         // Register event handlers
         this.onLoadStarted = function() {
+            // console.log("on load started");
             clearTimeout(timer);            //< Load Started: we want fo wait for "onLoadFinished" now
         };
         this.onLoadFinished = function() {
+            // console.log("on load finished");
             onLoadFunc();
         };
         this.onError = function() {         //< TODO Currently broken in PhantomJS, fixed by using "evaluateAsync"
-            console.log("Error, where it should be");
+            // console.log("on error");
             clearTimeout(timer);
             onErrorFunc();
         };

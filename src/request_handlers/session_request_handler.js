@@ -41,7 +41,8 @@ ghostdriver.SessionReqHand = function(session) {
         TITLE           : "title",
         WINDOW          : "window",
         FORWARD         : "forward",
-        BACK            : "back"
+        BACK            : "back",
+        REFRESH         : "refresh"
     },
     _errors = require("./errors.js"),
 
@@ -84,40 +85,52 @@ ghostdriver.SessionReqHand = function(session) {
             }
             return;
         } else if (req.urlParsed.file === _const.FORWARD && req.method === "POST") {
-            _backCommand(req, res);
+            _forwardCommand(req, res);
             return;
         } else if (req.urlParsed.file === _const.BACK && req.method === "POST") {
-            _forwardCommand(req, res);
+            _backCommand(req, res);
+            return;
+        } else if (req.urlParsed.file === _const.REFRESH && req.method === "POST") {
+            _refreshCommand(req, res);
             return;
         }
 
         throw _errors.createInvalidReqInvalidCommandMethodEH(req);
     },
 
-    _backCommand = function(req, res) {
-        var onSuccess = function (status) {
+    _createOnSuccessHandler = function(res) {
+        return function (status) {
             res.statusCode = 200;
-            res.writeJSON(_protoParent.buildSuccessResponseBody.call(this, _session.getId()));
+            res.writeJSON(_protoParent.buildSuccessResponseBody.call(res, _session.getId()));
             res.closeGracefully();
         };
+    },
+
+    _refreshCommand = function(req, res) {
+        var successHand = _createOnSuccessHandler(res);
+
+        _session.getCurrentWindow().evaluateAndWaitForLoad(
+            function() { window.location.reload(true); }, //< 'reload(true)' force reload from the server
+            successHand,
+            successHand); //< We don't care if 'forward' fails
+    },
+
+    _backCommand = function(req, res) {
+        var successHand = _createOnSuccessHandler(res);
 
         _session.getCurrentWindow().evaluateAndWaitForLoad(
             require("./webdriver_atoms.js").get("back"),
-            onSuccess,
-            onSuccess); //< We don't care if 'forward' fails
+            successHand,
+            successHand); //< We don't care if 'forward' fails
     },
 
     _forwardCommand = function(req, res) {
-        var onSuccess = function (status) {
-            res.statusCode = 200;
-            res.writeJSON(_protoParent.buildSuccessResponseBody.call(this, _session.getId()));
-            res.closeGracefully();
-        };
+        var successHand = _createOnSuccessHandler(res);
 
         _session.getCurrentWindow().evaluateAndWaitForLoad(
             require("./webdriver_atoms.js").get("forward"),
-            onSuccess,
-            onSuccess); //< We don't care if 'forward' fails
+            successHand,
+            successHand); //< We don't care if 'forward' fails
     },
 
     _getUrlCommand = function(req, res) {

@@ -49,7 +49,7 @@ public class GoogleCheeseServerOnly {
 
         System.exit(0);
     }
-    
+
     public static long runTest(int port) throws MalformedURLException, IOException, InterruptedException {
         long totalTime;
 
@@ -68,6 +68,12 @@ public class GoogleCheeseServerOnly {
         driver.get("http://www.google.com");
         System.out.println("Loaded. Current URL is: '" + driver.getCurrentUrl() + "'");
 
+        // Play around with the navigation...
+        driver.navigate().refresh();
+        driver.navigate().forward();
+        driver.navigate().back();
+        driver.navigate().to("http://www.google.com");
+
         // Find the text input element by its name
         System.out.println("Finding an Element via [name='q']...");
         WebElement element = driver.findElement(By.name("q"));
@@ -85,7 +91,15 @@ public class GoogleCheeseServerOnly {
 
         // Check the title of the page
         System.out.println("Page title is: " + driver.getTitle());
+
+        // Navigate 'Back'
+        System.out.println("Going back...");
+        driver.navigate().back();
+        System.out.println("After going back, page title is: " + driver.getTitle());
+
+        System.out.println("Closing...");
         driver.close();
+        System.out.println("Closed");
 
         totalTime = new Date().getTime() - start.getTime();
         System.out.println("Time elapsed (ms): " + totalTime);
