@@ -44,7 +44,8 @@ ghostdriver.SessionReqHand = function(session) {
         BACK            : "back",
         REFRESH         : "refresh",
         EXECUTE         : "execute",
-        EXECUTE_ASYNC   : "execute_async"
+        EXECUTE_ASYNC   : "execute_async",
+        SCREENSHOT      : "screenshot"
     },
     _errors = require("./errors.js"),
 
@@ -63,7 +64,10 @@ ghostdriver.SessionReqHand = function(session) {
             return;
         } else if (req.urlParsed.file === _const.TITLE && req.method === "GET") {       //< ".../title"
             // Get the current Page title
-            _titleCommand(req, res);
+            _getTitleCommand(req, res);
+            return;
+        } else if (req.urlParsed.file === _const.SCREENSHOT && req.method === "GET") {
+            _getScreenshotCommand(req, res);
             return;
         } else if (req.urlParsed.file === _const.WINDOW) {                              //< ".../window"
             if (req.method === "DELETE") {
@@ -224,6 +228,14 @@ ghostdriver.SessionReqHand = function(session) {
         }
     },
 
+    _getScreenshotCommand = function(req, res) {
+        var rendering = _session.getCurrentWindow().renderBase64PNG();
+
+        res.statusCode = 200;
+        res.writeJSON(_protoParent.buildSuccessResponseBody.call(this, _session.getId(), rendering));
+        res.close();
+    },
+
     _getUrlCommand = function(req, res) {
         // Get the URL at which the Page currently is
         var result = _session.getCurrentWindow().evaluate(
@@ -280,7 +292,7 @@ ghostdriver.SessionReqHand = function(session) {
         // TODO An optional JSON parameter "name" might be given
     },
 
-    _titleCommand = function(req, res) {
+    _getTitleCommand = function(req, res) {
         var result = _session.getCurrentWindow().evaluate(function() { return document.title; });
         res.statusCode = 200;
         res.writeJSON(_protoParent.buildSuccessResponseBody.call(this, _session.getId(), result));
