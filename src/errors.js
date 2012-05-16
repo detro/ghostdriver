@@ -202,7 +202,7 @@ var _failedCommandHandle = function(res) {
         "status" : this.errorStatusCode,
         "value" : {
             "message" : this.message,
-            //"screen" : "",  //< TODO I need a renderToBase64() in PhantomJS
+            "screen" : this.errorScreenshot,
             "class" : this.errorClassName
         }
     };
@@ -222,6 +222,7 @@ exports.createFailedCommandEH = function(errorName, errorMsg, req, session, clas
     e.errorStatusCode = exports.FAILED_CMD_STATUS_CODES[errorName] || 13; //< '13' Unkown Error
     e.errorSessionId = session.getId() || null;
     e.errorClassName = className || "unknown";
+    e.errorScreenshot = session.getCurrentWindow().renderBase64PNG();
     e.handle = _failedCommandHandle;
 
     return e;
