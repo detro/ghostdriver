@@ -1,9 +1,6 @@
 package ghostdriver;
 
-import org.openqa.selenium.By;
-import org.openqa.selenium.Capabilities;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
@@ -70,9 +67,17 @@ public class GoogleCheeseServerOnly {
 
         // Play around with the navigation...
         driver.navigate().refresh();
+        System.out.println("Refreshed.");
         driver.navigate().forward();
+        System.out.println("Clicked on Forward.");
         driver.navigate().back();
+        System.out.println("Clicked on Backward.");
         driver.navigate().to("http://www.google.com");
+        System.out.println("Went to: '" + driver.getCurrentUrl() + "'");
+
+        System.out.println("Calling a meaningless 'setTimeout' using 'executeAsyncScript'...");
+        ((JavascriptExecutor) driver).executeAsyncScript("window.setTimeout(arguments[arguments.length - 1], 1000); ");
+        System.out.println("Timed-out.");
 
         // Find the text input element by its name
         System.out.println("Finding an Element via [name='q']...");
@@ -93,8 +98,9 @@ public class GoogleCheeseServerOnly {
         System.out.println("Page title is: " + driver.getTitle());
 
         // Executing a Script, synchronously
-        System.out.println("Grabbing 'div#ires' container of the search results...");
-        WebElement e = (WebElement)((RemoteWebDriver) driver).executeScript("return document.getElementById(arguments[0])", "ires");
+        System.out.println("Grabbing 'div#ires' container of the search results, using 'executeScript'...");
+        WebElement e = (WebElement)((JavascriptExecutor) driver).executeScript("return document.getElementById(arguments[0])", "ires");
+        System.out.println("Grabbed.");
 //        e.isEnabled();
 //        e.isSelected();
 //        e.isDisplayed();
@@ -104,6 +110,7 @@ public class GoogleCheeseServerOnly {
         // Navigate 'Back'
         System.out.println("Going back...");
         driver.navigate().back();
+        System.out.println("Back.");
         System.out.println("After going back, page title is: " + driver.getTitle());
 
         // Closing
