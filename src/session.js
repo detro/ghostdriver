@@ -59,39 +59,50 @@ ghostdriver.Session = function(desiredCapabilities) {
     _currentWindowHandle = null,
     _id = (++ghostdriver.Session.instanceCounter) + '', //< must be a string, even if I use progressive integers as unique ID
 
-    _evaluateAndWaitForLoad = function(evalFunc, onLoadFunc, onErrorFunc) {
+    _decorator_evaluateAndWaitForLoad = function(evalFunc, onLoadFunc, onErrorFunc) {
         var args = Array.prototype.splice.call(arguments, 0), //< 'arguments' to array
             timer, maxTimeForPageToStartLoading = 3000;
 
         // Separating arguments for the 'evaluate' call from the callback handlers
-        // NOTE: I'm also passing 'evalFunc' as first parameter for the 'evaluate' call
+        // NOTE: I'm also passing 'evalFunc' as first parameter for the 'evaluate' call, and '0' as timeout
         args.splice(0, 3, evalFunc, 0);
 
         // Register event handlers
-        this.onLoadStarted = function() {
-            // console.log("on load started");
-            clearTimeout(timer);            //< Load Started: we want fo wait for "onLoadFinished" now
-        };
-        this.onLoadFinished = function() {
-            // console.log("on load finished");
+        this.setOneShotCallback("onLoadStarted", function() {
+            // console.log("onLoadStarted");
+            clearTimeout(timer);                            //< Load Started: we'll wait for "onLoadFinished" now
+        });
+        this.setOneShotCallback("onLoadFinished", function() {
+            // console.log("onLoadFinished");
             onLoadFunc();
-        };
-        this.onError = function() {         //< TODO Currently broken in PhantomJS, fixed by using "evaluateAsync"
-            // console.log("on error");
+        });
+        this.setOneShotCallback("onError", function() {     //< TODO Currently broken in PhantomJS, fixed by using "evaluateAsync"
+            // console.log("onError");
             clearTimeout(timer);
             onErrorFunc();
-        };
+        });
         // Starting timer
         timer = setTimeout(onErrorFunc, maxTimeForPageToStartLoading);
 
         // We are ready to Eval
         this.evaluateAsync.apply(this, args);
+
     },
+
+    _decorator_setOneShotCallback = function(callbackName, handlerFunc) {
+        var thePage = this;
+
+        this[callbackName] = function() {
+            handlerFunc.apply(thePage, arguments);  //< call the actual handler
+            thePage[callbackName] = null;           //< once done, get rid of the handling
+        };
+    };
 
     _createNewWindow = function(page, newWindowHandle) {
         // Decorating...
         page.windowHandle = newWindowHandle;
-        page.evaluateAndWaitForLoad = _evaluateAndWaitForLoad;
+        page.evaluateAndWaitForLoad = _decorator_evaluateAndWaitForLoad;
+        page.setOneShotCallback = _decorator_setOneShotCallback;
 
         return page;
     },
