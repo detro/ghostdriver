@@ -98,6 +98,9 @@ ghostdriver.SessionReqHand = function(session) {
         } else if (req.urlParsed.file === _const.EXECUTE && req.method === "POST") {
             _executeCommand(req, res);
             return;
+        } else if (req.urlParsed.file === _const.EXECUTE_ASYNC && req.method === "POST") {
+            _executeAsyncCommand(req, res);
+            return;
         }
 
         throw _errors.createInvalidReqInvalidCommandMethodEH(req);
@@ -112,34 +115,40 @@ ghostdriver.SessionReqHand = function(session) {
     },
 
     _respondBasedOnResult = function(req, res, result) {
+        // console.log("respondBasedOnResult => "+JSON.stringify(result));
+
         // Convert string to JSON
         if (typeof(result) === "string") {
             try {
                 result = JSON.parse(result);
             } catch (e) {
                 // In case the conversion fails, report and "Invalid Command Method" error
-                throw _erros.createInvalidReqInvalidCommandMethodEH(req);
+                _erros.handleInvalidReqInvalidCommandMethodEH(req, res);
             }
         }
 
         // In case the JSON doesn't contain the expected fields
-        if (typeof(result) !== "object" ||
+        if (result === null ||
+            typeof(result) === "undefined" ||
+            typeof(result) !== "object" ||
             typeof(result.status) === "undefined" ||
             typeof(result.value) === "undefined") {
-            throw _errors.createFailedCommandEH(
+            _errors.handleFailedCommandEH(
                 _errors.FAILED_CMD_STATUS.UNKNOWN_ERROR,
                 "Command failed without producing the expected error report",
                 req,
+                res,
                 _session,
                 "SessionReqHand");
         }
 
         // An error occurred but we got an error report to use
         if (result.status !== 0) {
-            throw _errors.createFailedCommandEH(
+            _errors.handleFailedCommandEH(
                 _errors.FAILED_CMD_STATUS_CODES_NAMES[result.status],
                 result.value.message,
                 req,
+                res,
                 _session,
                 "SessionReqHand");
         }
@@ -156,7 +165,7 @@ ghostdriver.SessionReqHand = function(session) {
         _session.getCurrentWindow().evaluateAndWaitForLoad(
             function() { window.location.reload(true); }, //< 'reload(true)' force reload from the server
             successHand,
-            successHand); //< We don't care if 'forward' fails
+            successHand); //< We don't care if 'refresh' fails
     },
 
     _backCommand = function(req, res) {
@@ -165,7 +174,7 @@ ghostdriver.SessionReqHand = function(session) {
         _session.getCurrentWindow().evaluateAndWaitForLoad(
             require("./webdriver_atoms.js").get("back"),
             successHand,
-            successHand); //< We don't care if 'forward' fails
+            successHand); //< We don't care if 'back' fails
     },
 
     _forwardCommand = function(req, res) {
@@ -185,9 +194,31 @@ ghostdriver.SessionReqHand = function(session) {
             result = _session.getCurrentWindow().evaluate(
                 require("./webdriver_atoms.js").get("execute_script"),
                 postObj.script,
-                postObj.args);
+                postObj.args,
+                true);
 
             _respondBasedOnResult(req, res, result);
+        } else {
+            throw _errors.createInvalidReqMissingCommandParameterEH(req);
+        }
+    },
+
+    _executeAsyncCommand = function(req, res) {
+        var postObj = JSON.parse(req.post);
+
+        if (typeof(postObj) === "object" && postObj.script && postObj.args) {
+            _session.getCurrentWindow().setOneShotCallback("onCallback", function() {
+                _respondBasedOnResult(req, res, arguments[0]);
+            });
+
+            _session.getCurrentWindow().evaluate(
+                "function(script, args, timeout) { " +
+                    "return (" + require("./webdriver_atoms.js").get("execute_async_script") + ")( " +
+                        "script, args, timeout, callPhantom, true); " +
+                "}",
+                postObj.script,
+                postObj.args,
+                6000);          //< TODO timeout
         } else {
             throw _errors.createInvalidReqMissingCommandParameterEH(req);
         }

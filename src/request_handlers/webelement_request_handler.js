@@ -83,7 +83,7 @@ ghostdriver.WebElementReqHand = function(id, session) {
             submitAtom = require("./webdriver_atoms.js").get("submit");
 
         // Listen for the page to Finish Loading after the submit
-        _getSession().getCurrentWindow().onLoadFinished = function(status) {
+        _getSession().getCurrentWindow().setOneShotCallback("onLoadFinished", function(status) {
             if (status === "success") {
                 res.statusCode = 200;
                 res.closeGracefully();
@@ -91,7 +91,7 @@ ghostdriver.WebElementReqHand = function(id, session) {
 
             // TODO - what do we do if this fails?
             // TODO - clear thing up after we are done waiting
-        };
+        });
 
         submitRes = _getSession().getCurrentWindow().evaluate(submitAtom, _getJSON());
 

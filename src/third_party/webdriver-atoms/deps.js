@@ -516,7 +516,7 @@ bot.action.prepareToInteractWith_ = function(element, opt_coords) {
   // necessary, not scrolling at all if the element is already in view.
   var doc = goog.dom.getOwnerDocument(element);
   goog.style.scrollIntoContainerView(element,
-      goog.userAgent.WEBKIT ? doc.body : doc.documentElement);
+      goog.userAgent.WEBKIT || goog.userAgent.IE ? doc.body : doc.documentElement);
 
   // NOTE(user): Ideally, we would check that any provided coordinates fall
   // within the bounds of the element, but this has proven difficult, because:
@@ -1010,7 +1010,7 @@ bot.Device.prototype.clickElement = function(coord, button) {
   // FORM(action) No    Yes    Yes    Yes
   var targetLink = null;
   var targetButton = null;
-  if (bot.Device.EXPLICIT_FOLLOW_LINK_) {
+  if (!bot.Device.ALWAYS_FOLLOWS_LINKS_ON_CLICK_) {
     for (var e = this.element_; e; e = e.parentNode) {
       if (bot.dom.isElement(e, goog.dom.TagName.A)) {
         targetLink = /**@type {!Element}*/ (e);
@@ -1128,40 +1128,16 @@ bot.Device.prototype.focusOnElement = function() {
 
 
 /**
- * Whether extra handling needs to be considered when clicking on a link or a
- * submit button.
+ * Whether links must be manually followed when clicking (because firing click
+ * events doesn't follow them).
  *
  * @type {boolean}
  * @private
  * @const
  */
-bot.Device.EXPLICIT_FOLLOW_LINK_ = goog.userAgent.IE ||
-    // Normal firefox
-    (goog.userAgent.GECKO && !bot.userAgent.FIREFOX_EXTENSION) ||
-    // Firefox extension prior to Firefox 4
-    (bot.userAgent.FIREFOX_EXTENSION && !bot.userAgent.isProductVersion(4));
-
-
-/**
- * Whether synthesized events are trusted to trigger click actions.
- *
- * @type {boolean}
- * @private
- * @const
- */
-bot.Device.CAN_SYNTHESISED_EVENTS_FOLLOW_LINKS_ =
-    bot.userAgent.FIREFOX_EXTENSION && bot.userAgent.isProductVersion(4);
-
-
-/**
- * Whether synthesized events can cause new windows to open.
- *
- * @type {boolean}
- * @const
- * @private
- */
-bot.Device.SYNTHESISED_EVENTS_CAN_OPEN_JAVASCRIPT_WINDOWS_ =
-    bot.userAgent.FIREFOX_EXTENSION;
+bot.Device.ALWAYS_FOLLOWS_LINKS_ON_CLICK_ =
+    goog.userAgent.WEBKIT || goog.userAgent.OPERA ||
+      (bot.userAgent.FIREFOX_EXTENSION && bot.userAgent.isProductVersion(3.6));
 
 
 /**
@@ -1201,21 +1177,16 @@ bot.Device.isFormSubmitElement = function(element) {
  * @private
  */
 bot.Device.shouldFollowHref_ = function(element) {
-  if (!element.href) {
+  if (bot.Device.ALWAYS_FOLLOWS_LINKS_ON_CLICK_ || !element.href) {
     return false;
   }
 
-  if (goog.userAgent.IE ||
-      (goog.userAgent.GECKO && !bot.userAgent.FIREFOX_EXTENSION)) {
+  if (!bot.userAgent.FIREFOX_EXTENSION) {
     return true;
   }
 
-  if (bot.Device.CAN_SYNTHESISED_EVENTS_FOLLOW_LINKS_) {
-    return false;
-  }
-
   if (element.target || element.href.toLowerCase().indexOf('javascript') == 0) {
-    return !bot.Device.SYNTHESISED_EVENTS_CAN_OPEN_JAVASCRIPT_WINDOWS_;
+    return false;
   }
 
   var owner = goog.dom.getWindow(goog.dom.getOwnerDocument(element));
@@ -1452,6 +1423,7 @@ goog.provide('bot.dom');
 goog.require('bot');
 goog.require('bot.locators.xpath');
 goog.require('bot.userAgent');
+goog.require('bot.window');
 goog.require('goog.array');
 goog.require('goog.dom');
 goog.require('goog.dom.NodeIterator');
@@ -1713,6 +1685,15 @@ bot.dom.splitStyleAttributeOnSemicolonsRe_ =
 
 
 /**
+ * @param {string} attributeName The name of the attribute to check.
+ * @return {boolean} Whether the specified attribute is a boolean attribute.
+ */
+bot.dom.isBooleanAttribute = function(attributeName) {
+  return goog.array.contains(bot.dom.BOOLEAN_ATTRIBUTES_, attributeName);
+};
+
+
+/**
  * Standardize a style attribute value, which includes:
  // (1) converting all property names lowercase
  // (2) ensuring it ends in a trailing semi-colon
@@ -1728,7 +1709,7 @@ bot.dom.standardizeStyleAttribute_ = function(value) {
   goog.array.forEach(styleArray, function(pair) {
     var i = pair.indexOf(':');
     if (i > 0) {
-      var keyValue = [pair.slice(0,i), pair.slice(i+1)];
+      var keyValue = [pair.slice(0, i), pair.slice(i + 1)];
       if (keyValue.length == 2) {
         css.push(keyValue[0].toLowerCase(), ':', keyValue[1], ';');
       }
@@ -1776,7 +1757,7 @@ bot.dom.getAttribute = function(element, attributeName) {
   // out when compiled for non-IE browsers.
   if (goog.userAgent.IE) {
     if (!attr && goog.userAgent.isVersion(8) &&
-        goog.array.contains(bot.dom.BOOLEAN_ATTRIBUTES_, attributeName)) {
+        bot.dom.isBooleanAttribute(attributeName)) {
       attr = element[attributeName];
     }
   }
@@ -1791,7 +1772,7 @@ bot.dom.getAttribute = function(element, attributeName) {
   // that is sometimes false for user-specified boolean attributes.
   // IE does consistently yield 'true' or 'false' strings for boolean attribute
   // values, and so we know 'false' attribute values were not user-specified.
-  if (goog.array.contains(bot.dom.BOOLEAN_ATTRIBUTES_, attributeName)) {
+  if (bot.dom.isBooleanAttribute(attributeName)) {
     return bot.userAgent.IE_DOC_PRE9 && attr.value == 'false' ? null : 'true';
   }
 
@@ -1821,7 +1802,7 @@ bot.dom.hasAttribute = function(element, attributeName) {
       return false;
     }
   }
-}
+};
 
 
 /**
@@ -2054,6 +2035,19 @@ bot.dom.getElementSize = function(element) {
       // even if the function exists.
     }
   }
+
+  // If the element is the BODY, then get the visible size.
+  if (bot.dom.isElement(element, goog.dom.TagName.BODY)) {
+    var doc = goog.dom.getOwnerDocument(element);
+    // Type annotation is incorrect on goog.dom.getWindow. It will always
+    // return a non-null window.
+    var win = (/** @type {!Window} */goog.dom.getWindow(doc));
+    if (bot.dom.getEffectiveStyle(element, 'overflow') == 'hidden') {
+      return goog.dom.getViewportSize(win);
+    }
+    return bot.window.getInteractableSize(win);
+  }
+
   return goog.style.getSize(element);
 };
 
@@ -2174,16 +2168,16 @@ bot.dom.isShown = function(elem, opt_ignoreOpacity) {
     return false;
   }
 
-  // Elements should be hidden if their parent has a fixed size AND has the style
-  // overflow:hidden AND the element's location is not within the fixed size
-  // of the parent
+  // Elements should be hidden if their parent has a fixed size AND has the
+  // style overflow:hidden AND the element's location is not within the fixed
+  // size of the parent
   function isOverflowHiding(e) {
-    var parent = bot.dom.getParentElement(e);
+    var parent = goog.style.getOffsetParent(e);
     if (parent && bot.dom.getEffectiveStyle(parent, 'overflow') == 'hidden') {
       var sizeOfParent = bot.dom.getElementSize(parent);
       var locOfParent = goog.style.getClientPosition(parent);
       var locOfElement = goog.style.getClientPosition(e);
-         if (locOfParent.x + sizeOfParent.width < locOfElement.x) {
+      if (locOfParent.x + sizeOfParent.width < locOfElement.x) {
         return false;
       }
       if (locOfParent.y + sizeOfParent.height < locOfElement.y) {
@@ -2194,7 +2188,7 @@ bot.dom.isShown = function(elem, opt_ignoreOpacity) {
     return true;
   }
 
-  if (!isOverflowHiding(elem)){
+  if (!isOverflowHiding(elem)) {
     return false;
   }
 
@@ -3156,6 +3150,30 @@ bot.events.MouseEventFactory_.prototype.create = function(target, opt_args) {
         detail, /*screenX*/ 0, /*screenY*/ 0, args.clientX, args.clientY,
         args.ctrlKey, args.altKey, args.shiftKey, args.metaKey, args.button,
         args.relatedTarget);
+
+    // Lifted from jquery-ui tests/jquery.simulate.js
+    // IE 9+ creates events with pageX and pageY set to 0.
+    // Trying to modify the properties throws an error,
+    // so we define getters to return the correct values.
+    if ( event.pageX === 0 && event.pageY === 0 && Object.defineProperty ) {
+      var doc = bot.getDocument().documentElement;
+      var body = bot.getDocument().body;
+
+      Object.defineProperty( event, "pageX", {
+        get: function() {
+          return args.clientX +
+            ( doc && doc.scrollLeft || body && body.scrollLeft || 0 ) -
+            ( doc && doc.clientLeft || body && body.clientLeft || 0 );
+        }
+      });
+      Object.defineProperty( event, "pageY", {
+        get: function() {
+          return args.clientY +
+          ( doc && doc.scrollTop || body && body.scrollTop || 0 ) -
+          ( doc && doc.clientTop || body && body.clientTop || 0 );
+        }
+      });
+    }
   }
 
   return event;
@@ -4155,9 +4173,10 @@ goog.require('goog.userAgent');
  * A keyboard that provides atomic typing actions.
  *
  * @constructor
+ * @param {Array.<!bot.Keyboard.Key>=} opt_state Optional keyboard state.
  * @extends {bot.Device}
  */
-bot.Keyboard = function() {
+bot.Keyboard = function(opt_state) {
   goog.base(this);
 
   /**
@@ -4171,6 +4190,10 @@ bot.Keyboard = function() {
    * @private
    */
   this.pressed_ = new goog.structs.Set();
+
+  if (opt_state) {
+    this.pressed_.addAll(opt_state);
+  }
 };
 goog.inherits(bot.Keyboard, bot.Device);
 
@@ -4623,12 +4646,23 @@ bot.Keyboard.prototype.getChar_ = function(key) {
 
 
 /**
+ * Whether firing a keypress event causes text to be edited without any
+ * additional logic to surgically apply the edit.
+ *
+ * @const
+ * @type {boolean}
+ * @private
+ */
+bot.Keyboard.KEYPRESS_EDITS_TEXT_ = goog.userAgent.GECKO &&
+    !bot.userAgent.isEngineVersion(12)
+
+
+/**
  * @param {!bot.Keyboard.Key} key Key with character to insert.
  * @private
  */
 bot.Keyboard.prototype.updateOnCharacter_ = function(key) {
-  // Gecko updates the element as a result of the keypress.
-  if (goog.userAgent.GECKO) {
+  if (bot.Keyboard.KEYPRESS_EDITS_TEXT_) {
     return;
   }
 
@@ -4649,8 +4683,7 @@ bot.Keyboard.prototype.updateOnCharacter_ = function(key) {
  * @private
  */
 bot.Keyboard.prototype.updateOnEnter_ = function() {
-  // Gecko updates the element as a result of the keypress.
-  if (goog.userAgent.GECKO) {
+  if (bot.Keyboard.KEYPRESS_EDITS_TEXT_) {
     return;
   }
 
@@ -4676,8 +4709,7 @@ bot.Keyboard.prototype.updateOnEnter_ = function() {
  * @private
  */
 bot.Keyboard.prototype.updateOnBackspaceOrDelete_ = function(key) {
-  // Gecko updates the element as a result of the keypress.
-  if (goog.userAgent.GECKO) {
+  if (bot.Keyboard.KEYPRESS_EDITS_TEXT_) {
     return;
   }
 
@@ -4707,7 +4739,8 @@ bot.Keyboard.prototype.updateOnBackspaceOrDelete_ = function(key) {
   //  In a textbox/password box, backspace always sends an input event unless
   //  the box has no text.  Delete behaves the same way in Firefox 3.0, but
   //  in later versions it only fires an input event if no text changes.
-  if (!goog.userAgent.IE && textChanged) {
+  if (!goog.userAgent.IE && textChanged ||
+      (goog.userAgent.GECKO && key == bot.Keyboard.Keys.BACKSPACE)) {
     this.fireHtmlEvent(bot.events.EventType.INPUT);
   }
 };
@@ -4771,6 +4804,16 @@ bot.Keyboard.prototype.moveCursor = function(element) {
     goog.dom.selection.setCursorPosition(element, element.value.length);
   }
 };
+
+
+/**
+ * Serialize the current state of the keyboard.
+ *
+ * @return {!Array.<!bot.Keyboard.Key>} The current keyboard state.
+ */
+bot.Keyboard.prototype.getState = function() {
+  return this.pressed_.getValues();
+};
 // Copyright 2011 WebDriver committers
 // Copyright 2011 Google Inc.
 //
@@ -4813,11 +4856,11 @@ goog.require('goog.userAgent');
 /**
  * A mouse that provides atomic mouse actions. This mouse currently only
  * supports having one button pressed at a time.
- *
+ * @param {bot.Mouse.State=} opt_state The mouse's initial state.
  * @constructor
  * @extends {bot.Device}
  */
-bot.Mouse = function() {
+bot.Mouse = function(opt_state) {
   goog.base(this);
 
   /**
@@ -4851,8 +4894,43 @@ bot.Mouse = function() {
    * @private
    */
   this.hasEverInteracted_ = false;
+
+  if (opt_state) {
+    this.buttonPressed_ = opt_state.buttonPressed;
+
+    try {
+      if (bot.dom.isElement(opt_state.elementPressed)) {
+        this.elementPressed_ = opt_state.elementPressed;
+      }
+    } catch (ignored) {
+      this.buttonPressed_ = null;
+    }
+
+    this.clientXY_ = opt_state.clientXY;
+    this.nextClickIsDoubleClick_ = opt_state.nextClickIsDoubleClick;
+    this.hasEverInteracted_ = opt_state.hasEverInteracted;
+
+    try {
+      if(bot.dom.isElement(opt_state.element)) {
+        this.setElement((/** @type {!Element} */opt_state.element));
+      }
+    } catch (ignored) {
+      this.buttonPressed_ = null;
+    }
+  }
 };
 goog.inherits(bot.Mouse, bot.Device);
+
+
+/**
+ * @typedef {{buttonPressed: ?bot.Mouse.Button,
+ *           elementPressed: Element,
+ *           clientXY: !goog.math.Coordinate,
+ *           nextClickIsDoubleClick: boolean,
+ *           hasEverInteracted: boolean,
+ *           element: Element}}
+ */
+bot.Mouse.State;
 
 
 /**
@@ -5142,7 +5220,21 @@ bot.Mouse.prototype.getButtonValue_ = function(eventType) {
   }
   return buttonValue;
 };
-// Copyright 2011 Software Freedom Conservancy. All Rights Reserved.
+
+/**
+* Serialize the current state of the mouse.
+* @return {!bot.Mouse.State} The current mouse state.
+*/
+bot.Mouse.prototype.getState = function () {
+  var state = {};
+  state.buttonPressed = this.buttonPressed_;
+  state.elementPressed = this.elementPressed_;
+  state.clientXY = this.clientXY_;
+  state.nextClickIsDoubleClick = this.nextClickIsDoubleClick_;
+  state.hasEverInteracted = this.hasEverInteracted_;
+  state.element = this.getElement();
+  return state;
+};// Copyright 2011 Software Freedom Conservancy. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -5158,7 +5250,7 @@ bot.Mouse.prototype.getButtonValue_ = function(eventType) {
 
 /**
  * @fileoverview Utilities for working with WebDriver response objects.
- * See: http://code.google.com/p/selenium/wiki/JsonWireProtocol#Responses
+ * @see: http://code.google.com/p/selenium/wiki/JsonWireProtocol#Responses
  */
 
 goog.provide('bot.response');
@@ -7554,6 +7646,10 @@ webdriver.atoms.element.getAttribute = function(element, attribute) {
     return (/** @type {?string} */value);
   }
 
+  if (bot.dom.isBooleanAttribute(attribute)) {
+    return bot.dom.hasAttribute(element, attribute) ? 'true' : null;
+  }
+
   var property;
   try {
     property = bot.dom.getProperty(element, attribute);
@@ -7671,21 +7767,21 @@ webdriver.atoms.element.type = function(element, keys, opt_keyboard) {
           throw Error('Unsupported WebDriver key: \\u' +
               key.charCodeAt(0).toString(16));
         }
+      } else {
+        // Handle common aliases.
+        switch (key) {
+          case '\n':
+            current.push(bot.Keyboard.Keys.ENTER);
+            break;
+          case '\t':
+            current.push(bot.Keyboard.Keys.TAB);
+            break;
+          case '\b':
+            current.push(bot.Keyboard.Keys.BACKSPACE);
+            break;
+        }
+        current.push(key);
       }
-
-      // Handle common aliases.
-      switch (key) {
-        case '\n':
-          current.push(bot.Keyboard.Keys.ENTER);
-          break;
-        case '\t':
-          current.push(bot.Keyboard.Keys.TAB);
-          break;
-        case '\b':
-          current.push(bot.Keyboard.Keys.BACKSPACE);
-          break;
-      }
-      current.push(key);
     });
   });
 
@@ -7779,98 +7875,168 @@ goog.scope(function() {
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 /**
-* @fileoverview Synthetic events for fun and profit.
-*/
+ * @fileoverview Synthetic events for fun and profit.
+ */
 
 goog.provide('webdriver.atoms.inputs');
 
 goog.require('bot.Keyboard');
 goog.require('bot.Mouse');
 goog.require('bot.action');
-goog.require('bot.userAgent');
 goog.require('goog.array');
-goog.require('goog.string');
+goog.require('webdriver.atoms.element');
 
 
 /**
-* Examines the opt_keyboard parameter, and returns either that or a new
-* keyboard instance, which is stored on the document for later use.
-*
-* @param {bot.Keyboard=} opt_keyboard A mouse to use.
-* @return {!bot.Keyboard} A mouse instance.
-*/
-webdriver.atoms.inputs.getKeyboard_ = function (opt_keyboard) {
-    if (opt_keyboard) {
-        return opt_keyboard;
-    }
+ * Send keyboard input to a particular element.
+ *
+ * @param {!Element} element The element to send the keyboard input to.
+ * @param {Array.<!bot.Keyboard.Key>=} opt_state The keyboard to use, or
+ *     construct one.
+ * @param {...(string|!Array.<string>)} var_args What to type.
+ * @return {Array.<!bot.Keyboard.Key>} The keyboard state.
+ */
+webdriver.atoms.inputs.sendKeys = function(element, opt_state, var_args) {
+  var keyboard = new bot.Keyboard(opt_state);
+  var to_type = goog.array.slice(arguments, 2);
+  var flattened = goog.array.flatten(to_type);
+  if (!element) {
+    element = bot.dom.getActiveElement(document);
+  }
+  webdriver.atoms.element.type(element, flattened, keyboard);
 
-    if (!bot.userAgent.FIREFOX_EXTENSION && document['__webdriver_keyboard']) {
-        return document['__webdriver_keyboard'];
-    }
-
-    var keyboard = new bot.Keyboard();
-    if (!bot.userAgent.FIREFOX_EXTENSION) {
-        document['__webdriver_keyboard'] = keyboard;
-    }
-
-    return keyboard;
+  return keyboard.getState();
 };
+goog.exportSymbol('webdriver.atoms.inputs.sendKeys',
+                  webdriver.atoms.inputs.sendKeys);
 
 
 /**
-* Examines the opt_mouse parameter, and returns either that or a new mouse
-* instance, which is stored on the document for later use.
-*
-* @param {bot.Mouse=} opt_mouse A mouse to use.
-* @return {!bot.Mouse} A mouse instance.
-*/
-webdriver.atoms.inputs.getMouse_ = function (opt_mouse) {
-    if (opt_mouse) {
-        return opt_mouse;
-    }
-
-    if (!bot.userAgent.FIREFOX_EXTENSION && document['__webdriver_mouse']) {
-        return document['__webdriver_mouse'];
-    }
-
-    var mouse = new bot.Mouse();
-    if (!bot.userAgent.FIREFOX_EXTENSION) {
-        document['__webdriver_mouse'] = mouse;
-    }
-
-    return mouse;
+ * Click on an element.
+ *
+ * @param {!Element} element The element to click.
+ * @return {!bot.Mouse.State} The mouse state.
+ * @return {Object} The mouse state.
+ */
+webdriver.atoms.inputs.click = function(element, opt_state) {
+  var mouse = new bot.Mouse(opt_state);
+  if (!element) {
+    element = mouse.getElement();
+  }
+  bot.action.click(element, null, mouse);
+  return mouse.getState();
 };
-
+goog.exportSymbol('webdriver.atoms.inputs.click',
+                  webdriver.atoms.inputs.click);
 
 /**
-*
-* @param {!Element} element The element to send the keyboard input to.
-* @param {...(string|!Array.<string>)} var_args What to type.
-* @param {bot.Keyboard=} opt_keyboard The keyboard to use, or construct one.
-*/
-webdriver.atoms.inputs.sendKeys = function (
-    element, var_args, opt_keyboard) {
-    var keyboard = webdriver.atoms.inputs.getKeyboard_(opt_keyboard);
-    var to_type = goog.array.slice(arguments, 2);
-    var flattened = goog.array.flatten(values);
+ * Move the mouse to a specific element and/or coordinate location.
+ *
+ * @param {!Element} element The element to move the mouse to.
+ * @param {number} x_offset The x coordinate to use as an offset.
+ * @param {number} y_offset The y coordinate to use as an offset.
+ * @param {bot.Mouse.State=} opt_state The serialized state of the mouse.
+ * @return {!bot.Mouse.State} The mouse state.
+ */
+webdriver.atoms.inputs.mouseMove = function(element, x_offset, y_offset,
+    opt_state) {
+  var mouse = new bot.Mouse(opt_state);
+  var target = element || mouse.getElement();
 
-    bot.action.type(element, flattened, keyboard);
+  var offset_specified = (x_offset != null) && (y_offset != null);
+  x_offset = x_offset || 0;
+  y_offset = y_offset || 0;
+
+  // If we have specified an element and no offset, we should
+  // move the mouse to the center of the specified element.
+  if (element) {
+    if (!offset_specified) {
+      var source_element_size = bot.action.getInteractableSize_(element);
+      x_offset = Math.floor(source_element_size.width / 2);
+      y_offset = Math.floor(source_element_size.height / 2);
+    }
+  } else {
+    // Moving to an absolute offset from the current target element,
+    // so we have to account for the existing offset of the current
+    // mouse position to the element origin (upper-left corner).
+    var pos = goog.style.getClientPosition(target);
+    x_offset += (mouse.clientXY_.x - pos.x);
+    y_offset += (mouse.clientXY_.y - pos.y);
+  }
+
+  var doc = goog.dom.getOwnerDocument(target);
+  var win = goog.dom.getWindow(doc);
+  var inViewAfterScroll = bot.action.scrollIntoView(
+      target,
+      new goog.math.Coordinate(x_offset, y_offset));
+
+  var coords = new goog.math.Coordinate(x_offset, y_offset);
+  mouse.move(target, coords);
+  return mouse.getState();
 };
-
+goog.exportSymbol('webdriver.atoms.inputs.mouseMove',
+                  webdriver.atoms.inputs.mouseMove);
 
 /**
-* Click on an element.
+* Presses the primary mouse button at the current location.
 *
-* @param {!Element} element The element to click.
-* @param {bot.Mouse=} opt_mouse The mouse to use, or constructs one.
+* @param {Object} opt_state The serialized state of the mouse.
+* @return {Object} The mouse state.
 */
-webdriver.atoms.inputs.click = function (element, opt_mouse) {
-    var mouse = webdriver.atoms.inputs.getMouse_(opt_mouse);
-
-    bot.action.click(element, null, mouse);
+webdriver.atoms.inputs.mouseButtonDown = function(opt_state) {
+  var mouse = new bot.Mouse(opt_state);
+  mouse.pressButton(bot.Mouse.Button.LEFT);
+  return mouse.getState();
 };
+goog.exportSymbol('webdriver.atoms.inputs.mouseButtonDown',
+                  webdriver.atoms.inputs.mouseButtonDown);
+
+/**
+* Releases the primary mouse button at the current location.
+*
+* @param {Object} opt_state The serialized state of the mouse.
+* @return {Object} The mouse state.
+*/
+webdriver.atoms.inputs.mouseButtonUp = function(opt_state) {
+  var mouse = new bot.Mouse(opt_state);
+  mouse.releaseButton();
+  return mouse.getState();
+};
+goog.exportSymbol('webdriver.atoms.inputs.mouseButtonUp',
+                  webdriver.atoms.inputs.mouseButtonUp);
+
+/**
+* Double-clicks primary mouse button at the current location.
+*
+* @param {Object} opt_state The serialized state of the mouse.
+* @return {Object} The mouse state.
+*/
+webdriver.atoms.inputs.doubleClick = function(opt_state) {
+  var mouse = new bot.Mouse(opt_state);
+  mouse.pressButton(bot.Mouse.Button.LEFT);
+  mouse.releaseButton();
+  mouse.pressButton(bot.Mouse.Button.LEFT);
+  mouse.releaseButton();
+  return mouse.getState();
+};
+goog.exportSymbol('webdriver.atoms.inputs.doubleClick',
+                  webdriver.atoms.inputs.doubleClick);
+
+/**
+* Right-clicks mouse button at the current location.
+*
+* @param {Object)} opt_state The serialized state of the mouse.
+* @return {Object} The mouse state.
+*/
+webdriver.atoms.inputs.rightClick = function (opt_state) {
+  var mouse = new bot.Mouse(opt_state);
+  mouse.pressButton(bot.Mouse.Button.RIGHT);
+  mouse.releaseButton();
+  return mouse.getState();
+};
+goog.exportSymbol('webdriver.atoms.inputs.rightClick',
+                  webdriver.atoms.inputs.rightClick);
 // Copyright 2011 WebDriver committers
 // Copyright 2011 Google Inc.
 //

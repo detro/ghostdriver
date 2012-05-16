@@ -1,15 +1,5 @@
 # Builds all the atoms that will later be imported in PhantomJS Driver
 
-js_fragment(name = "execute_script",
-  module = "webdriver.atoms.inject",
-  function = "webdriver.atoms.inject.executeScript",
-  deps = [ "//javascript/webdriver/atoms/inject:deps" ])
-
-js_fragment(name = "execute_async_script",
-  module = "webdriver.atoms.inject",
-  function = "webdriver.atoms.inject.executeAsyncScript",
-  deps = [ "//javascript/webdriver/atoms/inject:deps" ])
-
 js_fragment(name = "back",
   module = "bot.window",
   function = "bot.window.back",
@@ -24,9 +14,9 @@ js_deps(name = "build_atoms",
   deps = [
     ":back",
     ":forward",
-    ":execute_script",
-    ":execute_async_script",
 
+    "//javascript/webdriver/atoms:execute_script",
+    "//javascript/webdriver/atoms:execute_async_script",
     "//javascript/webdriver/atoms:get_attribute",
     "//javascript/webdriver/atoms:get_location",
     "//javascript/webdriver/atoms:get_window_size",

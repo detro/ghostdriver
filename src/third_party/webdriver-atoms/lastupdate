@@ -1,7 +1,7 @@
-2012-05-11 13:46:06
+2012-05-16 17:15:28
 
 ------------------------------------------------------------------------
-r16876 | andreastt@opera.com | 2012-05-11 10:45:23 +0100 (Fri, 11 May 2012) | 1 line
+r16936 | jmleyba@gmail.com | 2012-05-16 17:05:18 +0100 (Wed, 16 May 2012) | 1 line
 
-AndreasTolfTolfsen: google-protobuffers and commons-jxpath are needed for OperaDriver
+JasonLeyba: Certain commands should always be handled by the topmost frame.
 ------------------------------------------------------------------------
