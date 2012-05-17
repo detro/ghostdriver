@@ -28,11 +28,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 var ghostdriver = ghostdriver || {};
 
 ghostdriver.Session = function(desiredCapabilities) {
-    // TODO - Actually try to match the "desiredCapabilities" instead of ignoring them
-
     // private:
     var
-    _defaultCapabilities = {
+    _defaultCapabilities = {    // TODO - Actually try to match the "desiredCapabilities" instead of ignoring them
         "browserName" : "phantomjs",
         "version" : phantom.version.major + '.' + phantom.version.minor + '.' + phantom.version.patch,
         "platform" : phantom.defaultPageSettings.userAgent,
@@ -149,11 +147,11 @@ ghostdriver.Session = function(desiredCapabilities) {
     },
 
     _setTimeout = function(type, ms) {
-        _timeoutsAmount[type] = ms;
+        _timeouts[type] = ms;
     },
 
     _getTimeout = function(type) {
-        return _timeoutsAmount[type];
+        return _timeouts[type];
     },
 
     _timeoutNames = function() {
