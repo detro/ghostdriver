@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Date;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 
@@ -71,6 +72,10 @@ public class GoogleCheeseServerOnly {
         driver.manage().timeouts().pageLoadTimeout(10, TimeUnit.SECONDS);
         driver.manage().timeouts().setScriptTimeout(2, TimeUnit.SECONDS);
         System.out.println("Done changing Timeouts.");
+
+        System.out.println("Current Window Handle: " + driver.getWindowHandle());
+        Set<String> whandles = driver.getWindowHandles();
+        System.out.println("Number of Window Handles: " + whandles.size() + " - list: " + whandles.toString());
 
         // Play around with the navigation...
         driver.navigate().refresh();

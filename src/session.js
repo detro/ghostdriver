@@ -141,6 +141,14 @@ ghostdriver.Session = function(desiredCapabilities) {
         return Object.keys(_windows).length;
     },
 
+    _getCurrentWindowHandle = function() {
+        return _currentWindowHandle;
+    },
+
+    _getWindowHandles = function() {
+        return Object.keys(_windows);
+    },
+
     _closeWindow = function(windowHandle) {
         _windows[windowHandle].release();
         delete _windows[windowHandle];
@@ -182,7 +190,9 @@ ghostdriver.Session = function(desiredCapabilities) {
         aboutToDelete : _aboutToDelete,
         setTimeout : _setTimeout,
         getTimeout : _getTimeout,
-        timeoutNames : _timeoutNames
+        timeoutNames : _timeoutNames,
+        getCurrentWindowHandle : _getCurrentWindowHandle,
+        getWindowHandles : _getWindowHandles
     };
 };
 

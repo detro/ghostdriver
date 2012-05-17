@@ -49,7 +49,9 @@ ghostdriver.SessionReqHand = function(session) {
         TIMEOUTS        : "timeouts",
         TIMEOUTS_DIR    : "/timeouts/",
         ASYNC_SCRIPT    : "async_script",
-        IMPLICIT_WAIT   : "implicit_wait"
+        IMPLICIT_WAIT   : "implicit_wait",
+        WINDOW_HANDLE   : "window_handle",
+        WINDOW_HANDLES  : "window_handles"
     },
     _errors = require("./errors.js"),
 
@@ -114,6 +116,12 @@ ghostdriver.SessionReqHand = function(session) {
         } else if ((req.urlParsed.file === _const.TIMEOUTS || req.urlParsed.directory === _const.TIMEOUTS_DIR) &&
             req.method === "POST") {
             _postTimeout(req, res);
+            return;
+        } else if (req.urlParsed.file === _const.WINDOW_HANDLE && req.method === "GET") {
+            _getWindowHandle(req, res);
+            return;
+        } else if (req.urlParsed.file === _const.WINDOW_HANDLES && req.method === "GET") {
+            _getWindowHandles(req, res);
             return;
         }
 
@@ -259,6 +267,18 @@ ghostdriver.SessionReqHand = function(session) {
         } else {
             throw _errors.createInvalidReqMissingCommandParameterEH(req);
         }
+    },
+
+    _getWindowHandle = function(req, res) {
+        res.statusCode = 200;
+        res.writeJSON(_protoParent.buildSuccessResponseBody.call(this, _session.getId(), _session.getCurrentWindowHandle()));
+        res.close();
+    },
+
+    _getWindowHandles = function(req, res) {
+        res.statusCode = 200;
+        res.writeJSON(_protoParent.buildSuccessResponseBody.call(this, _session.getId(), _session.getWindowHandles()));
+        res.close();
     },
 
     _getScreenshotCommand = function(req, res) {
