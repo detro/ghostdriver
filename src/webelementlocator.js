@@ -29,25 +29,16 @@ var ghostdriver = ghostdriver || {};
 
 ghostdriver.WebElementLocator = function(session) {
     // private:
-    var _const = {
-        CLASS_NAME          : "class name",
-        CSS_SELECTOR        : "css selector",
-        ID                  : "id",
-        NAME                : "name",
-        LINK_TEXT           : "link text",
-        PARTIAL_LINK_TEXT   : "partial link text",
-        TAG_NAME            : "tag name",
-        XPATH               : "xpath"
-    },
+    var
     _supportedStrategies = [
-        _const.CLASS_NAME,           //< Returns an element whose class name contains the search value; compound class names are not permitted.
-        _const.CSS_SELECTOR,         //< Returns an element matching a CSS selector.
-        _const.ID,                   //< Returns an element whose ID attribute matches the search value.
-        _const.NAME,                 //< Returns an element whose NAME attribute matches the search value.
-        _const.LINK_TEXT,            //< Returns an anchor element whose visible text matches the search value.
-        _const.PARTIAL_LINK_TEXT,    //< Returns an anchor element whose visible text partially matches the search value.
-        _const.TAG_NAME,             //< Returns an element whose tag name matches the search value.
-        _const.XPATH                 //< Returns an element matching an XPath expression.
+        "class name", "className",              //< Returns an element whose class name contains the search value; compound class names are not permitted.
+        "css", "css selector",                  //< Returns an element matching a CSS selector.
+        "id",                                   //< Returns an element whose ID attribute matches the search value.
+        "name",                                 //< Returns an element whose NAME attribute matches the search value.
+        "link text", "linkText",                //< Returns an anchor element whose visible text matches the search value.
+        "partial link text", "partialLinkText", //< Returns an anchor element whose visible text partially matches the search value.
+        "tag name", "tagName",                  //< Returns an element whose tag name matches the search value.
+        "xpath"                                 //< Returns an element matching an XPath expression.
     ],
     _elements = {},
     _session = session,
@@ -57,7 +48,7 @@ ghostdriver.WebElementLocator = function(session) {
             findElementAtom = require("./webdriver_atoms.js").get("find_element"),
             findElementRes;
 
-        if (locator && locator.using && locator.value &&              //< if well-formed input
+        if (locator && locator.using && locator.value &&         //< if well-formed input
             _supportedStrategies.indexOf(locator.using) >= 0) {  //< and if strategy is recognized
 
             // Use Atom "find_result" to search for element in the page
@@ -86,7 +77,7 @@ ghostdriver.WebElementLocator = function(session) {
         }
 
         // Not found because of invalid Locator
-        return null;
+        return null;    // TODO Handle unsupported locator strategy error
     },
 
     _getElement = function(id) {
