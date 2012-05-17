@@ -51,7 +51,7 @@ ghostdriver.Session = function(desiredCapabilities) {
         }
     },
     _timeouts = {
-        "script"            : 100,          //< 0.1s
+        "script"            : 200,          //< 0.1s
         "async script"      : 3000,         //< 3s
         "implicit"          : 0,            //< 0s
         "page load"         : 2000          //< 2s

@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
 
 public class GoogleCheeseServerOnly {
@@ -64,6 +65,12 @@ public class GoogleCheeseServerOnly {
         System.out.println("Loading 'http://www.google.com'...");
         driver.get("http://www.google.com");
         System.out.println("Loaded. Current URL is: '" + driver.getCurrentUrl() + "'");
+
+        System.out.println("Changing Timeouts values ('implicit', 'page load' and 'script')...");
+        driver.manage().timeouts().implicitlyWait(1, TimeUnit.SECONDS);
+        driver.manage().timeouts().pageLoadTimeout(10, TimeUnit.SECONDS);
+        driver.manage().timeouts().setScriptTimeout(2, TimeUnit.SECONDS);
+        System.out.println("Done changing Timeouts.");
 
         // Play around with the navigation...
         driver.navigate().refresh();

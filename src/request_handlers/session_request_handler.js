@@ -45,7 +45,11 @@ ghostdriver.SessionReqHand = function(session) {
         REFRESH         : "refresh",
         EXECUTE         : "execute",
         EXECUTE_ASYNC   : "execute_async",
-        SCREENSHOT      : "screenshot"
+        SCREENSHOT      : "screenshot",
+        TIMEOUTS        : "timeouts",
+        TIMEOUTS_DIR    : "/timeouts/",
+        ASYNC_SCRIPT    : "async_script",
+        IMPLICIT_WAIT   : "implicit_wait"
     },
     _errors = require("./errors.js"),
 
@@ -53,6 +57,8 @@ ghostdriver.SessionReqHand = function(session) {
         var element;
 
         _protoParent.handle.call(this, req, res);
+
+        // console.log("Request => " + JSON.stringify(req, null, '  '));
 
         // Handle "/url" GET and POST
         if (req.urlParsed.file === _const.URL) {                                         //< ".../url"
@@ -71,9 +77,9 @@ ghostdriver.SessionReqHand = function(session) {
             return;
         } else if (req.urlParsed.file === _const.WINDOW) {                              //< ".../window"
             if (req.method === "DELETE") {
-                _windowCloseCommand(req, res);
+                _deleteWindowCommand(req, res); //< close window
             } else if (req.method === "POST") {
-                _windowChangeFocusToCommand(req, res);
+                _postWindowCommand(req, res);   //< change focus to the given window
             }
             return;
         } else if (req.urlParsed.file === _const.ELEMENT && req.method === "POST") {    //< ".../element"
@@ -104,6 +110,10 @@ ghostdriver.SessionReqHand = function(session) {
             return;
         } else if (req.urlParsed.file === _const.EXECUTE_ASYNC && req.method === "POST") {
             _executeAsyncCommand(req, res);
+            return;
+        } else if ((req.urlParsed.file === _const.TIMEOUTS || req.urlParsed.directory === _const.TIMEOUTS_DIR) &&
+            req.method === "POST") {
+            _postTimeout(req, res);
             return;
         }
 
@@ -303,14 +313,34 @@ ghostdriver.SessionReqHand = function(session) {
         }
     },
 
-    _windowCloseCommand = function(req, res) {
+    _postTimeout = function(req, res) {
+        var postObj = JSON.parse(req.post);
+
+        // Normalize the call: the "type" is read from the URL, not a POST parameter
+        if (req.urlParsed.file === _const.IMPLICIT_WAIT) {
+            postObj["type"] = _session.timeoutNames().IMPLICIT;
+        } else if (req.urlParsed.file === _const.ASYNC_SCRIPT) {
+            postObj["type"] = _session.timeoutNames().ASYNC_SCRIPT;
+        }
+
+        if (typeof(postObj["type"]) !== "undefined" &&
+            typeof(postObj["ms"]) !== "undefined") {
+            _session.setTimeout(postObj["type"], postObj["ms"]);
+            res.statusCode = 200;
+            res.closeGracefully();
+        } else {
+            throw _errors.createInvalidReqMissingCommandParameterEH(req);
+        }
+    },
+
+    _deleteWindowCommand = function(req, res) {
         // TODO An optional JSON parameter "name" might be given
         _session.closeCurrentWindow();
         res.statusCode = 200;
         res.closeGracefully();
     },
 
-    _windowChangeFocusToCommand = function(req, res) {
+    _postWindowCommand = function(req, res) {
         // TODO
         // TODO An optional JSON parameter "name" might be given
     },
