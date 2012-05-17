@@ -52,16 +52,28 @@ ghostdriver.Session = function(desiredCapabilities) {
             "proxyType" : "direct"
         }
     },
+    _timeouts = {
+        "script"            : 100,          //< 0.1s
+        "async script"      : 3000,         //< 3s
+        "implicit"          : 0,            //< 0s
+        "page load"         : 2000          //< 2s
+    },
     _const = {
-        DEFAULT_CURRENT_WINDOW_HANDLE : "1"
+        DEFAULT_CURRENT_WINDOW_HANDLE : "1",
+        TIMEOUT_NAMES : {
+            SCRIPT          : "script",
+            ASYNC_SCRIPT    : "async script",
+            IMPLICIT        : "implicit",
+            PAGE_LOAD       : "page load"
+        }
     },
     _windows = {},  //< windows are "webpage" in Phantom-dialect
     _currentWindowHandle = null,
     _id = (++ghostdriver.Session.instanceCounter) + '', //< must be a string, even if I use progressive integers as unique ID
 
     _decorator_evaluateAndWaitForLoad = function(evalFunc, onLoadFunc, onErrorFunc) {
-        var args = Array.prototype.splice.call(arguments, 0), //< 'arguments' to array
-            timer, maxTimeForPageToStartLoading = 3000;
+        var args = Array.prototype.splice.call(arguments, 0), //< convert 'arguments' to a real Array
+            timer;
 
         // Separating arguments for the 'evaluate' call from the callback handlers
         // NOTE: I'm also passing 'evalFunc' as first parameter for the 'evaluate' call, and '0' as timeout
@@ -82,7 +94,7 @@ ghostdriver.Session = function(desiredCapabilities) {
             onErrorFunc();
         });
         // Starting timer
-        timer = setTimeout(onErrorFunc, maxTimeForPageToStartLoading);
+        timer = setTimeout(onErrorFunc, _getTimeout(_const.TIMEOUT_NAMES.PAGE_LOAD));
 
         // We are ready to Eval
         this.evaluateAsync.apply(this, args);
@@ -136,6 +148,18 @@ ghostdriver.Session = function(desiredCapabilities) {
         delete _windows[windowHandle];
     },
 
+    _setTimeout = function(type, ms) {
+        _timeoutsAmount[type] = ms;
+    },
+
+    _getTimeout = function(type) {
+        return _timeoutsAmount[type];
+    },
+
+    _timeoutNames = function() {
+        return _const.TIMEOUT_NAMES;
+    },
+
     _aboutToDelete = function() {
         var k;
 
@@ -143,7 +167,7 @@ ghostdriver.Session = function(desiredCapabilities) {
         _closeCurrentWindow();
 
         // Releasing page resources and deleting the objects
-        for (handle in _windows) {
+        for (k in _windows) {
             _closeWindow(k);
         }
     };
@@ -157,7 +181,10 @@ ghostdriver.Session = function(desiredCapabilities) {
         getWindow : _getWindow,
         getWindowsCount : _getWindowsCount,
         closeWindow : _closeWindow,
-        aboutToDelete : _aboutToDelete
+        aboutToDelete : _aboutToDelete,
+        setTimeout : _setTimeout,
+        getTimeout : _getTimeout,
+        timeoutNames : _timeoutNames
     };
 };
 
