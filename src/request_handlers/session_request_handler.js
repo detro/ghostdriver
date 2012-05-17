@@ -77,7 +77,7 @@ ghostdriver.SessionReqHand = function(session) {
             }
             return;
         } else if (req.urlParsed.file === _const.ELEMENT && req.method === "POST") {    //< ".../element"
-            _elementCommand(req, res);
+            _postElementCommand(req, res);
             return;
         } else if (req.urlParsed.directory === _const.ELEMENT_DIR) {                    //< ".../element/:elementId" or ".../element/active"
             // TODO
@@ -192,16 +192,39 @@ ghostdriver.SessionReqHand = function(session) {
 
     _executeCommand = function(req, res) {
         var postObj = JSON.parse(req.post),
-            result;
+            result,
+            timer,
+            scriptTimeout = _session.getTimeout(_session.timeoutNames().SCRIPT),
+            timedOut = false;
 
         if (typeof(postObj) === "object" && postObj.script && postObj.args) {
+            // Execute script, but within a limited timeframe
+            timer = setTimeout(function() {
+                // The script didn't return within the expected timeframe
+                timedOut = true;
+                _errors.handleFailedCommandEH(
+                    _errors.FAILED_CMD_STATUS.TIMEOUT,
+                    "Script didn't return within "+scriptTimeout+"ms",
+                    req,
+                    res,
+                    _session,
+                    "SessionReqHand");
+            }, scriptTimeout);
+
+            // Launch the actual script
             result = _session.getCurrentWindow().evaluate(
                 require("./webdriver_atoms.js").get("execute_script"),
                 postObj.script,
                 postObj.args,
                 true);
 
-            _respondBasedOnResult(req, res, result);
+            // If we are here, we don't need the timer anymore
+            clearTimeout(timer);
+
+            // Respond with result ONLY if this hasn't ALREADY timed-out
+            if (!timedOut) {
+                _respondBasedOnResult(req, res, result);
+            }
         } else {
             throw _errors.createInvalidReqMissingCommandParameterEH(req);
         }
@@ -222,7 +245,7 @@ ghostdriver.SessionReqHand = function(session) {
                 "}",
                 postObj.script,
                 postObj.args,
-                6000);          //< TODO timeout
+                _session.getTimeout(_session.timeoutNames().ASYNC_SCRIPT));
         } else {
             throw _errors.createInvalidReqMissingCommandParameterEH(req);
         }
@@ -249,7 +272,7 @@ ghostdriver.SessionReqHand = function(session) {
     _postUrlCommand = function(req, res) {
         // Load the given URL in the Page
         var postObj = JSON.parse(req.post),
-            maxWaitForOpen = 1000 * 60,     //< a website should take less than 1m to open
+            pageOpenTimeout = _session.getTimeout(_session.timeoutNames().PAGE_LOAD),
             timer;
 
         if (typeof(postObj) === "object" && postObj.url) {
@@ -269,12 +292,12 @@ ghostdriver.SessionReqHand = function(session) {
                 // Command Failed (Timed-out)
                 _errors.handleFailedCommandEH(
                     _errors.FAILED_CMD_STATUS.TIMEOUT,
-                    "URL '"+postObj.url+"' didn't load within "+maxWaitForOpen+"ms",
+                    "URL '"+postObj.url+"' didn't load within "+pageOpenTimeout+"ms",
                     req,
                     res,
                     _session,
                     "SessionReqHand");
-            }, 1000 * 60);
+            }, pageOpenTimeout);
         } else {
             throw _errors.createInvalidReqMissingCommandParameterEH(req);
         }
@@ -299,15 +322,23 @@ ghostdriver.SessionReqHand = function(session) {
         res.close();
     },
 
-    _elementCommand = function(req, res) {
+    _postElementCommand = function(req, res) {
         // Search for a WebElement on the Page
-        var element = _locator.locateElement(JSON.parse(req.post));
-        if (element) {
-            res.statusCode = 200;
-            res.writeJSON(_protoParent.buildSuccessResponseBody.call(this, _session.getId(), element.getJSON()));
-            res.close();
-            return;
-        }
+        var element,
+            searchStartTime = new Date().getTime();
+
+        // Try to find the element
+        //  and retry if "startTime + implicitTimeout" is
+        //  greater (or equal) than current time
+        do {
+            element = _locator.locateElement(JSON.parse(req.post));
+            if (element) {
+                res.statusCode = 200;
+                res.writeJSON(_protoParent.buildSuccessResponseBody.call(this, _session.getId(), element.getJSON()));
+                res.close();
+                return;
+            }
+        } while(searchStartTime + _session.getTimeout(_session.timeoutNames().IMPLICIT) >= new Date().getTime());
 
         throw _errors.createInvalidReqVariableResourceNotFoundEH(req);
     };
