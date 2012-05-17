@@ -56,10 +56,27 @@ ghostdriver.RequestHandler = function() {
         request.urlParsed = require("./third_party/parseuri.js").parse(request.url);
     },
 
+    _writeJSONDecorator = function(obj) {
+        this.write(JSON.stringify(obj));
+    },
+
+    _successDecorator = function(sessionId, value) {
+        this.statusCode = 200;
+
+        if (arguments.length > 0) {
+            // write something, only if there is something to write
+            this.writeJSON(_buildSuccessResponseBody(sessionId, value));
+            this.close();
+        } else {
+            this.closeGracefully();
+        }
+    },
+
     _decorateResponse = function(response) {
         response.setHeader("Cache", "no-cache");
         response.setHeader("Content-Type", "application/json;charset=UTF-8");
-        response.writeJSON = function(obj) { this.write(JSON.stringify(obj)); };
+        response.writeJSON = _writeJSONDecorator;
+        response.success = _successDecorator;
     },
 
     _buildResponseBody = function(sessionId, value, statusCode) {

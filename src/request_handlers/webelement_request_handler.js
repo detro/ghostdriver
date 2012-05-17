@@ -70,8 +70,7 @@ ghostdriver.WebElementReqHand = function(id, session) {
 
             // TODO - Error handling based on the value of "typeRes"
 
-            res.statusCode = 200;
-            res.closeGracefully();
+            res.success();
             return;
         }
 
@@ -85,8 +84,7 @@ ghostdriver.WebElementReqHand = function(id, session) {
         // Listen for the page to Finish Loading after the submit
         _getSession().getCurrentWindow().setOneShotCallback("onLoadFinished", function(status) {
             if (status === "success") {
-                res.statusCode = 200;
-                res.closeGracefully();
+                res.success();
             }
 
             // TODO - what do we do if this fails?

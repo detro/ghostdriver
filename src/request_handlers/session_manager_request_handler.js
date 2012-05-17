@@ -80,8 +80,6 @@ ghostdriver.SessionManagerReqHand = function() {
         var activeSessions = [],
             sessionId;
 
-        res.statusCode = 200;
-
         // Create array of format '[{ "id" : SESSION_ID, "capabilities" : SESSION_CAPABILITIES_OBJECT }]'
         for (sessionId in _sessions) {
             activeSessions.push({
@@ -90,8 +88,7 @@ ghostdriver.SessionManagerReqHand = function() {
             });
         }
 
-        res.writeJSON(_protoParent.buildSuccessResponseBody.call(this, null, activeSessions));
-        res.close();
+        res.success(null, activeSessions);
     },
 
     _deleteSession = function(sessionId) {
@@ -112,8 +109,7 @@ ghostdriver.SessionManagerReqHand = function() {
 
         if (typeof(_sessions[sId]) !== "undefined") {
             _deleteSession(sId);
-            res.statusCode = 200;
-            res.closeGracefully();
+            res.success();
         } else {
             throw _errors.createInvalidReqVariableResourceNotFoundEH(req);
         }
@@ -128,9 +124,7 @@ ghostdriver.SessionManagerReqHand = function() {
 
         session = _getSession(sId);
         if (session !== null) {
-            res.statusCode = 200;
-            res.writeJSON(_protoParent.buildSuccessResponseBody.call(this, sId, _sessions[sId].getCapabilities()));
-            res.close();
+            res.success(sId, _sessions[sId].getCapabilities());
         } else {
             throw _errors.createInvalidReqVariableResourceNotFoundEH(req);
         }

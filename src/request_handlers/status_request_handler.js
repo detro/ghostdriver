@@ -48,9 +48,7 @@ ghostdriver.StatusReqHand = function() {
         _protoParent.handle.call(this, req, res);
 
         if (req.method === "GET" && req.urlParsed.file === "status") {
-            res.statusCode = 200;
-            res.writeJSON(_protoParent.buildSuccessResponseBody.call(this, null, _statusObj));
-            res.close();
+            res.success(null, _statusObj);
             return;
         }
 

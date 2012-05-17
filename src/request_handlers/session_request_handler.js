@@ -130,9 +130,7 @@ ghostdriver.SessionReqHand = function(session) {
 
     _createOnSuccessHandler = function(res) {
         return function (status) {
-            res.statusCode = 200;
-            res.writeJSON(_protoParent.buildSuccessResponseBody.call(res, _session.getId()));
-            res.closeGracefully();
+            res.success(_session.getId());
         };
     },
 
@@ -176,9 +174,7 @@ ghostdriver.SessionReqHand = function(session) {
         }
 
         // If we arrive here, everything should be fine, birds are singing, the sky is blue
-        res.statusCode = 200;
-        res.writeJSON(_protoParent.buildSuccessResponseBody.call(this, _session.getId(), result.value));
-        res.close();
+        res.success(_session.getId(), result.value);
     },
 
     _refreshCommand = function(req, res) {
@@ -270,23 +266,16 @@ ghostdriver.SessionReqHand = function(session) {
     },
 
     _getWindowHandle = function(req, res) {
-        res.statusCode = 200;
-        res.writeJSON(_protoParent.buildSuccessResponseBody.call(this, _session.getId(), _session.getCurrentWindowHandle()));
-        res.close();
+        res.success(_session.getId(), _session.getCurrentWindowHandle());
     },
 
     _getWindowHandles = function(req, res) {
-        res.statusCode = 200;
-        res.writeJSON(_protoParent.buildSuccessResponseBody.call(this, _session.getId(), _session.getWindowHandles()));
-        res.close();
+        res.success(_session.getId(), _session.getWindowHandles());
     },
 
     _getScreenshotCommand = function(req, res) {
         var rendering = _session.getCurrentWindow().renderBase64PNG();
-
-        res.statusCode = 200;
-        res.writeJSON(_protoParent.buildSuccessResponseBody.call(this, _session.getId(), rendering));
-        res.close();
+        res.success(_session.getId(), rendering);
     },
 
     _getUrlCommand = function(req, res) {
@@ -312,8 +301,7 @@ ghostdriver.SessionReqHand = function(session) {
                 clearTimeout(timer);
 
                 if (status === "success") {
-                    res.statusCode = 200;
-                    res.closeGracefully();
+                    res.success();
                 } else {
                     _errors.handleInvalidReqInvalidCommandMethodEH(req, res);
                 }
@@ -343,11 +331,9 @@ ghostdriver.SessionReqHand = function(session) {
             postObj["type"] = _session.timeoutNames().ASYNC_SCRIPT;
         }
 
-        if (typeof(postObj["type"]) !== "undefined" &&
-            typeof(postObj["ms"]) !== "undefined") {
+        if (typeof(postObj["type"]) !== "undefined" && typeof(postObj["ms"]) !== "undefined") {
             _session.setTimeout(postObj["type"], postObj["ms"]);
-            res.statusCode = 200;
-            res.closeGracefully();
+            res.success();
         } else {
             throw _errors.createInvalidReqMissingCommandParameterEH(req);
         }
@@ -356,8 +342,7 @@ ghostdriver.SessionReqHand = function(session) {
     _deleteWindowCommand = function(req, res) {
         // TODO An optional JSON parameter "name" might be given
         _session.closeCurrentWindow();
-        res.statusCode = 200;
-        res.closeGracefully();
+        res.success();
     },
 
     _postWindowCommand = function(req, res) {
@@ -367,9 +352,7 @@ ghostdriver.SessionReqHand = function(session) {
 
     _getTitleCommand = function(req, res) {
         var result = _session.getCurrentWindow().evaluate(function() { return document.title; });
-        res.statusCode = 200;
-        res.writeJSON(_protoParent.buildSuccessResponseBody.call(this, _session.getId(), result));
-        res.close();
+        res.success(_session.getId(), result);
     },
 
     _postElementCommand = function(req, res) {
@@ -383,9 +366,7 @@ ghostdriver.SessionReqHand = function(session) {
         do {
             element = _locator.locateElement(JSON.parse(req.post));
             if (element) {
-                res.statusCode = 200;
-                res.writeJSON(_protoParent.buildSuccessResponseBody.call(this, _session.getId(), element.getJSON()));
-                res.close();
+                res.success(_session.getId(), element.getJSON());
                 return;
             }
         } while(searchStartTime + _session.getTimeout(_session.timeoutNames().IMPLICIT) >= new Date().getTime());
