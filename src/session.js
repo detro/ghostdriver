@@ -69,7 +69,7 @@ ghostdriver.Session = function(desiredCapabilities) {
     _currentWindowHandle = null,
     _id = (++ghostdriver.Session.instanceCounter) + '', //< must be a string, even if I use progressive integers as unique ID
 
-    _decorator_evaluateAndWaitForLoad = function(evalFunc, onLoadFunc, onErrorFunc) {
+    _evaluateAndWaitForLoadDecorator = function(evalFunc, onLoadFunc, onErrorFunc) {
         var args = Array.prototype.splice.call(arguments, 0), //< convert 'arguments' to a real Array
             timer;
 
@@ -99,7 +99,7 @@ ghostdriver.Session = function(desiredCapabilities) {
 
     },
 
-    _decorator_setOneShotCallback = function(callbackName, handlerFunc) {
+    _setOneShotCallbackDecorator = function(callbackName, handlerFunc) {
         var thePage = this;
 
         this[callbackName] = function() {
@@ -111,8 +111,8 @@ ghostdriver.Session = function(desiredCapabilities) {
     _createNewWindow = function(page, newWindowHandle) {
         // Decorating...
         page.windowHandle = newWindowHandle;
-        page.evaluateAndWaitForLoad = _decorator_evaluateAndWaitForLoad;
-        page.setOneShotCallback = _decorator_setOneShotCallback;
+        page.evaluateAndWaitForLoad = _evaluateAndWaitForLoadDecorator;
+        page.setOneShotCallback = _setOneShotCallbackDecorator;
 
         return page;
     },
