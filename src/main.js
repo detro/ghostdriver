@@ -27,8 +27,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // Load dependencies
 // NOTE: We need to provide PhantomJS with the "require" module ASAP. This is a pretty s**t way to load dependencies
-var ghostdriver = ghostdriver || {},
-    system = require('system'),
+var ghostdriver = {
+        system : require('system')
+    },
     server = require('webserver').create(),
     router,
     parseURI;
@@ -52,7 +53,7 @@ phantom.injectJs("webelementlocator.js");
 router = new ghostdriver.RouterReqHand();
 
 // Start the server
-if (server.listen(system.args[1] || 8080, router.handle)) {
+if (server.listen(ghostdriver.system.args[1] || 8080, router.handle)) {
     console.log('Ghost Driver running on port ' + server.port);
 } else {
     console.error("ERROR: Could not start Ghost Driver");

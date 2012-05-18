@@ -30,7 +30,6 @@ var ghostdriver = ghostdriver || {};
 ghostdriver.StatusReqHand = function() {
     // private:
     var
-    _system = require("system"),
     _protoParent = ghostdriver.StatusReqHand.prototype,
     _statusObj = {
         "build" : {
@@ -39,9 +38,9 @@ ghostdriver.StatusReqHand = function() {
             "time"      : "unknown"
         },
         "os" : {
-            "name"      : _system.os.name,
-            "version"   : _system.os.version,
-            "arch"      : _system.os.architecture
+            "name"      : ghostdriver.system.os.name,
+            "version"   : ghostdriver.system.os.version,
+            "arch"      : ghostdriver.system.os.architecture
         }
     },
 
