@@ -30,17 +30,18 @@ var ghostdriver = ghostdriver || {};
 ghostdriver.StatusReqHand = function() {
     // private:
     var
+    _system = require("system"),
     _protoParent = ghostdriver.StatusReqHand.prototype,
-    _statusObj = {               //< TODO Report real status
+    _statusObj = {
         "build" : {
-            "version" : "0.1a",
-            "revision" : "none",
-            "time" : "20120320"
+            "version"   : "1.0-dev",
+            "revision"  : "unknown",
+            "time"      : "unknown"
         },
         "os" : {
-            "arch" : "x86",
-            "name" : "osx",
-            "version" : "10.7.2"
+            "name"      : _system.os.name,
+            "version"   : _system.os.version,
+            "arch"      : _system.os.architecture
         }
     },
 
