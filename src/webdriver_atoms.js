@@ -29,7 +29,7 @@ var fs = require("fs"),
     atomsCache = {};
 
 exports.get = function(atomName) {
-    var atomFileName = "./third_party/webdriver-atoms/" + atomName + ".js";
+    var atomFileName = module.dirname + "/third_party/webdriver-atoms/" + atomName + ".js";
 
     // Check if we have already loaded an cached this Atom
     if (!atomsCache.hasOwnProperty(atomName)) {
