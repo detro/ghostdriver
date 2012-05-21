@@ -34,6 +34,7 @@ ghostdriver.SessionManagerReqHand = function() {
     _sessions = {}, //< will store key/value pairs like 'SESSION_ID : SESSION_OBJECT'
     _sessionRHs = {},
     _errors = require("./errors.js"),
+    _CLEANUP_WINDOWLESS_SESSIONS_TIMEOUT = 60000,
 
     _handle = function(req, res) {
         _protoParent.handle.call(this, req, res);
@@ -57,23 +58,26 @@ ghostdriver.SessionManagerReqHand = function() {
     },
 
     _postNewSessionCommand = function(req, res) {
-        var desiredCapabilities = req.post || {},
+        var desiredCapabilities,
             newSession;
 
-        if (typeof(desiredCapabilities) !== "object") {
-            desiredCapabilities = JSON.parse(desiredCapabilities);
+        try {
+            desiredCapabilities = req.post;             //< this must exist
+            if (typeof(desiredCapabilities) !== "object") {
+                desiredCapabilities = JSON.parse(desiredCapabilities);
+            }
+
+            // Create and store a new Session
+            newSession = new ghostdriver.Session(desiredCapabilities);
+            _sessions[newSession.getId()] = newSession;
+
+            // Redirect to the newly created Session
+            res.statusCode = 303; //< "303 See Other"
+            res.setHeader("Location", "/session/"+newSession.getId());
+            res.closeGracefully();
+        } catch (e) {
+            throw _errors.createInvalidReqMissingCommandParameterEH(req);
         }
-
-        // Create and store a new Session
-        newSession = new ghostdriver.Session(desiredCapabilities);
-        _sessions[newSession.getId()] = newSession;
-
-        // Redirect to the newly created Session
-        res.statusCode = 303; //< "303 See Other"
-        res.setHeader("Location", "/session/"+newSession.getId());
-        res.closeGracefully();
-
-        // TODO Capabilities not provided - Handle error case
     },
 
     _getActiveSessionsCommand = function(req, res) {
@@ -165,7 +169,7 @@ ghostdriver.SessionManagerReqHand = function() {
     };
 
     // Regularly cleanup un-used sessions
-    setInterval(_cleanupWindowlessSessions, 60000); //< every 60s
+    setInterval(_cleanupWindowlessSessions, _CLEANUP_WINDOWLESS_SESSIONS_TIMEOUT); //< every 60s
 
     // public:
     return {
