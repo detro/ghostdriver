@@ -39,10 +39,10 @@ ghostdriver.SessionManagerReqHand = function() {
         _protoParent.handle.call(this, req, res);
 
         if (req.urlParsed.file === "session" && req.method === "POST") {
-            _createAndRedirectToNewSessionCommand(req, res);
+            _postNewSessionCommand(req, res);
             return;
         } else if (req.urlParsed.file === "sessions" && req.method === "GET") {
-            _listActiveSessionsCommand(req, res);
+            _getActiveSessionsCommand(req, res);
             return;
         } else if (req.urlParsed.directory === "/session/") {
             if (req.method === "GET") {
@@ -56,7 +56,7 @@ ghostdriver.SessionManagerReqHand = function() {
         throw _errors.createInvalidReqInvalidCommandMethodEH(req);
     },
 
-    _createAndRedirectToNewSessionCommand = function(req, res) {
+    _postNewSessionCommand = function(req, res) {
         var desiredCapabilities = req.post || {},
             newSession;
 
@@ -76,7 +76,7 @@ ghostdriver.SessionManagerReqHand = function() {
         // TODO Capabilities not provided - Handle error case
     },
 
-    _listActiveSessionsCommand = function(req, res) {
+    _getActiveSessionsCommand = function(req, res) {
         var activeSessions = [],
             sessionId;
 
