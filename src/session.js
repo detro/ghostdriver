@@ -54,7 +54,7 @@ ghostdriver.Session = function(desiredCapabilities) {
         "script"            : 200,          //< 0.1s
         "async script"      : 3000,         //< 3s
         "implicit"          : 0,            //< 0s
-        "page load"         : 2000          //< 2s
+        "page load"         : 5000          //< 2s
     },
     _const = {
         DEFAULT_CURRENT_WINDOW_HANDLE : "1",

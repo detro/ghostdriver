@@ -292,22 +292,26 @@ ghostdriver.SessionReqHand = function(session) {
         // Load the given URL in the Page
         var postObj = JSON.parse(req.post),
             pageOpenTimeout = _session.getTimeout(_session.timeoutNames().PAGE_LOAD),
+            pageOpenTimedout = false,
             timer;
 
         if (typeof(postObj) === "object" && postObj.url) {
             // Open the given URL and, when done, return "HTTP 200 OK"
             _session.getCurrentWindow().open(postObj.url, function(status) {
-                // Callback received: don't need the timer anymore
-                clearTimeout(timer);
+                if (!pageOpenTimedout) {
+                    // Callback received: don't need the timer anymore
+                    clearTimeout(timer);
 
-                if (status === "success") {
-                    res.success();
-                } else {
-                    _errors.handleInvalidReqInvalidCommandMethodEH(req, res);
+                    if (status === "success") {
+                        res.success();
+                    } else {
+                        _errors.handleInvalidReqInvalidCommandMethodEH(req, res);
+                    }
                 }
             });
             timer = setTimeout(function() {
                 // Command Failed (Timed-out)
+                pageOpenTimedout = true;
                 _errors.handleFailedCommandEH(
                     _errors.FAILED_CMD_STATUS.TIMEOUT,
                     "URL '"+postObj.url+"' didn't load within "+pageOpenTimeout+"ms",
