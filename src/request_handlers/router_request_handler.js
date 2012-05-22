@@ -83,8 +83,7 @@ ghostdriver.RouterReqHand = function() {
                 // This should never happen, if we handle all the possible error scenario
                 res.statusCode = 404; //< "404 Not Found"
                 res.setHeader("Content-Type", "text/plain");
-                res.write(e.name + " - " + e.message);
-                res.close();
+                res.writeAndClose(e.name + " - " + e.message);
             }
         }
     };

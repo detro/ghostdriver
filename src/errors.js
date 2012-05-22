@@ -53,8 +53,7 @@ var _invalidReqHandle = function(res) {
     }
 
     res.setHeader("Content-Type", "text/plain");
-    res.write(this.name + " - " + this.message);
-    res.close();
+    res.writeAndClose(this.name + " - " + this.message);
 };
 
 // Invalid Request Error Handler
@@ -209,8 +208,7 @@ var _failedCommandHandle = function(res) {
 
     // Send it
     res.statusCode = 500; //< 500 Internal Server Error
-    res.writeJSON(body);
-    res.close();
+    res.writeJSONAndClose(body);
 };
 
 // Failed Command Error Handler

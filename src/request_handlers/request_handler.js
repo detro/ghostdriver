@@ -65,17 +65,31 @@ ghostdriver.RequestHandler = function() {
 
         if (arguments.length > 0) {
             // write something, only if there is something to write
-            this.writeJSON(_buildSuccessResponseBody(sessionId, value));
-            this.close();
+            this.writeJSONAndClose(_buildSuccessResponseBody(sessionId, value));
         } else {
             this.closeGracefully();
         }
     },
 
+    _writeAndCloseDecorator = function(body) {
+        this.setHeader("Content-Length", body.length);
+        this.write(body);
+        this.close();
+    },
+
+    _writeJSONAndCloseDecorator = function(obj) {
+        var objStr = JSON.stringify(obj);
+        this.setHeader("Content-Length", objStr.length);
+        this.write(objStr);
+        this.close();
+    },
+
     _decorateResponse = function(response) {
         response.setHeader("Cache", "no-cache");
         response.setHeader("Content-Type", "application/json;charset=UTF-8");
+        response.writeAndClose = _writeAndCloseDecorator;
         response.writeJSON = _writeJSONDecorator;
+        response.writeJSONAndClose = _writeJSONAndCloseDecorator;
         response.success = _successDecorator;
     },
 
