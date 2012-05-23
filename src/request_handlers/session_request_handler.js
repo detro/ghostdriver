@@ -51,7 +51,8 @@ ghostdriver.SessionReqHand = function(session) {
         ASYNC_SCRIPT    : "async_script",
         IMPLICIT_WAIT   : "implicit_wait",
         WINDOW_HANDLE   : "window_handle",
-        WINDOW_HANDLES  : "window_handles"
+        WINDOW_HANDLES  : "window_handles",
+        FRAME           : "frame"
     },
     _errors = require("./errors.js"),
 
@@ -122,6 +123,9 @@ ghostdriver.SessionReqHand = function(session) {
             return;
         } else if (req.urlParsed.file === _const.WINDOW_HANDLES && req.method === "GET") {
             _getWindowHandles(req, res);
+            return;
+        } else if (req.urlParsed.file === _const.FRAME && req.method === "POST") {
+            _postFrameCommand(req, res);
             return;
         }
 
@@ -338,6 +342,27 @@ ghostdriver.SessionReqHand = function(session) {
         if (typeof(postObj["type"]) !== "undefined" && typeof(postObj["ms"]) !== "undefined") {
             _session.setTimeout(postObj["type"], postObj["ms"]);
             res.success();
+        } else {
+            throw _errors.createInvalidReqMissingCommandParameterEH(req);
+        }
+    },
+
+    _postFrameCommand = function(req, res) {
+        var postObj = JSON.parse(req.post);
+
+        if (typeof(postObj) === "object" && typeof(postObj.id) !== "undefined") {
+            if (typeof(postObj.id) === "number") {
+                // TODO - search frame by "index" in the "window.frames" array
+                res.success();
+            } else if (typeof(postObj.id) === "string") {
+                // TODO - search frame by "id" or "name" field
+                res.success();
+            } else if (typeof(postObj.id) === "object") {
+                // TODO - search frame by "{ELEMENT : id}" object
+                res.success();
+            } else {
+                throw _errors.createInvalidReqInvalidCommandMethodEH(req);
+            }
         } else {
             throw _errors.createInvalidReqMissingCommandParameterEH(req);
         }
