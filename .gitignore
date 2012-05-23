@@ -9,3 +9,5 @@ chromedriver.log
 build
 *.log
 .gradle
+*.ipr
+*.iws
