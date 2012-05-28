@@ -1,7 +1,7 @@
 /*
 This file is part of the GhostDriver project from Neustar inc.
 
-Copyright (c) 2012, Ivan De Marino <ivan.de.marino@gmail.com> - Neustar inc.
+Copyright (c) 2012, Ivan De Marino <ivan.de.marino@gmail.com> - Neustar inc. and other authors.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
