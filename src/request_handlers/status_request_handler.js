@@ -26,12 +26,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 var ghostdriver = ghostdriver || {};
+// On my machine, the following prints:
+//StatusReqHand :: Ghostdriver.system=System(name = "")
+//StatusReqHand :: Ghostdriver.system.os=undefined
+console.log("StatusReqHand :: Ghostdriver.system=" + ghostdriver.system);
+console.log("StatusReqHand :: Ghostdriver.system.os=" + ghostdriver.system.os);
 
 ghostdriver.StatusReqHand = function() {
     // private:
-    var
-    _protoParent = ghostdriver.StatusReqHand.prototype,
-    _statusObj = {
+    var _protoParent = ghostdriver.StatusReqHand.prototype;
+    var _statusObj = {
         "build" : {
             "version"   : "1.0-dev",
             "revision"  : "unknown",
@@ -42,9 +46,9 @@ ghostdriver.StatusReqHand = function() {
             "version"   : ghostdriver.system.os.version,
             "arch"      : ghostdriver.system.os.architecture
         }
-    },
+    };
 
-    _handle = function(req, res) {
+    var _handle = function(req, res) {
         _protoParent.handle.call(this, req, res);
 
         if (req.method === "GET" && req.urlParsed.file === "status") {

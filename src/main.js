@@ -29,8 +29,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // NOTE: We need to provide PhantomJS with the "require" module ASAP. This is a pretty s**t way to load dependencies
 var ghostdriver = {
         system : require('system')
-    },
-    server = require('webserver').create(),
+    };
+
+// ghostrdriver.system.os is not defined on my machine
+console.log("ghostdriver.system=" + ghostdriver.system);
+if(!ghostdriver.system.os) ghostdriver.system.os = { name:"fake", version:"x.y.z", architecture:"27-bit" };
+console.log("ghostdriver.system=" + ghostdriver.system);
+
+var server = require('webserver').create(),
     router,
     parseURI;
 

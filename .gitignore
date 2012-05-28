@@ -11,3 +11,6 @@ build
 .gradle
 *.ipr
 *.iws
+
+# vim temp files
+*.swp

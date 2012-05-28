@@ -1,7 +1,7 @@
 /*
 This file is part of the GhostDriver project from Neustar inc.
 
-Copyright (c) 2012, Ivan De Marino <ivan.de.marino@gmail.com> - Neustar inc.
+Copyright (c) 2012, Ivan De Marino <ivan.de.marino@gmail.com> - Neustar inc. and others.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -52,7 +52,9 @@ ghostdriver.SessionReqHand = function(session) {
         IMPLICIT_WAIT   : "implicit_wait",
         WINDOW_HANDLE   : "window_handle",
         WINDOW_HANDLES  : "window_handles",
-        FRAME           : "frame"
+        FRAME           : "frame",
+        SOURCE          : "source",
+        COOKIE          : "cookie"
     },
     _errors = require("./errors.js"),
 
@@ -127,6 +129,16 @@ ghostdriver.SessionReqHand = function(session) {
         } else if (req.urlParsed.file === _const.FRAME && req.method === "POST") {
             _postFrameCommand(req, res);
             return;
+        } else if (req.urlParsed.file === _const.SOURCE && req.method === "GET") {
+            _getSourceCommand(req, res);
+            return;
+        } else if (req.urlParsed.file === _const.COOKIE) {
+            if(req.method === "DELETE") {
+                console.log("Handling delete cookie command...");
+                _deleteCookieCommand(req, res);
+                console.log("Cookies deleted.");
+                return;
+            }
         }
 
         throw _errors.createInvalidReqInvalidCommandMethodEH(req);
@@ -366,6 +378,22 @@ ghostdriver.SessionReqHand = function(session) {
         } else {
             throw _errors.createInvalidReqMissingCommandParameterEH(req);
         }
+    },
+
+    _getSourceCommand = function(req, res) {
+        var source = _session.getCurrentWindow().content;
+        res.success(_session.getId(), source);
+    },
+
+    _deleteCookieCommand = function(req, res) {
+        _session.getCurrentWindow().evaluate(function() {
+            var p = document.cookie.split(";");
+            for(i=p.length-1;i>=0;--i) {
+                var key = p[i].split("=");
+                document.cookie = key + "=";
+            }
+        });
+        res.success(_session.getId());
     },
 
     _deleteWindowCommand = function(req, res) {
