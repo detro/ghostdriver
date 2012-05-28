@@ -94,10 +94,12 @@ ghostdriver.RequestHandler = function() {
     },
 
     _buildResponseBody = function(sessionId, value, statusCode) {
+        // Need to check for undefined to prevent errors when trying to return boolean false
+        if(typeof(value) === "undefined") value = {};
         return {
             "sessionId" : sessionId || null,
             "status" : statusCode || 0, //< '0' is Success
-            "value" : value || {}
+            "value" : value
         };
     },
 
