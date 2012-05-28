@@ -53,7 +53,8 @@ ghostdriver.SessionReqHand = function(session) {
         WINDOW_HANDLE   : "window_handle",
         WINDOW_HANDLES  : "window_handles",
         FRAME           : "frame",
-        SOURCE          : "source"
+        SOURCE          : "source",
+        COOKIE          : "cookie"
     },
     _errors = require("./errors.js"),
 
@@ -131,6 +132,13 @@ ghostdriver.SessionReqHand = function(session) {
         } else if (req.urlParsed.file === _const.SOURCE && req.method === "GET") {
             _getSourceCommand(req, res);
             return;
+        } else if (req.urlParsed.file === _const.COOKIE) {
+            if(req.method === "DELETE") {
+                console.log("Handling delete cookie command...");
+                _deleteCookieCommand(req, res);
+                console.log("Cookies deleted.");
+                return;
+            }
         }
 
         throw _errors.createInvalidReqInvalidCommandMethodEH(req);
@@ -375,6 +383,17 @@ ghostdriver.SessionReqHand = function(session) {
     _getSourceCommand = function(req, res) {
         var source = _session.getCurrentWindow().content;
         res.success(_session.getId(), source);
+    },
+
+    _deleteCookieCommand = function(req, res) {
+        _session.getCurrentWindow().evaluate(function() {
+            var p = document.cookie.split(";");
+            for(i=p.length-1;i>=0;--i) {
+                var key = p[i].split("=");
+                document.cookie = key + "=";
+            }
+        });
+        res.success(_session.getId());
     },
 
     _deleteWindowCommand = function(req, res) {
