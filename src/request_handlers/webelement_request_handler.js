@@ -1,7 +1,7 @@
 /*
 This file is part of the GhostDriver project from Neustar inc.
 
-Copyright (c) 2012, Ivan De Marino <ivan.de.marino@gmail.com> - Neustar inc.
+Copyright (c) 2012, Ivan De Marino <ivan.de.marino@gmail.com> - Neustar inc. and other authors.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -35,7 +35,8 @@ ghostdriver.WebElementReqHand = function(id, session) {
     _protoParent = ghostdriver.WebElementReqHand.prototype,
     _const = {
         VALUE           : "value",
-        SUBMIT          : "submit"
+        SUBMIT          : "submit",
+        DISPLAYED       : "displayed"
     },
     _errors = require("./errors.js"),
 
@@ -50,11 +51,20 @@ ghostdriver.WebElementReqHand = function(id, session) {
         } else if (req.urlParsed.file === _const.SUBMIT && req.method === "POST") {
             _submitCommand(req, res);
             return;
+        } else if (req.urlParsed.file === _const.DISPLAYED && req.method === "GET") {
+            _getDisplayedCommand(req, res);
+            return;
         } // else ...
 
         // TODO lots to do...
 
         throw _errors.createInvalidReqInvalidCommandMethodEH(req);
+    },
+
+    _getDisplayedCommand = function(req, res) {
+        var isDisplayedAtom = require("./webdriver_atoms.js").get("is_displayed");
+        var displayed = _session.getCurrentWindow().evaluate(isDisplayedAtom, _getJSON());
+        res.respondBasedOnResult(_session, req, displayed);
     },
 
     _valueCommand = function(req, res) {
