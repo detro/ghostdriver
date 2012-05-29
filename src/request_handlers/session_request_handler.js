@@ -150,48 +150,6 @@ ghostdriver.SessionReqHand = function(session) {
         };
     },
 
-    _respondBasedOnResult = function(req, res, result) {
-        // console.log("respondBasedOnResult => "+JSON.stringify(result));
-
-        // Convert string to JSON
-        if (typeof(result) === "string") {
-            try {
-                result = JSON.parse(result);
-            } catch (e) {
-                // In case the conversion fails, report and "Invalid Command Method" error
-                _erros.handleInvalidReqInvalidCommandMethodEH(req, res);
-            }
-        }
-
-        // In case the JSON doesn't contain the expected fields
-        if (result === null ||
-            typeof(result) === "undefined" ||
-            typeof(result) !== "object" ||
-            typeof(result.status) === "undefined" ||
-            typeof(result.value) === "undefined") {
-            _errors.handleFailedCommandEH(
-                _errors.FAILED_CMD_STATUS.UNKNOWN_ERROR,
-                "Command failed without producing the expected error report",
-                req,
-                res,
-                _session,
-                "SessionReqHand");
-        }
-
-        // An error occurred but we got an error report to use
-        if (result.status !== 0) {
-            _errors.handleFailedCommandEH(
-                _errors.FAILED_CMD_STATUS_CODES_NAMES[result.status],
-                result.value.message,
-                req,
-                res,
-                _session,
-                "SessionReqHand");
-        }
-
-        // If we arrive here, everything should be fine, birds are singing, the sky is blue
-        res.success(_session.getId(), result.value);
-    },
 
     _refreshCommand = function(req, res) {
         var successHand = _createOnSuccessHandler(res);
@@ -253,7 +211,7 @@ ghostdriver.SessionReqHand = function(session) {
 
             // Respond with result ONLY if this hasn't ALREADY timed-out
             if (!timedOut) {
-                _respondBasedOnResult(req, res, result);
+                res.respondBasedOnResult(_session, req, result);
             }
         } else {
             throw _errors.createInvalidReqMissingCommandParameterEH(req);
@@ -265,7 +223,7 @@ ghostdriver.SessionReqHand = function(session) {
 
         if (typeof(postObj) === "object" && postObj.script && postObj.args) {
             _session.getCurrentWindow().setOneShotCallback("onCallback", function() {
-                _respondBasedOnResult(req, res, arguments[0]);
+                res.respondBasedOnResult(_session, req, arguments[0]);
             });
 
             _session.getCurrentWindow().evaluate(
@@ -301,7 +259,7 @@ ghostdriver.SessionReqHand = function(session) {
             "return location.toString()",
             []);
 
-        _respondBasedOnResult(req, res, result);
+        res.respondBasedOnResult(_session, res, result);
     },
 
     _postUrlCommand = function(req, res) {
