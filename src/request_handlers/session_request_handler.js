@@ -134,9 +134,7 @@ ghostdriver.SessionReqHand = function(session) {
             return;
         } else if (req.urlParsed.file === _const.COOKIE) {
             if(req.method === "DELETE") {
-                console.log("Handling delete cookie command...");
                 _deleteCookieCommand(req, res);
-                console.log("Cookies deleted.");
                 return;
             }
         }
@@ -345,10 +343,12 @@ ghostdriver.SessionReqHand = function(session) {
 
     _deleteCookieCommand = function(req, res) {
         _session.getCurrentWindow().evaluate(function() {
-            var p = document.cookie.split(";");
-            for(i=p.length-1;i>=0;--i) {
-                var key = p[i].split("=");
-                document.cookie = key + "=";
+            var p = document.cookie.split(";"),
+                i, key;
+
+            for(i = p.length -1; i >= 0; --i) {
+                key = p[i].split("=");
+                document.cookie = key + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT";
             }
         });
         res.success(_session.getId());
