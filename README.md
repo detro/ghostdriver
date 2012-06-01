@@ -16,7 +16,7 @@ It's going to be a Remote WebDriver that uses PhantomJS as back-end.
 
 ## Presentation and Slides
 
-In April 2012 I presented GhostDriver at the [Selenium Conference](http://www.seleniumconf.org/speakers/#IDM):
+In April 2012 Ivan De Marino presented GhostDriver at the [Selenium Conference](http://www.seleniumconf.org/speakers/#IDM):
 [slides](http://detro.github.com/ghostdriver/slides/index.html)
 and
 [video](http://blog.ivandemarino.me/2012/05/01/Me-the-Selenium-Conference-2012).
@@ -34,36 +34,31 @@ of PhantomJS, and build it (I assume you know Git).
 There is **plenty to do before this is usable**, but if you can't wait to try
 PhantomJS's speed when it acts as a RemoteWebDriver Server, do the following:
 
-1. Start GhostDriver on a terminal:
+1. Indicate the location of the needed executables (`phantomjs`…) by editing the `examples/google_cheese/config/paths.properties.default` file.
+
+2. Build and launch the first Java-based example (to build we use [Gradle](http://www.gradle.org/), already included):
 
     ```bash
-    $> phantomjs ghostdriver/src/main.js
-    Ghost Driver running on port 8080
+    $> cd examples/google_cheese/
+    $> ./gradlew googleExample -Pargs="ghost"
     ```
 
-2. Build and Launch the first Java-based example (to build we use [Gradle](http://www.gradle.org/), already included):
-
-    ```bash
-    $> cd ghostdriver/examples/google_cheese/
-    $> ./gradlew execServer -Pargs="1 8080"
-    ```
-
-For a quick speed comparison with other WebDriver implementations, try passing the parameter `firefox` or `chrome` to the `./mvnexec.sh` script.
+For a quick speed comparison with other WebDriver implementations, try passing the parameter `firefox` or `chrome` as `-Pargs`.
 
 ## Reasoning: pros and cons
 
 ### Pros of using an Headless browser for your Selenium testing
 * Speed: makes development faster
 * Speed: makes THE developer happier
-* Speed: makes leaves more time for beer, video-games, cycling or whatever you fancy
+* Speed: leaves more time for beer, video-games, cycling or whatever you fancy
 * ...
 
 ### Cons of using an Headless browser for your Selenium testing
-* PhantomJS is not a "Real" Browser, but _"just"_ very very close to on
+* PhantomJS is not a "Real" Browser, but "just" very very close to it
 
 ## Contributions
 
-You can contribute testing it and reporting bugs and issues, or submitting Pull Requests.
+You can contribute by testing it and reporting bugs and issues, or by submitting Pull Requests.
 _Any help is more than welcome!!!_
 
 ## License

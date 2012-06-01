@@ -21,12 +21,12 @@ tasks.withType(JavaExec) {
     args project.hasProperty("args") ? project.args.split("\\s") : []
 }
 
-// ./gradlew exec [-Pargs="firefox|chrome|ghostdriver|stats"]
-task exec(type: JavaExec) {
+// ./gradlew googleExample [-Pargs="firefox|chrome|ghost|stats SERVER_PORT"]
+task googleExample(type: JavaExec) {
     main "ghostdriver.GoogleCheese"
 }
 
-// ./gradlew execServer [-Pargs="NUM_ITERATIONS SERVER_PORT"]
-task execServer(type: JavaExec) {
-    main "ghostdriver.GoogleCheeseServerOnly"
+// ./gradlew navigationExample [-Pargs="firefox|chrome|ghost|stats SERVER_PORT"]
+task navigationExample(type: JavaExec) {
+    main "ghostdriver.GoogleCheeseAndNavigate"
 }

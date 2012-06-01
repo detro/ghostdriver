@@ -1,0 +1,15 @@
+# This file lists paths to all executables needed to instrument browsers
+
+# Duplicate this file, remove its ".defaults" extension, and set the values of these properties to the proper ones for your setup  :)
+# You may of course edit this file directly, but if you intend to use source control, it would be smarter to decouple defaults and actual values
+
+phantomjs = /opt/local/bin/phantomjs
+ghostdriver = /opt/local/ghostdriver/src/main.js
+chromedriver = /bin/chromedriver
+
+# You may leave the properties beneath this line empty to use the defaults
+
+# Under OS X, this is the path to the application bundle (.app)
+firefox = 
+# This must be the path to the binary itself
+chrome = 

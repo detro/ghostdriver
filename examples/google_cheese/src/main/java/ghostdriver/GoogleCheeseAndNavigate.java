@@ -4,65 +4,20 @@ import org.openqa.selenium.*;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.Date;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 
-public class GoogleCheeseServerOnly {
-    public static void main( String[] args ) throws MalformedURLException, IOException, InterruptedException, NumberFormatException {
-        int samplingSize = 1;
-        int port = 8080;
-
-        if (args.length > 0) {
-            samplingSize = Integer.parseInt(args[0]);
-        }
-
-        if (args.length > 1) {
-            port = Integer.parseInt(args[1]);
-        }
-
-        System.out.println("Sampling Size: "+samplingSize);
-        System.out.println("Remote WebDriver Server port: "+port);
-
-        // Let's make some stats
-        long stats = 0;
-
-        // Sum up samples
-        for (int i = 0; i < samplingSize; ++i) {
-            stats += runTest(port);
-        }
-
-        // Normalize
-        stats /= samplingSize;
-
-        System.out.println("");
-        System.out.println("--------------------------------------");
-        System.out.println("*** STATS");
-        System.out.println("*** Total Execution Time over "+samplingSize+" samples: "+stats);
-        System.out.println("--------------------------------------");
-        System.out.println("");
-
-        System.exit(0);
-    }
-
-    public static long runTest(int port) throws MalformedURLException, IOException, InterruptedException {
-        long totalTime;
-
-        // Start the clock
-        Date start = new Date();
-
-        // Ask for a JavaScript-enabled browser
-        DesiredCapabilities capabilities = new DesiredCapabilities();
-        capabilities.setJavascriptEnabled(true);
-
-        WebDriver driver = new RemoteWebDriver(new URL("http://localhost:"+port), capabilities);
-        Capabilities actualCapabilities = ((RemoteWebDriver) driver).getCapabilities();
-
-        // And now use this to visit Google
+public class GoogleCheeseAndNavigate extends WebDriverTester {
+	public static void main(String[] args) {
+		new GoogleCheeseAndNavigate(args);
+	}
+	
+	private GoogleCheeseAndNavigate(String[] args) {
+		super(args);
+	}
+	
+    protected void runTestOn(WebDriver driver) {
         System.out.println("Loading 'http://www.google.com'...");
         driver.get("http://www.google.com");
         System.out.println("Loaded. Current URL is: '" + driver.getCurrentUrl() + "'");
@@ -129,10 +84,5 @@ public class GoogleCheeseServerOnly {
         System.out.println("Closing...");
         driver.close();
         System.out.println("Closed");
-
-        totalTime = new Date().getTime() - start.getTime();
-        System.out.println("Time elapsed (ms): " + totalTime);
-
-        return totalTime;
     }
 }
