@@ -99,19 +99,35 @@ ghostdriver.WebElementReqHand = function(id, session) {
 
     _getNameCommand = function(req, res) {
         var result = _session.getCurrentWindow().evaluate(
-            require("./webdriver_atoms.js").get("execute_script"),
-            "return arguments[0].tagName;",
-            [_getJSON()]);
-        // N.B. must convert value to a lowercase string as per WebDriver JSONWireProtocol spec
-        if(result.status === 0) result.value = result.value.toLowerCase();
+                require("./webdriver_atoms.js").get("execute_script"),
+                "return arguments[0].tagName;",
+                [_getJSON()]);
+
+        // Convert value to a lowercase string as per WebDriver JSONWireProtocol spec
+        // @see http://code.google.com/p/selenium/wiki/JsonWireProtocol#/session/:sessionId/element/:id/name
+        if(result.status === 0) {
+            result.value = result.value.toLowerCase();
+        }
+
         res.respondBasedOnResult(_session, req, result);
     },
 
     _getAttributeCommand = function(req, res) {
-        var attributeValueAtom = require("./webdriver_atoms.js").get("get_attribute_value");
-        var attributeName = req.urlParsed.file;
-        var response = _session.getCurrentWindow().evaluate(attributeValueAtom, _getJSON(), attributeName);
-        res.respondBasedOnResult(_session, req, response);
+        var attributeValueAtom = require("./webdriver_atoms.js").get("get_attribute_value"),
+            result;
+
+        if (typeof(req.urlParsed.file) !== "undefined") {
+            // Read the attribute
+            result = _session.getCurrentWindow().evaluate(
+                attributeValueAtom,     // < Atom to read an attribute
+                _getJSON(),             // < Element to read from
+                req.urlParsed.file);    // < Attribute to read
+
+            res.respondBasedOnResult(_session, req, result);
+            return;
+        }
+
+        throw _errors.createInvalidReqMissingCommandParameterEH(req);
     },
 
     _submitCommand = function(req, res) {
