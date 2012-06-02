@@ -37,7 +37,10 @@ ghostdriver.WebElementReqHand = function(id, session) {
     _const = {
         VALUE           : "value",
         SUBMIT          : "submit",
-        DISPLAYED       : "displayed"
+        DISPLAYED       : "displayed",
+        ATTRIBUTE_DIR   : "/attribute/",
+        NAME            : "name"
+
     },
     _errors = require("./errors.js"),
 
@@ -54,6 +57,12 @@ ghostdriver.WebElementReqHand = function(id, session) {
             return;
         } else if (req.urlParsed.file === _const.DISPLAYED && req.method === "GET") {
             _getDisplayedCommand(req, res);
+            return;
+        } else if (req.urlParsed.path.indexOf(_const.ATTRIBUTE_DIR) != -1 && req.method === "GET") {
+            _getAttributeCommand(req, res);
+            return;
+        } else if (req.urlParsed.file === _const.NAME && req.method === "GET") {
+            _getNameCommand(req, res);
             return;
         } // else ...
 
@@ -86,6 +95,23 @@ ghostdriver.WebElementReqHand = function(id, session) {
         }
 
         throw _errors.createInvalidReqMissingCommandParameterEH(req);
+    },
+
+    _getNameCommand = function(req, res) {
+        var result = _session.getCurrentWindow().evaluate(
+            require("./webdriver_atoms.js").get("execute_script"),
+            "return arguments[0].tagName;",
+            [_getJSON()]);
+        // N.B. must convert value to a lowercase string as per WebDriver JSONWireProtocol spec
+        if(result.status === 0) result.value = result.value.toLowerCase();
+        res.respondBasedOnResult(_session, req, result);
+    },
+
+    _getAttributeCommand = function(req, res) {
+        var attributeValueAtom = require("./webdriver_atoms.js").get("get_attribute_value");
+        var attributeName = req.urlParsed.file;
+        var response = _session.getCurrentWindow().evaluate(attributeValueAtom, _getJSON(), attributeName);
+        res.respondBasedOnResult(_session, req, response);
     },
 
     _submitCommand = function(req, res) {
