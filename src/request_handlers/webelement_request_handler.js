@@ -47,6 +47,8 @@ ghostdriver.WebElementReqHand = function(id, session) {
     _handle = function(req, res) {
         _protoParent.handle.call(this, req, res);
 
+        // console.log("Request => " + JSON.stringify(req, null, '  '));
+
         // TODO lots to do...
 
         if (req.urlParsed.file === _const.VALUE && req.method === "POST") {

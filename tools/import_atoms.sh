@@ -32,6 +32,9 @@ pushd $SELENIUM_REPO_PATH
 # Build all the Atoms
 ./go //javascript/$TEMP_BUILD_DIR_NAME:$ATOMS_BUILD_TARGET
 
+# Before importing, delete the previous atoms
+rm $DESTINATION_DIRECTORY/*
+
 # Import only the Atoms JavaScript files
 JS_LIST="./build/javascript/webdriver/atoms/*.js ./build/javascript/webdriver/atoms/inject/*.js ./build/javascript/phantomjs-driver/*.js"
 for JS in $JS_LIST

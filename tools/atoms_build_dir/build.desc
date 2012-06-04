@@ -10,10 +10,16 @@ js_fragment(name = "forward",
   function = "bot.window.forward",
   deps = [ "//javascript/atoms:deps" ])
 
+js_fragment(name = "get_element_from_cache",
+  module = "bot.inject.cache",
+  function = "bot.inject.cache.getElement",
+  deps = [ "//javascript/atoms:deps" ])
+
 js_deps(name = "build_atoms",
   deps = [
     ":back",
     ":forward",
+    ":get_element_from_cache",
 
     "//javascript/webdriver/atoms:execute_script",
     "//javascript/webdriver/atoms:execute_async_script",
