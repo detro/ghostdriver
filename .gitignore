@@ -11,3 +11,4 @@ build
 .gradle
 *.ipr
 *.iws
+*.class
