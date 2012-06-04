@@ -113,7 +113,7 @@ ghostdriver.SessionManagerReqHand = function() {
 
         if (typeof(_sessions[sId]) !== "undefined") {
             _deleteSession(sId);
-            res.success();
+            res.success(sId);
         } else {
             throw _errors.createInvalidReqVariableResourceNotFoundEH(req);
         }

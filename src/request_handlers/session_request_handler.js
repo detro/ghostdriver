@@ -276,7 +276,7 @@ ghostdriver.SessionReqHand = function(session) {
                     clearTimeout(timer);
 
                     if (status === "success") {
-                        res.success();
+                        res.success(_session.getId());
                     } else {
                         _errors.handleInvalidReqInvalidCommandMethodEH(req, res);
                     }
@@ -310,27 +310,86 @@ ghostdriver.SessionReqHand = function(session) {
 
         if (typeof(postObj["type"]) !== "undefined" && typeof(postObj["ms"]) !== "undefined") {
             _session.setTimeout(postObj["type"], postObj["ms"]);
-            res.success();
+            res.success(_session.getId());
         } else {
             throw _errors.createInvalidReqMissingCommandParameterEH(req);
         }
     },
 
     _postFrameCommand = function(req, res) {
-        var postObj = JSON.parse(req.post);
+        var postObj = JSON.parse(req.post),
+            frameElement = null,
+            result;
 
         if (typeof(postObj) === "object" && typeof(postObj.id) !== "undefined") {
+            if(postObj.id === null) {
+                // Reset focus on the topmost (main) Frame
+                _session.getCurrentWindow().evaluate(
+                    require("./webdriver_atoms.js").get("execute_script"),
+                    "return top.focus();");
+                res.success(_session.getId());
+                return; //< we are done here: no need go further
+            }
+
             if (typeof(postObj.id) === "number") {
-                // TODO - search frame by "index" in the "window.frames" array
-                res.success();
+                // Search frame by "index" within the "window.frames" array
+                result = _session.getCurrentWindow().evaluate(
+                    require("./webdriver_atoms.js").get("execute_script"),
+                    "var el = null; " +
+                        "if (typeof(window.frames[arguments[0]]) !== 'undefined') { " +
+                            "el = window.frames[arguments[0]].frameElement; " +
+                        "} " +
+                        "return el; ",
+                    [postObj.id]);
+
+                // Check if the Frame was found
+                if (result.status === 0 && typeof(result.value) === "object") {
+                    frameElement = result.value;
+                }
             } else if (typeof(postObj.id) === "string") {
-                // TODO - search frame by "id" or "name" field
-                res.success();
-            } else if (typeof(postObj.id) === "object") {
-                // TODO - search frame by "{ELEMENT : id}" object
-                res.success();
+                // Search frame by "name" and, if not found, by "id"
+                result = _session.getCurrentWindow().evaluate(
+                    require("./webdriver_atoms.js").get("execute_script"),
+                    "var el = null; " +
+                        "el = document.querySelector(\"[name='\"+arguments[0]+\"']\"); " +
+                        "if (el === null) { " +
+                            "el = document.querySelector('#'+arguments[0]); " +
+                        "} " +
+                        "return el; ",
+                    [postObj.id]);
+
+                // Check if the Frame was found
+                if (result.status === 0 && typeof(result.value) === "object") {
+                    frameElement = result.value;
+                }
+            } else if (typeof(postObj.id) === "object" && typeof(postObj.id["ELEMENT"]) === "string") {
+                // Search frame by "{ELEMENT : id}" object
+                result = _locator.getElement(decodeURIComponent(postObj.id["ELEMENT"]));
+
+                // Check if the Frame was found
+                if (result !== null && typeof(result) === "object") {
+                    frameElement = result.getJSON();
+                }
             } else {
                 throw _errors.createInvalidReqInvalidCommandMethodEH(req);
+            }
+
+            // Send a positive response if the element was found...
+            if (frameElement !== null) {
+                result = _session.getCurrentWindow().evaluate(
+                    require("./webdriver_atoms.js").get("execute_script"),
+                    "return arguments[0].focus();",
+                    [frameElement]);
+                res.success(_session.getId());
+            } else {
+                // ... otherwise, throw the appropriate exception
+                _errors.handleFailedCommandEH(
+                    _errors.FAILED_CMD_STATUS.NO_SUCH_FRAME,    //< error name
+                    "Frame not found",                          //< error message
+                    req,                                        //< request
+                    res,
+                    _session,                                   //< session
+                    "SessionReqHand");                          //< class name
             }
         } else {
             throw _errors.createInvalidReqMissingCommandParameterEH(req);
@@ -358,7 +417,7 @@ ghostdriver.SessionReqHand = function(session) {
     _deleteWindowCommand = function(req, res) {
         // TODO An optional JSON parameter "name" might be given
         _session.closeCurrentWindow();
-        res.success();
+        res.success(_session.getId());
     },
 
     _postWindowCommand = function(req, res) {
