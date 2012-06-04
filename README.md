@@ -9,14 +9,14 @@ It's going to be a Remote WebDriver that uses PhantomJS as back-end.
 
 * Under development
 * Far from complete
-* Only **~20%** of the WireProtocol currently implemented
+* Only **~30%** of the WireProtocol currently implemented
 * You can monitor development progress [at this Google Spreadsheet](https://docs.google.com/spreadsheet/ccc?key=0Am63grtxc7bDdGNqX1ZPX2VoZlE2ZHZhd09lNDkzbkE)
 * Core released to get people interested and get contributions
 * Don't raise BUGS: send PULL REQUESTS pleaase!
 
 ## Presentation and Slides
 
-In April 2012 I presented GhostDriver at the [Selenium Conference](http://www.seleniumconf.org/speakers/#IDM):
+In April 2012 I (Ivan De Marino) presented GhostDriver at the [Selenium Conference](http://www.seleniumconf.org/speakers/#IDM):
 [slides](http://detro.github.com/ghostdriver/slides/index.html)
 and
 [video](http://blog.ivandemarino.me/2012/05/01/Me-the-Selenium-Conference-2012).
@@ -41,14 +41,12 @@ PhantomJS's speed when it acts as a RemoteWebDriver Server, do the following:
     Ghost Driver running on port 8080
     ```
 
-2. Build and Launch the first Java-based example (to build we use [Gradle](http://www.gradle.org/), already included):
+2. Build and Launch the test suite (written in Java, built with [Gradle](http://www.gradle.org/)):
 
     ```bash
-    $> cd ghostdriver/examples/google_cheese/
-    $> ./gradlew execServer -Pargs="1 8080"
+    $> cd ghostdriver/test
+    $> ./gradlew test
     ```
-
-For a quick speed comparison with other WebDriver implementations, try passing the parameter `firefox` or `chrome` to the `./mvnexec.sh` script.
 
 ## Reasoning: pros and cons
 
@@ -64,7 +62,11 @@ For a quick speed comparison with other WebDriver implementations, try passing t
 ## Contributions
 
 You can contribute testing it and reporting bugs and issues, or submitting Pull Requests.
-_Any help is more than welcome!!!_
+Any **help is welcome**, but bear in mind the following base principles:
+
+* Squash your commits by theme: I prefer a clean, readable log
+* Maintain consistency with the code-style you are surrounded by
+* If you are going to make a big, substantial change, let's discuss it first
 
 ## License
 GhostDriver is distributed under [BSD License](http://www.opensource.org/licenses/BSD-2-Clause).
