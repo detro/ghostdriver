@@ -51,10 +51,10 @@ ghostdriver.Session = function(desiredCapabilities) {
         }
     },
     _timeouts = {
-        "script"            : 200,          //< 0.1s
-        "async script"      : 3000,         //< 3s
+        "script"            : 500,          //< 0.5s
+        "async script"      : 5000,         //< 5s
         "implicit"          : 0,            //< 0s
-        "page load"         : 5000          //< 2s
+        "page load"         : 10000         //< 10s
     },
     _const = {
         DEFAULT_CURRENT_WINDOW_HANDLE : "1",
