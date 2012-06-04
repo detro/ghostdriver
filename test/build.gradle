@@ -10,7 +10,7 @@ repositories {
     mavenCentral()
 }
 
-ext.seleniumVersion = "2.21.0"
+ext.seleniumVersion = "2.22.0"
 
 dependencies {
     ["selenium-java", "selenium-remote-driver", "selenium-server"].each {
