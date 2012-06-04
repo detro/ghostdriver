@@ -1,7 +1,7 @@
-2012-05-16 17:15:28
+2012-06-04 13:16:48
 
 ------------------------------------------------------------------------
-r16936 | jmleyba@gmail.com | 2012-05-16 17:05:18 +0100 (Wed, 16 May 2012) | 1 line
+r17108 | jmleyba | 2012-06-04 05:06:09 +0200 (Mon, 04 Jun 2012) | 1 line
 
-JasonLeyba: Certain commands should always be handled by the topmost frame.
+JasonLeyba: The page script handler should only respond to messages from its own window.
 ------------------------------------------------------------------------
