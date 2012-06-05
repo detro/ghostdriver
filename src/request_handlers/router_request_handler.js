@@ -60,7 +60,7 @@ ghostdriver.RouterReqHand = function() {
                 req.urlParsed.file === _const.SESSIONS ||                           // GET '/sessions'
                 req.urlParsed.directory === _const.SESSION_DIR) {                   // GET or DELETE '/session/:id'
                 _sessionManRH.handle(req, res);
-            } else if (req.urlParsed.path.indexOf(_const.SESSION_DIR) === 0) {      // GET, POST or DELETE '/session/:id/...'
+            } else if (req.urlParsed.chunks[0] === _const.SESSION) {      // GET, POST or DELETE '/session/:id/...'
                 // Retrieve session
                 session = _sessionManRH.getSession(req.urlParsed.chunks[1]);
 

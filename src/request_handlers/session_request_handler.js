@@ -93,7 +93,7 @@ ghostdriver.SessionReqHand = function(session) {
             return;
         } else if (req.urlParsed.directory === _const.ELEMENT_DIR) {                    //< ".../element/:elementId" or ".../element/active"
             // TODO
-        } else if (req.urlParsed.path.indexOf(_const.ELEMENT_DIR) === 0) {              //< ".../element/:elementId/COMMAND"
+        } else if (req.urlParsed.chunks[0] === _const.ELEMENT) {                        //< ".../element/:elementId/COMMAND"
             // Get the WebElementRH and, if found, re-route request to it
             element = _locator.getElement(decodeURIComponent(req.urlParsed.chunks[1]));
             if (element !== null) {
@@ -117,8 +117,7 @@ ghostdriver.SessionReqHand = function(session) {
         } else if (req.urlParsed.file === _const.EXECUTE_ASYNC && req.method === "POST") {
             _executeAsyncCommand(req, res);
             return;
-        } else if ((req.urlParsed.file === _const.TIMEOUTS || req.urlParsed.directory === _const.TIMEOUTS_DIR) &&
-            req.method === "POST") {
+        } else if ((req.urlParsed.file === _const.TIMEOUTS || req.urlParsed.directory === _const.TIMEOUTS_DIR) && req.method === "POST") {
             _postTimeout(req, res);
             return;
         } else if (req.urlParsed.file === _const.WINDOW_HANDLE && req.method === "GET") {
