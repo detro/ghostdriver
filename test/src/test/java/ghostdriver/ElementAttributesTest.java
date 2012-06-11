@@ -11,18 +11,15 @@ import static org.junit.Assert.assertTrue;
 
 public class ElementAttributesTest extends BaseTest {
     @Test
-    public void navigateAroundMDN() {
+    public void checkAttributesOnGoogleSearchBox() {
         WebDriver d = getDriver();
 
         d.get("http://www.google.com");
-        WebElement el = d.findElement(By.cssSelector("img[id*='logo']"));
+        WebElement el = d.findElement(By.cssSelector("input[name*='q']"));
 
-        assertTrue(el.getAttribute("alt").toLowerCase().contains("google"));
-        assertTrue(el.getAttribute("id").toLowerCase().contains("logo"));
-        Integer.parseInt(el.getAttribute("width"));
-        Integer.parseInt(el.getAttribute("height"));
-        assertTrue(el.getAttribute("src").toLowerCase().contains("google"));
-        assertTrue(el.getAttribute("src").toLowerCase().contains("logo"));
+        assertTrue(el.getAttribute("name").toLowerCase().contains("q"));
+        assertTrue(el.getAttribute("type").toLowerCase().contains("text"));
         assertTrue(el.getAttribute("style").length() > 0);
+        assertTrue(el.getAttribute("type").length() > 0);
     }
 }

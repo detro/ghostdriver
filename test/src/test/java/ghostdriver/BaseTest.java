@@ -3,6 +3,7 @@ package ghostdriver;
 import org.junit.After;
 import org.junit.Before;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
@@ -22,6 +23,7 @@ public abstract class BaseTest {
         DesiredCapabilities capabilities = new DesiredCapabilities();
         capabilities.setJavascriptEnabled(true);
         mDriver = new RemoteWebDriver(new URL(GHOSTDRIVER_URL), capabilities);
+//        mDriver = new FirefoxDriver(capabilities);
     }
 
     protected WebDriver getDriver() {
