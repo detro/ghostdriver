@@ -57,7 +57,7 @@ PhantomJS's speed when it acts as a RemoteWebDriver Server, do the following:
 * ...
 
 ### Cons of using an Headless browser for your Selenium testing
-* PhantomJS is not a "Real" Browser, but _"just"_ very very close to on
+* PhantomJS is not a "Real" Browser, but _"just"_ very very close to one
 
 ## Contributions
 
