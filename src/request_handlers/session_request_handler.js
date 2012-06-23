@@ -450,7 +450,7 @@ ghostdriver.SessionReqHand = function(session) {
             width = params.width,
             height = params.height;
 
-        if(!params.width || !params.height) {
+        if(typeof(params.width) !== "number" || typeof(params.height) !== "number") {
             throw _errors.createInvalidReqMissingCommandParameterEH(req);
         }
 
