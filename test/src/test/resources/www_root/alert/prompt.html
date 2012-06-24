@@ -1,0 +1,27 @@
+<html>
+	<head>
+		<title>Prompt</title>
+		<style>
+		</style>
+	</head>
+	<body>
+		<div id="result"></div>
+		<div id="cancelled"></div>
+		<script language="javascript">
+			window.onload = function() {
+				var result = prompt("I am an alert of type prompt"),
+					text, elementId;
+				if(result === null) {
+					elementId = "cancelled";
+					text = "prompt cancelled";
+				} else {
+					elementId = "result";
+					text = "prompt accepted: " + result;
+				}
+				text = document.createTextNode(text);
+				document.getElementById(elementId).appendChild(text);
+			}
+		</script>
+	</body>
+</html>
+

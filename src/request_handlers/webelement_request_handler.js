@@ -33,14 +33,22 @@ ghostdriver.WebElementReqHand = function(id, session) {
     var
     _id = id + '',      //< ensure this is always a string
     _session = session,
+    _locator = new ghostdriver.WebElementLocator(_session),
     _protoParent = ghostdriver.WebElementReqHand.prototype,
     _const = {
         VALUE           : "value",
         SUBMIT          : "submit",
         DISPLAYED       : "displayed",
         ATTRIBUTE       : "attribute",
-        NAME            : "name"
-
+        NAME            : "name",
+        ELEMENT         : "element",
+        ELEMENTS        : "elements",
+        TEXT            : "text",
+        EQUALS          : "equals",
+        CLEAR           : "clear",
+        CSS             : "css",
+        CLICK           : "click",
+        SELECTED        : "selected"
     },
     _errors = require("./errors.js"),
 
@@ -51,7 +59,10 @@ ghostdriver.WebElementReqHand = function(id, session) {
 
         // TODO lots to do...
 
-        if (req.urlParsed.file === _const.VALUE && req.method === "POST") {
+        if (req.urlParsed.chunks[0] === _const.ATTRIBUTE && req.method === "GET") {
+            _getAttributeCommand(req, res);
+            return;
+        } else if (req.urlParsed.file === _const.VALUE && req.method === "POST") {
             _valueCommand(req, res);
             return;
         } else if (req.urlParsed.file === _const.SUBMIT && req.method === "POST") {
@@ -60,11 +71,32 @@ ghostdriver.WebElementReqHand = function(id, session) {
         } else if (req.urlParsed.file === _const.DISPLAYED && req.method === "GET") {
             _getDisplayedCommand(req, res);
             return;
-        } else if (req.urlParsed.chunks[0] === _const.ATTRIBUTE && req.method === "GET") {
-            _getAttributeCommand(req, res);
-            return;
         } else if (req.urlParsed.file === _const.NAME && req.method === "GET") {
             _getNameCommand(req, res);
+            return;
+        } else if (req.urlParsed.file === _const.ELEMENT && req.method === "POST") {
+            _postElementCommand(req, res);
+            return;
+        } else if (req.urlParsed.file === _const.ELEMENTS && req.method === "POST") {
+            _postElementsCommand(req, res);
+            return;
+        } else if (req.urlParsed.file === _const.TEXT && req.method === "GET") {
+            _getTextCommand(req, res);
+            return;
+        } else if (req.urlParsed.chunks[0] === _const.EQUALS && req.method === "GET") {
+            _getEqualsCommand(req, res);
+            return;
+        } else if (req.urlParsed.file === _const.CLEAR && req.method === "POST") {
+            _postClearCommand(req, res);
+            return;
+        } else if (req.urlParsed.chunks[0] === _const.CSS && req.method === "GET") {
+            _getCssCommand(req, res);
+            return;
+        } else if (req.urlParsed.file === _const.CLICK && req.method === "POST") {
+            _postClickCommand(req, res);
+            return;
+        } else if (req.urlParsed.file === _const.SELECTED && req.method === "GET") {
+            _getSelectedCommand(req, res);
             return;
         } // else ...
 
@@ -97,6 +129,22 @@ ghostdriver.WebElementReqHand = function(id, session) {
         }
 
         throw _errors.createInvalidReqMissingCommandParameterEH(req);
+    },
+
+    _postClearCommand = function(req, res) {
+        var result = _session.getCurrentWindow().evaluate(
+                require("./webdriver_atoms.js").get("clear"),
+                _getJSON());
+        res.respondBasedOnResult(_session, req, result);
+    },
+
+    _getCssCommand = function(req, res) {
+        var result = _session.getCurrentWindow().evaluate(
+                require("./webdriver_atoms.js").get("execute_script"),
+                "return window.getComputedStyle(arguments[0]).getPropertyValue(arguments[1]);",
+                [_getJSON(), req.urlParsed.file]);
+
+        res.respondBasedOnResult(_session, req, result);
     },
 
     _getNameCommand = function(req, res) {
@@ -132,6 +180,38 @@ ghostdriver.WebElementReqHand = function(id, session) {
         throw _errors.createInvalidReqMissingCommandParameterEH(req);
     },
 
+    _getNameCommand = function(req, res) {
+        var result = _session.getCurrentWindow().evaluate(
+            require("./webdriver_atoms.js").get("execute_script"),
+            "return arguments[0].tagName;",
+            [_getJSON()]);
+        // N.B. must convert value to a lowercase string as per WebDriver JSONWireProtocol spec
+        if(result.status === 0) result.value = result.value.toLowerCase();
+        res.respondBasedOnResult(_session, req, result);
+    },
+
+    _getAttributeCommand = function(req, res) {
+        var attributeValueAtom = require("./webdriver_atoms.js").get("get_attribute_value"),
+            attributeName = req.urlParsed.file,
+            response = _session.getCurrentWindow().evaluate(attributeValueAtom, _getJSON(), attributeName);
+        res.respondBasedOnResult(_session, req, response);
+    },
+
+    _getTextCommand = function(req, res) {
+        var textAtom = require("./webdriver_atoms.js").get("get_text");
+        var response = _session.getCurrentWindow().evaluate(textAtom, _getJSON());
+        res.respondBasedOnResult(_session, req, response);
+    },
+
+    _getEqualsCommand = function(req, res) {
+        // TODO this appears to work, but I don't know a decent way to test it
+        var result = _session.getCurrentWindow().evaluate(
+            require("./webdriver_atoms.js").get("execute_script"),
+            "return arguments[0].isSameNode(arguments[1]);",
+            [_getJSON(), _getJSON(req.urlParsed.file)]);
+        res.success(_session.getId(), false);
+    },
+
     _submitCommand = function(req, res) {
         var submitRes,
             submitAtom = require("./webdriver_atoms.js").get("submit");
@@ -151,9 +231,51 @@ ghostdriver.WebElementReqHand = function(id, session) {
         // TODO - Error handling based on the value of "submitRes"
     },
 
-    _getJSON = function() {
+    _postElementCommand = function(req, res) {
+        // Search for WebElement relative to this element
+        // TODO should handle XPathLookupError - probably an exception will be thrown by the locator
+        console.log("_postElementCommand() :: locating element...");
+        var element = _locator.locateElement(JSON.parse(req.post), _getJSON());
+        console.log("_postElementCommand() :: got element (JSON string):" + JSON.stringify(element));
+
+        res.success(_session.getId(), element);
+    },
+
+    _postElementsCommand = function(req, res) {
+        // Search for WebElements in this element
+        // TODO should handle XPathLookupError - probably an exception will be thrown by the locator
+        console.log("_postElementsCommand() :: locating elements...");
+        var elements = _locator.locateElements(JSON.parse(req.post), _getJSON());
+        console.log("_postElementsCommand() :: got elements (JSON string):" + JSON.stringify(elements));
+
+        res.success(_session.getId(), elements);
+    },
+
+    _postClickCommand = function(req, res) {
+        var clickAtom = require("./webdriver_atoms.js").get("click");
+            result = _session.getCurrentWindow().evaluate(clickAtom, _getJSON());
+console.log("_postClickCommand :: result=" + result);
+        // TODO handle errors
+        //throw _errors.createInvalidReqInvalidCommandMethodEH(req);
+        res.success(_session.getId());
+    },
+
+    _getSelectedCommand = function(req, res) {
+        var selectedAtom = require("./webdriver_atoms.js").get("is_selected");
+            result = JSON.parse(_session.getCurrentWindow().evaluate(selectedAtom, _getJSON()));
+        if(result.status === 0) {
+            res.success(_session.getId(), result.value);
+        } else {
+            // spec does not detail which errors to throw, although it is implied
+            // by the response of the atom
+console.log("_getSelectedCommand :: result=" + result);
+            throw _errors.createInvalidReqInvalidCommandMethodEH(req);
+        }
+    },
+
+    _getJSON = function(elementId) {
         return {
-            "ELEMENT" : _getId()
+            "ELEMENT" : elementId || _getId()
         };
     },
 

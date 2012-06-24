@@ -2,6 +2,7 @@
 This file is part of the GhostDriver project from Neustar inc.
 
 Copyright (c) 2012, Ivan De Marino <ivan.de.marino@gmail.com> - Neustar inc.
+Copyright (c) 2012, Alex Anderson <@alxndrsn>
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -43,7 +44,7 @@ ghostdriver.WebElementLocator = function(session) {
     _elements = {},
     _session = session,
 
-    _locateElement = function(locator) {
+    _locateElement = function(locator, parent_element) {
         var elementId,
             findElementAtom = require("./webdriver_atoms.js").get("find_element"),
             findElementRes;
@@ -57,7 +58,8 @@ ghostdriver.WebElementLocator = function(session) {
             findElementRes = _session.getCurrentWindow().evaluate(
                 findElementAtom,
                 locator.using,
-                locator.value);
+                locator.value,
+                parent_element);
 
             // console.log("Find Element Result: "+JSON.stringify(findElementRes));
 
@@ -71,16 +73,33 @@ ghostdriver.WebElementLocator = function(session) {
                 return null;
             }
 
-            // If the Element is found, create a relative WebElement Request Handler and return it
             if (typeof(findElementRes.status) !== "undefined" && findElementRes.status === 0) {
-                elementId = findElementRes.value["ELEMENT"];
-                // Create and Store a new WebElement if it doesn't exist yet
-                if (typeof(_elements[elementId]) === "undefined") {
-                    // TODO There is no need to store elements here and have them wrapped in WebElementReqHand
-                    _elements[elementId] = new ghostdriver.WebElementReqHand(elementId, _session);
-                }
-                return _elements[elementId];
+                return findElementRes.value; // N.B. this could be null, which is completely valid.  However this can currently be mistaken for an error
             }
+        }
+
+        // Not found because of invalid Locator
+        return null;    // TODO Handle unsupported locator strategy error
+    },
+
+    _locateElements = function(locator, parent_element) {
+        var findElementsAtom = require("./webdriver_atoms.js").get("find_elements");
+        if (locator && locator.using && locator.value &&         //< if well-formed input
+            _supportedStrategies.indexOf(locator.using) >= 0) {  //< and if strategy is recognized
+
+            // Use Atom "find_result" to search for element in the page
+            findElementRes = _session.getCurrentWindow().evaluate(findElementsAtom, locator.using, locator.value, parent_element);
+            console.log("findElementRes=" + findElementRes);
+
+            // De-serialise the result of the Atom execution
+            try {
+                findElementRes = JSON.parse(findElementRes);
+            } catch (e) {
+                console.error("Invalid locator received: "+JSON.stringify(locator));
+                return null;
+            }
+
+            return findElementRes.value;
         }
 
         // Not found because of invalid Locator
@@ -105,12 +124,13 @@ ghostdriver.WebElementLocator = function(session) {
                 return _elements[id];
             }
         }
-        return null;
+        return _elements[id];
     };
 
     // public:
     return {
         locateElement : _locateElement,
+        locateElements : _locateElements,
         getElement : _getElement
     };
 };

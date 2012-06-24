@@ -1,0 +1,27 @@
+<html>
+	<head>
+		<title>Confirm</title>
+		<style>
+		</style>
+	</head>
+	<body>
+		<div id="result"></div>
+		<div id="cancelled"></div>
+		<script language="javascript">
+			window.onload = function() {
+				var result = confirm("I am an alert of type confirm"),
+					text, elementId;
+				if(result === false) {
+					elementId = "cancelled";
+					text = "cancelled";
+				} else {
+					elementId = "result";
+					text = "confirmed";
+				}
+				text = document.createTextNode(text);
+				document.getElementById(elementId).appendChild(text);
+			}
+		</script>
+	</body>
+</html>
+

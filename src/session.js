@@ -65,6 +65,7 @@ ghostdriver.Session = function(desiredCapabilities) {
             PAGE_LOAD       : "page load"
         }
     },
+    _alertStatus = {},
     _windows = {},  //< windows are "webpage" in Phantom-dialect
     _currentWindowHandle = null,
     _id = (++ghostdriver.Session.instanceCounter) + '', //< must be a string, even if I use progressive integers as unique ID
@@ -113,8 +114,62 @@ ghostdriver.Session = function(desiredCapabilities) {
         page.windowHandle = newWindowHandle;
         page.evaluateAndWaitForLoad = _evaluateAndWaitForLoadDecorator;
         page.setOneShotCallback = _setOneShotCallbackDecorator;
+        page.onAlert = _onAlertHandler;
+        page.onPrompt = _onAlertHandler;
+        page.onConfirm = _onAlertHandler;
 
         return page;
+    },
+
+    _onAlertHandler = function(text) {
+        var result;
+console.log("_onAlertHandler :: ENTRY :: text=" + text);
+        _alertStatus.displayed = true;
+        _alertStatus.text = text;
+        while(_alertStatus.displayed === true) {
+		console.log("_onAlertHandler :: tick");
+		console.log("_onAlertHandler :: phantom=" + phantom);
+		console.log("_onAlertHandler :: phantom.sleep=" + phantom.sleep);
+		console.log("_onAlertHandler :: _getCurrentWindow().sleep=" + _getCurrentWindow().sleep);
+		console.log("_onAlertHandler :: phantom=" + JSON.stringify(phantom));
+		phantom.sleep(200); }
+        if(_alertStatus.accepted) result = _alertStatus.keyBuffer;
+        else result = null;
+        _alertStatus = {keyBuffer:""};
+console.log("_onAlertHandler :: EXIT :: result=" + result);
+        return result;
+    },
+
+    _getAlertText = function() {
+console.log("_getAlertText :: _alertStatus=" + JSON.stringify(_alertStatus));
+        if(!_alertStatus.displayed) return null;
+        return _alertStatus.text;
+    },
+
+    _sendKeysToAlert = function(keys) {
+console.log("_sendKeysToAlert :: _alertStatus=" + JSON.stringify(_alertStatus));
+        if(!_alertStatus.displayed) return false;
+        _alertStatus.keyBuffer += keys;
+        return true;
+    },
+
+    _acceptAlert = function() {
+console.log("_acceptAlert :: ENTRY :: _alertStatus=" + JSON.stringify(_alertStatus));
+        if(!_alertStatus.displayed) {
+            return false;
+        }
+        _alertStatus.accepted = true;
+        _alertStatus.displayed = false;
+        return true;
+    },
+
+    _dismissAlert = function() {
+console.log("_dismissAlert :: ENTRY :: _alertStatus=" + JSON.stringify(_alertStatus));
+        if(!_alertStatus.displayed) {
+            return false;
+        }
+        _alertStatus.displayed = false;
+        return true;
     },
 
     _getCurrentWindow = function() {
@@ -192,7 +247,11 @@ ghostdriver.Session = function(desiredCapabilities) {
         getTimeout : _getTimeout,
         timeoutNames : _timeoutNames,
         getCurrentWindowHandle : _getCurrentWindowHandle,
-        getWindowHandles : _getWindowHandles
+        getWindowHandles : _getWindowHandles,
+        getAlertText : _getAlertText,
+        sendKeysToAlert : _sendKeysToAlert,
+        acceptAlert : _acceptAlert,
+        dismissAlert : _dismissAlert
     };
 };
 

@@ -1,9 +1,22 @@
 apply plugin: "java"
 apply plugin: "idea"
 apply plugin: "eclipse"
+apply plugin: 'groovy'
+
+import org.mortbay.jetty.*
+import org.mortbay.jetty.handler.*
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'org.mortbay.jetty:jetty-embedded:6.1.26'
+    }
+}
 
 task wrapper(type: Wrapper) {
-    gradleVersion "1.0-rc-3"
+    gradleVersion "1.0"
 }
 
 repositories {
@@ -14,9 +27,16 @@ ext.seleniumVersion = "2.22.0"
 
 dependencies {
     ["selenium-java", "selenium-remote-driver", "selenium-server"].each {
-        compile "org.seleniumhq.selenium:$it:$seleniumVersion"
+        testCompile "org.seleniumhq.selenium:$it:$seleniumVersion"
     }
     testCompile "junit:junit-dep:4.8+"
+
+    // Geb test dependencies
+    groovy 'org.codehaus.groovy:groovy-all:1.8.6'
+    def gebVersion = '0.7.0'
+    testCompile "org.codehaus.geb:geb-spock:$gebVersion"
+    testCompile "org.spockframework:spock-core:0.6-groovy-1.8"
+    // Jetty server for Geb tests
 }
 
 tasks.withType(JavaExec) {
@@ -26,13 +46,42 @@ tasks.withType(JavaExec) {
 
 test {
     //makes the standard streams (err and out) visible at console when running tests
-   testLogging.showStandardStreams = true
+    testLogging.showStandardStreams = true
 
-   //listening to test execution events
-   beforeTest { descriptor ->
-      logger.lifecycle("Running test: " + descriptor)
-   }
-   onOutput { descriptor, event ->
-      logger.lifecycle("Test: " + descriptor + " produced standard out/err: " + event.message )
-   }
+    //listening to test execution events
+    beforeTest { descriptor ->
+        logger.lifecycle("Running test: " + descriptor)
+    }
+    onOutput { descriptor, event ->
+        logger.lifecycle("Test: " + descriptor + " produced standard out/err: " + event.message )
+    }
 }
+
+task startJetty {
+// FIXME this seems to be run whether requested or not
+println '######################'
+println '### STARTING JETTY ###'
+println '######################'
+    // TODO probably neater to convert this to use Gradle's JettyRun and JettyStop tasks
+    def server = new Server(4567)
+    def root = new ContextHandler(server, "/")
+    root.setResourceBase("./src/test/resources/www_root")
+    root.addHandler(new org.mortbay.jetty.handler.ResourceHandler())
+    server.start()
+}
+
+task startGhostdriver() {
+// FIXME this seems to be run whether requested or not
+println '****************************'
+println '*** STARTING GHOSTDRIVER ***'
+println '****************************'
+    // start ghostdriver asynchronously and TODO: retain a handle for stopping it later
+    if(!phantomExecutable) {
+        System.err.println("You do not have 'phantomExecutable' defined in your gradle.properties.  Please set this.");
+        System.exit(1)
+    }
+    // N.B. this process is killed when gradle completes
+    "$phantomExecutable ../src/main.js 8080".execute()
+            .consumeProcessOutput() // Have to consume process output as otherwise process deadlocks
+}
+

@@ -31,6 +31,7 @@ var ghostdriver = ghostdriver || {};
 ghostdriver.SessionReqHand = function(session) {
     // private:
     var
+    _alertMonitor = {displayed:false, keyBuffer:''},
     _protoParent = ghostdriver.SessionReqHand.prototype,
     _session = session,
     _locator = new ghostdriver.WebElementLocator(_session),
@@ -41,6 +42,8 @@ ghostdriver.SessionReqHand = function(session) {
         ELEMENT_DIR     : "/element/",
         TITLE           : "title",
         WINDOW          : "window",
+        CURRENT         : "current",
+        SIZE            : "size",
         FORWARD         : "forward",
         BACK            : "back",
         REFRESH         : "refresh",
@@ -55,7 +58,10 @@ ghostdriver.SessionReqHand = function(session) {
         WINDOW_HANDLES  : "window_handles",
         FRAME           : "frame",
         SOURCE          : "source",
-        COOKIE          : "cookie"
+        COOKIE          : "cookie",
+        ACCEPT_ALERT    : "accept_alert",
+        DISMISS_ALERT   : "dismiss_alert",
+        ALERT_TEXT      : "alert_text"
     },
     _errors = require("./errors.js"),
 
@@ -66,8 +72,21 @@ ghostdriver.SessionReqHand = function(session) {
 
         // console.log("Request => " + JSON.stringify(req, null, '  '));
 
-        // Handle "/url" GET and POST
-        if (req.urlParsed.file === _const.URL) {                                         //< ".../url"
+        if (req.urlParsed.file === _const.ELEMENT && req.urlParsed.chunks.length === 1 && req.method === "POST") {    //< ".../element"
+            _postElementCommand(req, res);
+            return;
+        } else if (req.urlParsed.directory === _const.ELEMENT_DIR) {                    //< ".../element/:elementId" or ".../element/active"
+            // TODO
+        } else if (req.urlParsed.chunks[0] === _const.ELEMENT) {                        //< ".../element/:elementId/COMMAND"
+            // Get the WebElementRH and, if found, re-route request to it
+            element = _locator.getElement(decodeURIComponent(req.urlParsed.chunks[1]));
+            if (element !== null) {
+                _protoParent.reroute.call(element, req, res, _const.ELEMENT_DIR + req.urlParsed.chunks[1]);
+            } else {
+                throw _errors.createInvalidReqVariableResourceNotFoundEH(req);
+            }
+            return;
+        } else if (req.urlParsed.file === _const.URL) {                                        //< ".../url"
             if (req.method === "GET") {
                 _getUrlCommand(req, res);
             } else if (req.method === "POST") {
@@ -88,20 +107,23 @@ ghostdriver.SessionReqHand = function(session) {
                 _postWindowCommand(req, res);   //< change focus to the given window
             }
             return;
-        } else if (req.urlParsed.file === _const.ELEMENT && req.method === "POST") {    //< ".../element"
-            _postElementCommand(req, res);
-            return;
-        } else if (req.urlParsed.directory === _const.ELEMENT_DIR) {                    //< ".../element/:elementId" or ".../element/active"
-            // TODO
-        } else if (req.urlParsed.chunks[0] === _const.ELEMENT) {                        //< ".../element/:elementId/COMMAND"
-            // Get the WebElementRH and, if found, re-route request to it
-            element = _locator.getElement(decodeURIComponent(req.urlParsed.chunks[1]));
-            if (element !== null) {
-                _protoParent.reroute.call(element, req, res, _const.ELEMENT_DIR + req.urlParsed.chunks[1]);
-            } else {
-                throw _errors.createInvalidReqVariableResourceNotFoundEH(req);
+        } else if (req.urlParsed.chunks[0] === _const.WINDOW) {
+            var windowHandle = req.urlParsed.chunks[1],
+                command = req.urlParsed.chunks[2];
+console.log("WindowHandle: " + windowHandle);
+console.log("Command: " + command);
+            // TODO instead of checking request is for current, we should
+            // check if it's not, and if not change window... and then change back(?)
+            // TODO handle NoSuchWindow - If the specified window cannot be found.
+            if(windowHandle === _const.CURRENT) {
+                if(command === _const.SIZE && req.method === "POST") {
+                    _postWindowSizeCommand(req, res);
+                    return;
+                } else if(command === _const.SIZE && req.method === "GET") {
+                    _getWindowSizeCommand(req, res);
+                    return;
+                }
             }
-            return;
         } else if (req.urlParsed.file === _const.FORWARD && req.method === "POST") {
             _forwardCommand(req, res);
             return;
@@ -137,6 +159,18 @@ ghostdriver.SessionReqHand = function(session) {
                 _deleteCookieCommand(req, res);
                 return;
             }
+        } else if (req.urlParsed.file === _const.ACCEPT_ALERT && req.method === "POST") {
+            _postAcceptAlertCommand(req, res);
+            return;
+        } else if (req.urlParsed.file === _const.DISMISS_ALERT && req.method === "POST") {
+            _postDismissAlertCommand(req, res);
+            return;
+        } else if (req.urlParsed.file === _const.ALERT_TEXT && req.method === "GET") {
+            _getAlertTextCommand(req, res);
+            return;
+        } else if (req.urlParsed.file === _const.ALERT_TEXT && req.method === "POST") {
+            _postAlertTextCommand(req, res);
+            return;
         }
 
         throw _errors.createInvalidReqInvalidCommandMethodEH(req);
@@ -148,6 +182,65 @@ ghostdriver.SessionReqHand = function(session) {
         };
     },
 
+    _postAcceptAlertCommand = function(req, res) {
+console.log("_postAcceptAlertCommand :: ENTRY");
+        if(_session.acceptAlert()) {
+            res.success(_session.getId());
+        } else {
+            _errors.handleFailedCommandEH(
+                _errors.FAILED_CMD_STATUS.NO_ALERT_OPEN_ERROR,
+                "what do we say?  there was no alert apparently",
+                req,
+                res,
+                _session,
+                "SessionReqHand");
+        }
+    },
+
+    _postDismissAlertCommand = function(req, res) {
+console.log("_postDismissAlertCommand :: ENTRY");
+        if(_session.dismissAlert()) {
+            res.success(_session.getId());
+        } else {
+            _errors.handleFailedCommandEH(
+                _errors.FAILED_CMD_STATUS.NO_ALERT_OPEN_ERROR,
+                "what do we say?  there was no alert apparently",
+                req,
+                res,
+                _session,
+                "SessionReqHand");
+        }
+    },
+
+    _getAlertTextCommand = function(req, res) {
+        var text = _session.getAlertText();
+console.log("_getAlertTextCommand :: text=" + text);
+        if(text) {
+            res.success(_session.getId(), text);
+        } else {
+            _errors.handleFailedCommandEH(
+                _errors.FAILED_CMD_STATUS.NO_ALERT_OPEN_ERROR,
+                "what do we say?  there was no alert apparently",
+                req,
+                res,
+                _session,
+                "SessionReqHand");
+        }
+    },
+
+    _postAlertTextCommand = function(req, res) {
+        if(_session.sendKeysToAlert(req.text)) {
+            res.success(_session.getId());
+        } else {
+            _errors.handleFailedCommandEH(
+                _errors.FAILED_CMD_STATUS.NO_ALERT_OPEN_ERROR,
+                "what do we say?  there was no alert apparently",
+                req,
+                res,
+                _session,
+                "SessionReqHand");
+        }
+    },
 
     _refreshCommand = function(req, res) {
         var successHand = _createOnSuccessHandler(res);
@@ -270,11 +363,19 @@ ghostdriver.SessionReqHand = function(session) {
         if (typeof(postObj) === "object" && postObj.url) {
             // Open the given URL and, when done, return "HTTP 200 OK"
             _session.getCurrentWindow().open(postObj.url, function(status) {
-                if (!pageOpenTimedout) {
+                if (!pageOpenTimedout && ""+res!="null") {
                     // Callback received: don't need the timer anymore
                     clearTimeout(timer);
 
+console.log("STATUS: " + status);
                     if (status === "success") {
+console.log("res=" + res);
+console.log("res==null?" + (res==null));
+console.log("res===null?" + (res===null));
+if(res) { console.log("evaluates true"); } else { console.log("evaluates false"); }
+console.log("res=" + JSON.stringify(res));
+console.log("res.success=...");
+console.log("..." + res.success);
                         res.success(_session.getId());
                     } else {
                         _errors.handleInvalidReqInvalidCommandMethodEH(req, res);
@@ -401,6 +502,7 @@ ghostdriver.SessionReqHand = function(session) {
     },
 
     _deleteCookieCommand = function(req, res) {
+	// Delete all cookies visible to the current page.
         _session.getCurrentWindow().evaluate(function() {
             var p = document.cookie.split(";"),
                 i, key;
@@ -424,6 +526,24 @@ ghostdriver.SessionReqHand = function(session) {
         // TODO An optional JSON parameter "name" might be given
     },
 
+    _postWindowSizeCommand = function(req, res) {
+        // TODO handle errors
+        var params = JSON.parse(req.post),
+            width = params.width,
+            height = params.height;
+
+        if(typeof(params.width) !== "number" || typeof(params.height) !== "number") {
+            throw _errors.createInvalidReqMissingCommandParameterEH(req);
+        }
+
+        _session.getCurrentWindow().viewportSize = {width:width, height:height}
+        res.success(_session.getId());
+    },
+
+    _getWindowSizeCommand = function(req, res) {
+          res.success(_session.getId(), _session.getCurrentWindow().viewportSize);
+    },
+
     _getTitleCommand = function(req, res) {
         var result = _session.getCurrentWindow().evaluate(function() { return document.title; });
         res.success(_session.getId(), result);
@@ -440,7 +560,7 @@ ghostdriver.SessionReqHand = function(session) {
         do {
             element = _locator.locateElement(JSON.parse(req.post));
             if (element) {
-                res.success(_session.getId(), element.getJSON());
+                res.success(_session.getId(), element);
                 return;
             }
         } while(searchStartTime + _session.getTimeout(_session.timeoutNames().IMPLICIT) >= new Date().getTime());

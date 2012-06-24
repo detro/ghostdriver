@@ -12,3 +12,8 @@ build
 *.ipr
 *.iws
 *.class
+
+# vim temp files
+*.swp
+*.swo
+*.orig

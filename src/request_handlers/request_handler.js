@@ -111,6 +111,7 @@ ghostdriver.RequestHandler = function() {
                 this,
                 session,
                 "ReqHand");
+            return;
         }
 
         // An error occurred but we got an error report to use
@@ -122,6 +123,7 @@ ghostdriver.RequestHandler = function() {
                 this,
                 session,
                 "ReqHand");
+            return;
         }
 
         // If we arrive here, everything should be fine, birds are singing, the sky is blue
