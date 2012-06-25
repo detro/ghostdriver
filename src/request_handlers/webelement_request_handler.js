@@ -40,7 +40,8 @@ ghostdriver.WebElementReqHand = function(id, session) {
         DISPLAYED       : "displayed",
         ATTRIBUTE       : "attribute",
         NAME            : "name",
-        CLICK           : "click"
+        CLICK           : "click",
+        SELECTED        : "selected"
 
     },
     _errors = require("./errors.js"),
@@ -69,6 +70,9 @@ ghostdriver.WebElementReqHand = function(id, session) {
             return;
         } else if (req.urlParsed.file === _const.CLICK && req.method === "POST") {
             _postClickCommand(req, res);
+            return;
+        } else if (req.urlParsed.file === _const.SELECTED && req.method === "GET") {
+            _getSelectedCommand(req, res);
             return;
         } // else ...
 
@@ -158,6 +162,13 @@ ghostdriver.WebElementReqHand = function(id, session) {
     _postClickCommand = function(req, res) {
         var clickAtom = require("./webdriver_atoms.js").get("click"),
             result = _session.getCurrentWindow().evaluate(clickAtom, _getJSON());
+
+        res.respondBasedOnResult(_session, req, result);
+    },
+
+    _getSelectedCommand = function(req, res) {
+        var selectedAtom = require("./webdriver_atoms.js").get("is_selected");
+            result = JSON.parse(_session.getCurrentWindow().evaluate(selectedAtom, _getJSON()));
 
         res.respondBasedOnResult(_session, req, result);
     },
