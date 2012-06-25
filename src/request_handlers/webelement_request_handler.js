@@ -39,7 +39,8 @@ ghostdriver.WebElementReqHand = function(id, session) {
         SUBMIT          : "submit",
         DISPLAYED       : "displayed",
         ATTRIBUTE       : "attribute",
-        NAME            : "name"
+        NAME            : "name",
+        CLICK           : "click"
 
     },
     _errors = require("./errors.js"),
@@ -65,6 +66,9 @@ ghostdriver.WebElementReqHand = function(id, session) {
             return;
         } else if (req.urlParsed.file === _const.NAME && req.method === "GET") {
             _getNameCommand(req, res);
+            return;
+        } else if (req.urlParsed.file === _const.CLICK && req.method === "POST") {
+            _postClickCommand(req, res);
             return;
         } // else ...
 
@@ -149,6 +153,13 @@ ghostdriver.WebElementReqHand = function(id, session) {
         submitRes = _getSession().getCurrentWindow().evaluate(submitAtom, _getJSON());
 
         // TODO - Error handling based on the value of "submitRes"
+    },
+
+    _postClickCommand = function(req, res) {
+        var clickAtom = require("./webdriver_atoms.js").get("click"),
+            result = _session.getCurrentWindow().evaluate(clickAtom, _getJSON());
+
+        res.respondBasedOnResult(_session, req, result);
     },
 
     _getJSON = function() {
