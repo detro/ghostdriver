@@ -89,8 +89,9 @@ ghostdriver.WebElementReqHand = function(id, session) {
     },
 
     _getDisplayedCommand = function(req, res) {
-        var isDisplayedAtom = require("./webdriver_atoms.js").get("is_displayed");
-        var displayed = _session.getCurrentWindow().evaluate(isDisplayedAtom, _getJSON());
+        var displayed = _session.getCurrentWindow().evaluate(
+            require("./webdriver_atoms.js").get("is_displayed"),
+            _getJSON());
         res.respondBasedOnResult(_session, req, displayed);
     },
 
