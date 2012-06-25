@@ -34,7 +34,7 @@ public class FrameSwitchingTest extends BaseTest {
     }
 
     @Test(expected = NoSuchFrameException.class)
-    public void failtToswitchToFrameByName() throws Exception {
+    public void failToSwitchToFrameByName() throws Exception {
         WebDriver d = getDriver();
         d.get("http://docs.wpm.neustar.biz/testscript-api/index.html");
         d.switchTo().frame("unavailable frame");

@@ -3,18 +3,18 @@ apply plugin: "idea"
 apply plugin: "eclipse"
 
 task wrapper(type: Wrapper) {
-    gradleVersion "1.0-rc-3"
+    gradleVersion "1.0"
 }
 
 repositories {
     mavenCentral()
 }
 
-ext.seleniumVersion = "2.22.0"
+ext.seleniumVersion = "2.24.1"
 
 dependencies {
     ["selenium-java", "selenium-remote-driver", "selenium-server"].each {
-        compile "org.seleniumhq.selenium:$it:$seleniumVersion"
+        testCompile "org.seleniumhq.selenium:$it:$seleniumVersion"
     }
     testCompile "junit:junit-dep:4.8+"
 }
