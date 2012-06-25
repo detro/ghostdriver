@@ -42,7 +42,8 @@ ghostdriver.WebElementReqHand = function(id, session) {
         NAME            : "name",
         CLICK           : "click",
         SELECTED        : "selected",
-        CLEAR           : "clear"
+        CLEAR           : "clear",
+        CSS             : "css"
     },
     _errors = require("./errors.js"),
 
@@ -76,6 +77,9 @@ ghostdriver.WebElementReqHand = function(id, session) {
             return;
         } else if (req.urlParsed.file === _const.CLEAR && req.method === "POST") {
             _postClearCommand(req, res);
+            return;
+        } else if (req.urlParsed.chunks[0] === _const.CSS && req.method === "GET") {
+            _getCssCommand(req, res);
             return;
         } // else ...
 
@@ -184,6 +188,24 @@ ghostdriver.WebElementReqHand = function(id, session) {
                 require("./webdriver_atoms.js").get("clear"),
                 _getJSON());
         res.respondBasedOnResult(_session, req, result);
+    },
+
+    _getCssCommand = function(req, res) {
+        var cssPropertyName = req.urlParsed.file,
+            result;
+
+        // Check that a property name was indeed provided
+        if (typeof(cssPropertyName) === "string" || cssPropertyName.length > 0) {
+            result = _session.getCurrentWindow().evaluate(
+                require("./webdriver_atoms.js").get("execute_script"),
+                "return window.getComputedStyle(arguments[0]).getPropertyValue(arguments[1]);",
+                [_getJSON(), cssPropertyName]);
+
+            res.respondBasedOnResult(_session, req, result);
+            return;
+        }
+
+        throw _errors.createInvalidReqMissingCommandParameterEH(req);
     },
 
     _getJSON = function() {
