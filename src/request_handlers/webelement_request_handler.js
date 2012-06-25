@@ -132,23 +132,6 @@ ghostdriver.WebElementReqHand = function(id, session) {
         throw _errors.createInvalidReqMissingCommandParameterEH(req);
     },
 
-    _getNameCommand = function(req, res) {
-        var result = _session.getCurrentWindow().evaluate(
-            require("./webdriver_atoms.js").get("execute_script"),
-            "return arguments[0].tagName;",
-            [_getJSON()]);
-        // N.B. must convert value to a lowercase string as per WebDriver JSONWireProtocol spec
-        if(result.status === 0) result.value = result.value.toLowerCase();
-        res.respondBasedOnResult(_session, req, result);
-    },
-
-    _getAttributeCommand = function(req, res) {
-        var attributeValueAtom = require("./webdriver_atoms.js").get("get_attribute_value"),
-            attributeName = req.urlParsed.file,
-            response = _session.getCurrentWindow().evaluate(attributeValueAtom, _getJSON(), attributeName);
-        res.respondBasedOnResult(_session, req, response);
-    },
-
     _submitCommand = function(req, res) {
         var submitRes,
             submitAtom = require("./webdriver_atoms.js").get("submit");
