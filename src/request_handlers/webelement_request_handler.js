@@ -43,7 +43,9 @@ ghostdriver.WebElementReqHand = function(id, session) {
         CLICK           : "click",
         SELECTED        : "selected",
         CLEAR           : "clear",
-        CSS             : "css"
+        CSS             : "css",
+        TEXT            : "text",
+        EQUALS_DIR      : "equals"
     },
     _errors = require("./errors.js"),
 
@@ -80,6 +82,12 @@ ghostdriver.WebElementReqHand = function(id, session) {
             return;
         } else if (req.urlParsed.chunks[0] === _const.CSS && req.method === "GET") {
             _getCssCommand(req, res);
+            return;
+        } else if (req.urlParsed.file === _const.TEXT && req.method === "GET") {
+            _getTextCommand(req, res);
+            return;
+        } else if (req.urlParsed.chunks[0] === _const.EQUALS && req.method === "GET") {
+            _getEqualsCommand(req, res);
             return;
         } // else ...
 
@@ -134,7 +142,7 @@ ghostdriver.WebElementReqHand = function(id, session) {
         var attributeValueAtom = require("./webdriver_atoms.js").get("get_attribute_value"),
             result;
 
-        if (typeof(req.urlParsed.file) !== "undefined") {
+        if (typeof(req.urlParsed.file) === "string" && req.urlParsed.file.length > 0) {
             // Read the attribute
             result = _session.getCurrentWindow().evaluate(
                 attributeValueAtom,     // < Atom to read an attribute
@@ -143,6 +151,27 @@ ghostdriver.WebElementReqHand = function(id, session) {
 
             res.respondBasedOnResult(_session, req, result);
             return;
+        }
+
+        throw _errors.createInvalidReqMissingCommandParameterEH(req);
+    },
+
+    _getTextCommand = function(req, res) {
+        var result = _session.getCurrentWindow().evaluate(
+            require("./webdriver_atoms.js").get("get_text"),
+            _getJSON());
+        res.respondBasedOnResult(_session, req, result);
+    },
+
+    _getEqualsCommand = function(req, res) {
+        var result;
+
+        if (typeof(req.urlParsed.file) === "string" && req.urlParsed.file.length > 0) {
+            result = _session.getCurrentWindow().evaluate(
+                require("./webdriver_atoms.js").get("execute_script"),
+                "return arguments[0].isSameNode(arguments[1]);",
+                [_getJSON(), _getJSON(req.urlParsed.file)]);
+            res.success(_session.getId(), result);
         }
 
         throw _errors.createInvalidReqMissingCommandParameterEH(req);
@@ -209,9 +238,14 @@ ghostdriver.WebElementReqHand = function(id, session) {
         throw _errors.createInvalidReqMissingCommandParameterEH(req);
     },
 
-    _getJSON = function() {
+    /** This method can generate any Element JSON: just provide an ID.
+     * Will return the one of the current Element if no ID is provided.
+     * @param elementId ID of the Element to describe in JSON format,
+     *      or undefined to get the one fo the current Element.
+     */
+    _getJSON = function(elementId) {
         return {
-            "ELEMENT" : _getId()
+            "ELEMENT" : elementId || _getId()
         };
     },
 
