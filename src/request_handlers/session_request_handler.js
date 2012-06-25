@@ -450,21 +450,33 @@ ghostdriver.SessionReqHand = function(session) {
     },
 
     _postWindowSizeCommand = function(req, res) {
-        // TODO handle errors
         var params = JSON.parse(req.post),
-            width = params.width,
-            height = params.height;
+            newWidth = params.width,
+            newHeight = params.height;
 
-        if(typeof(params.width) !== "number" || typeof(params.height) !== "number") {
-            throw _errors.createInvalidReqMissingCommandParameterEH(req);
+        // If width/height are passed in string, force them to numbers
+        if (typeof(params.width) === "string") {
+            newWidth = parseInt(params.width, 10);
+        }
+        if (typeof(params.height) === "string") {
+            newHeight = parseInt(params.height, 10);
         }
 
-        _session.getCurrentWindow().viewportSize = {width:width, height:height}
+        // If a number was not found, the command is
+        if (isNaN(newWidth) || isNaN(newHeight)) {
+            throw _errors.createInvalidReqInvalidCommandMethodEH(req);
+        }
+
+        _session.getCurrentWindow().viewportSize = {
+            width : newWidth,
+            height : newHeight
+        };
         res.success(_session.getId());
     },
 
     _getWindowSizeCommand = function(req, res) {
-          res.success(_session.getId(), _session.getCurrentWindow().viewportSize);
+        // Returns response in the format "{width: number, height: number}"
+        res.success(_session.getId(), _session.getCurrentWindow().viewportSize);
     },
 
     _getTitleCommand = function(req, res) {
