@@ -12,3 +12,4 @@ build
 *.ipr
 *.iws
 *.class
+*.orig

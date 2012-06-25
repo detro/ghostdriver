@@ -41,6 +41,8 @@ ghostdriver.SessionReqHand = function(session) {
         ELEMENT_DIR     : "/element/",
         TITLE           : "title",
         WINDOW          : "window",
+        CURRENT         : "current",
+        SIZE            : "size",
         FORWARD         : "forward",
         BACK            : "back",
         REFRESH         : "refresh",
@@ -88,6 +90,23 @@ ghostdriver.SessionReqHand = function(session) {
                 _postWindowCommand(req, res);   //< change focus to the given window
             }
             return;
+        } else if (req.urlParsed.chunks[0] === _const.WINDOW) {
+            var windowHandle = req.urlParsed.chunks[1],
+                command = req.urlParsed.chunks[2];
+
+            // TODO instead of checking request is for current, we should
+            // check if it's not, and if not then apply to specific window instead
+            // of _session.getCurrentWindow()
+            // TODO handle NoSuchWindow - If the specified window cannot be found.
+            if(windowHandle === _const.CURRENT) {
+                if(command === _const.SIZE && req.method === "POST") {
+                    _postWindowSizeCommand(req, res);
+                    return;
+                } else if(command === _const.SIZE && req.method === "GET") {
+                    _getWindowSizeCommand(req, res);
+                    return;
+                }
+            }
         } else if (req.urlParsed.file === _const.ELEMENT && req.method === "POST") {    //< ".../element"
             _postElementCommand(req, res);
             return;
@@ -401,6 +420,7 @@ ghostdriver.SessionReqHand = function(session) {
     },
 
     _deleteCookieCommand = function(req, res) {
+        // Delete all cookies visible to the current page.
         _session.getCurrentWindow().evaluate(function() {
             var p = document.cookie.split(";"),
                 i, key;
@@ -422,6 +442,24 @@ ghostdriver.SessionReqHand = function(session) {
     _postWindowCommand = function(req, res) {
         // TODO
         // TODO An optional JSON parameter "name" might be given
+    },
+
+    _postWindowSizeCommand = function(req, res) {
+        // TODO handle errors
+        var params = JSON.parse(req.post),
+            width = params.width,
+            height = params.height;
+
+        if(typeof(params.width) !== "number" || typeof(params.height) !== "number") {
+            throw _errors.createInvalidReqMissingCommandParameterEH(req);
+        }
+
+        _session.getCurrentWindow().viewportSize = {width:width, height:height}
+        res.success(_session.getId());
+    },
+
+    _getWindowSizeCommand = function(req, res) {
+          res.success(_session.getId(), _session.getCurrentWindow().viewportSize);
     },
 
     _getTitleCommand = function(req, res) {
