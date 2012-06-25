@@ -41,8 +41,8 @@ ghostdriver.WebElementReqHand = function(id, session) {
         ATTRIBUTE       : "attribute",
         NAME            : "name",
         CLICK           : "click",
-        SELECTED        : "selected"
-
+        SELECTED        : "selected",
+        CLEAR           : "clear"
     },
     _errors = require("./errors.js"),
 
@@ -73,6 +73,9 @@ ghostdriver.WebElementReqHand = function(id, session) {
             return;
         } else if (req.urlParsed.file === _const.SELECTED && req.method === "GET") {
             _getSelectedCommand(req, res);
+            return;
+        } else if (req.urlParsed.file === _const.CLEAR && req.method === "POST") {
+            _postClearCommand(req, res);
             return;
         } // else ...
 
@@ -141,8 +144,7 @@ ghostdriver.WebElementReqHand = function(id, session) {
     },
 
     _submitCommand = function(req, res) {
-        var submitRes,
-            submitAtom = require("./webdriver_atoms.js").get("submit");
+        var submitRes;
 
         // Listen for the page to Finish Loading after the submit
         _getSession().getCurrentWindow().setOneShotCallback("onLoadFinished", function(status) {
@@ -154,22 +156,33 @@ ghostdriver.WebElementReqHand = function(id, session) {
             // TODO - clear thing up after we are done waiting
         });
 
-        submitRes = _getSession().getCurrentWindow().evaluate(submitAtom, _getJSON());
+        submitRes = _getSession().getCurrentWindow().evaluate(
+            require("./webdriver_atoms.js").get("submit"),
+            _getJSON());
 
         // TODO - Error handling based on the value of "submitRes"
     },
 
     _postClickCommand = function(req, res) {
-        var clickAtom = require("./webdriver_atoms.js").get("click"),
-            result = _session.getCurrentWindow().evaluate(clickAtom, _getJSON());
+        var result = _session.getCurrentWindow().evaluate(
+                require("./webdriver_atoms.js").get("click"),
+                _getJSON());
 
         res.respondBasedOnResult(_session, req, result);
     },
 
     _getSelectedCommand = function(req, res) {
-        var selectedAtom = require("./webdriver_atoms.js").get("is_selected");
-            result = JSON.parse(_session.getCurrentWindow().evaluate(selectedAtom, _getJSON()));
+        var result = JSON.parse(_session.getCurrentWindow().evaluate(
+                require("./webdriver_atoms.js").get("is_selected"),
+                _getJSON()));
 
+        res.respondBasedOnResult(_session, req, result);
+    },
+
+    _postClearCommand = function(req, res) {
+        var result = _session.getCurrentWindow().evaluate(
+                require("./webdriver_atoms.js").get("clear"),
+                _getJSON());
         res.respondBasedOnResult(_session, req, result);
     },
 
