@@ -270,7 +270,7 @@ ghostdriver.SessionReqHand = function(session) {
     },
 
     _getScreenshotCommand = function(req, res) {
-        var rendering = _session.getCurrentWindow().renderBase64PNG();
+        var rendering = _session.getCurrentWindow().renderBase64("png");
         res.success(_session.getId(), rendering);
     },
 
