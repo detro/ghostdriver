@@ -91,22 +91,8 @@ ghostdriver.SessionReqHand = function(session) {
             }
             return;
         } else if (req.urlParsed.chunks[0] === _const.WINDOW) {
-            var windowHandle = req.urlParsed.chunks[1],
-                command = req.urlParsed.chunks[2];
-
-            // TODO instead of checking request is for current, we should
-            // check if it's not, and if not then apply to specific window instead
-            // of _session.getCurrentWindow()
-            // TODO handle NoSuchWindow - If the specified window cannot be found.
-            if(windowHandle === _const.CURRENT) {
-                if(command === _const.SIZE && req.method === "POST") {
-                    _postWindowSizeCommand(req, res);
-                    return;
-                } else if(command === _const.SIZE && req.method === "GET") {
-                    _getWindowSizeCommand(req, res);
-                    return;
-                }
-            }
+            _handleWindow(req, res);
+            return;
         } else if (req.urlParsed.file === _const.ELEMENT && req.method === "POST") {    //< ".../element"
             _postElementCommand(req, res);
             return;
@@ -167,6 +153,25 @@ ghostdriver.SessionReqHand = function(session) {
         };
     },
 
+    _handleWindow = function(req, res) {
+        var windowHandle = req.urlParsed.chunks[1],
+            command = req.urlParsed.chunks[2];
+
+        // TODO - We need support for multiple windows:
+        // instead of checking request is for "current", we should
+        // check if it's not, and if not then apply to specific window instead
+        // of _session.getCurrentWindow().
+        // TODO handle NoSuchWindow - If the specified window cannot be found.
+        if(windowHandle === _const.CURRENT) {
+            if(command === _const.SIZE && req.method === "POST") {
+                _postWindowSizeCommand(req, res);
+                return;
+            } else if(command === _const.SIZE && req.method === "GET") {
+                _getWindowSizeCommand(req, res);
+                return;
+            }
+        }
+    },
 
     _refreshCommand = function(req, res) {
         var successHand = _createOnSuccessHandler(res);
