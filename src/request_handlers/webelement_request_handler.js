@@ -38,6 +38,7 @@ ghostdriver.WebElementReqHand = function(id, session) {
         VALUE           : "value",
         SUBMIT          : "submit",
         DISPLAYED       : "displayed",
+        ENABLED         : "enabled",
         ATTRIBUTE       : "attribute",
         NAME            : "name",
         CLICK           : "click",
@@ -64,6 +65,9 @@ ghostdriver.WebElementReqHand = function(id, session) {
             return;
         } else if (req.urlParsed.file === _const.DISPLAYED && req.method === "GET") {
             _getDisplayedCommand(req, res);
+            return;
+        } else if (req.urlParsed.file === _const.ENABLED && req.method === "GET") {
+            _getEnabledCommand(req, res);
             return;
         } else if (req.urlParsed.chunks[0] === _const.ATTRIBUTE && req.method === "GET") {
             _getAttributeCommand(req, res);
@@ -101,6 +105,13 @@ ghostdriver.WebElementReqHand = function(id, session) {
             require("./webdriver_atoms.js").get("is_displayed"),
             _getJSON());
         res.respondBasedOnResult(_session, req, displayed);
+    },
+
+    _getEnabledCommand = function(req, res) {
+        var enabled = _session.getCurrentWindow().evaluate(
+            require("./webdriver_atoms.js").get("is_enabled"),
+            _getJSON());
+        res.respondBasedOnResult(_session, req, enabled);
     },
 
     _valueCommand = function(req, res) {
