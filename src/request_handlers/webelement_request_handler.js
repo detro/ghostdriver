@@ -46,7 +46,8 @@ ghostdriver.WebElementReqHand = function(id, session) {
         CLEAR           : "clear",
         CSS             : "css",
         TEXT            : "text",
-        EQUALS_DIR      : "equals"
+        EQUALS_DIR      : "equals",
+        LOCATION        : "location"
     },
     _errors = require("./errors.js"),
 
@@ -93,6 +94,9 @@ ghostdriver.WebElementReqHand = function(id, session) {
         } else if (req.urlParsed.chunks[0] === _const.EQUALS && req.method === "GET") {
             _getEqualsCommand(req, res);
             return;
+        } else if (req.urlParsed.file === _const.LOCATION && req.method === "GET") {
+            _getLocationCommand(req, res);
+            return;
         } // else ...
 
         // TODO lots to do...
@@ -112,6 +116,13 @@ ghostdriver.WebElementReqHand = function(id, session) {
             require("./webdriver_atoms.js").get("is_enabled"),
             _getJSON());
         res.respondBasedOnResult(_session, req, enabled);
+    },
+
+    _getLocationCommand = function(req, res) {
+        var location = _session.getCurrentWindow().evaluate(
+            require("./webdriver_atoms.js").get("get_location"),
+            _getJSON());
+        res.respondBasedOnResult(_session, req, location);
     },
 
     _valueCommand = function(req, res) {
