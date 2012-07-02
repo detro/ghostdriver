@@ -47,7 +47,8 @@ ghostdriver.WebElementReqHand = function(id, session) {
         CSS             : "css",
         TEXT            : "text",
         EQUALS_DIR      : "equals",
-        LOCATION        : "location"
+        LOCATION        : "location",
+        SIZE            : "size"
     },
     _errors = require("./errors.js"),
 
@@ -97,6 +98,9 @@ ghostdriver.WebElementReqHand = function(id, session) {
         } else if (req.urlParsed.file === _const.LOCATION && req.method === "GET") {
             _getLocationCommand(req, res);
             return;
+        } else if (req.urlParsed.file === _const.SIZE && req.method === "GET") {
+            _getSizeCommand(req, res);
+            return;
         } // else ...
 
         // TODO lots to do...
@@ -124,6 +128,14 @@ ghostdriver.WebElementReqHand = function(id, session) {
             _getJSON());
         res.respondBasedOnResult(_session, req, location);
     },
+
+    _getSizeCommand = function(req, res) {
+        var size = _session.getCurrentWindow().evaluate(
+            require("./webdriver_atoms.js").get("get_size"),
+            _getJSON());
+        res.respondBasedOnResult(_session, req, size);
+    },
+
 
     _valueCommand = function(req, res) {
         var i, ilen,
