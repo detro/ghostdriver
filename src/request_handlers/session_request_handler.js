@@ -93,8 +93,11 @@ ghostdriver.SessionReqHand = function(session) {
         } else if (req.urlParsed.chunks[0] === _const.WINDOW) {
             _handleWindow(req, res);
             return;
-        } else if (req.urlParsed.file === _const.ELEMENT && req.method === "POST") {    //< ".../element"
+        } else if (req.urlParsed.file === _const.ELEMENT && req.method === "POST" && req.urlParsed.chunks.length == 1) {    //< ".../element"
             _postElementCommand(req, res);
+            return;
+        } else if (req.urlParsed.file === _const.ELEMENTS && req.method === "POST" && req.urlParsed.chunks.length == 1) {    //< ".../elements"
+            _postElementsCommand(req, res);
             return;
         } else if (req.urlParsed.directory === _const.ELEMENT_DIR) {                    //< ".../element/:elementId" or ".../element/active"
             // TODO
@@ -501,6 +504,34 @@ ghostdriver.SessionReqHand = function(session) {
         } while(searchStartTime + _session.getTimeout(_session.timeoutNames().IMPLICIT) >= new Date().getTime());
 
         throw _errors.createInvalidReqVariableResourceNotFoundEH(req);
+    };
+
+    _postElementsCommand = function(req, res) {
+        // Search for a WebElement on the Page
+        var elements,
+            searchStartTime = new Date().getTime(),
+            elementsResponse = "";
+
+        // Try to find at least one element
+        //  and retry if "startTime + implicitTimeout" is
+        //  greater (or equal) than current time
+        do {
+            elements = _locator.locateElements(JSON.parse(req.post));
+            if (elements.length > 0) {
+                // Manually construct the JSON response, since the return
+                // from locateElements is an array of WebElementReqHand
+                // objects.
+                for (var i = 0; i < elements.length; i++) {
+                    if (elementsResponse.length > 0) {
+                        elementsResponse += ", ";
+                    }
+                    elementsResponse += JSON.stringify(elements[i].getJSON());
+                }
+                break;
+            }
+        } while(searchStartTime + _session.getTimeout(_session.timeoutNames().IMPLICIT) >= new Date().getTime());
+
+        res.success(_session.getId(), JSON.parse("[" + elementsResponse + "]"));
     };
 
     // public:

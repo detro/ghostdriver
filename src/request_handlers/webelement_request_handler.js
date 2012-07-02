@@ -33,8 +33,11 @@ ghostdriver.WebElementReqHand = function(id, session) {
     var
     _id = id + '',      //< ensure this is always a string
     _session = session,
+    _locator = new ghostdriver.WebElementLocator(_session),
     _protoParent = ghostdriver.WebElementReqHand.prototype,
     _const = {
+        ELEMENT         : "element",
+        ELEMENTS        : "elements",
         VALUE           : "value",
         SUBMIT          : "submit",
         DISPLAYED       : "displayed",
@@ -57,7 +60,13 @@ ghostdriver.WebElementReqHand = function(id, session) {
 
         // TODO lots to do...
 
-        if (req.urlParsed.file === _const.VALUE && req.method === "POST") {
+        if (req.urlParsed.file === _const.ELEMENT && req.method === "POST") {
+            _findElementCommand(req, res);
+            return;
+        } else if (req.urlParsed.file === _const.ELEMENTS && req.method === "POST") {
+            _findElementsCommand(req, res);
+            return;
+        } else if (req.urlParsed.file === _const.VALUE && req.method === "POST") {
             _valueCommand(req, res);
             return;
         } else if (req.urlParsed.file === _const.SUBMIT && req.method === "POST") {
@@ -248,6 +257,54 @@ ghostdriver.WebElementReqHand = function(id, session) {
 
         throw _errors.createInvalidReqMissingCommandParameterEH(req);
     },
+
+    _findElementCommand = function(req, res) {
+        // Search for a WebElement on the Page
+        var element,
+            searchStartTime = new Date().getTime();
+
+         // Try to find the element
+        //  and retry if "startTime + implicitTimeout" is
+        //  greater (or equal) than current time
+        do {
+            element = _locator.locateElement(JSON.parse(req.post), _getId());
+            if (element) {
+                res.success(_session.getId(), element.getJSON());
+                return;
+            }
+        } while(searchStartTime + _session.getTimeout(_session.timeoutNames().IMPLICIT) >= new Date().getTime());
+
+        throw _errors.createInvalidReqVariableResourceNotFoundEH(req);
+    };
+
+    _findElementsCommand = function(req, res) {
+        // Search for a WebElement on the Page
+        var elements,
+            searchStartTime = new Date().getTime(),
+            elementsResponse = "";
+
+        // Try to find at least one element
+        //  and retry if "startTime + implicitTimeout" is
+        //  greater (or equal) than current time
+        do {
+            elements = _locator.locateElements(JSON.parse(req.post), _getId());
+            if (elements.length > 0) {
+                // Manually construct the JSON response, since the return
+                // from locateElements is an array of WebElementReqHand
+                // objects.
+                for (var i = 0; i < elements.length; i++) {
+                    if (elementsResponse.length > 0) {
+                        elementsResponse += ", ";
+                    }
+                    elementsResponse += JSON.stringify(elements[i].getJSON());
+                }
+                break;
+            }
+        } while(searchStartTime + _session.getTimeout(_session.timeoutNames().IMPLICIT) >= new Date().getTime());
+
+        res.success(_session.getId(), JSON.parse("[" + elementsResponse + "]"));
+    };
+
 
     /** This method can generate any Element JSON: just provide an ID.
      * Will return the one of the current Element if no ID is provided.
