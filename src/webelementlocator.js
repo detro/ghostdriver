@@ -43,7 +43,7 @@ ghostdriver.WebElementLocator = function(session) {
     _elements = {},
     _session = session,
 
-    _locateElement = function(locator) {
+    _locateElement = function(locator, rootElementId) {
         var elementId,
             findElementAtom = require("./webdriver_atoms.js").get("find_element"),
             findElementRes;
@@ -53,11 +53,17 @@ ghostdriver.WebElementLocator = function(session) {
         if (locator && locator.using && locator.value &&         //< if well-formed input
             _supportedStrategies.indexOf(locator.using) >= 0) {  //< and if strategy is recognized
 
+            var rootElement = undefined;
+            if (rootElementId) {
+                rootElement = { "ELEMENT" : rootElementId };
+            }
+
             // Use Atom "find_result" to search for element in the page
             findElementRes = _session.getCurrentWindow().evaluate(
                 findElementAtom,
                 locator.using,
-                locator.value);
+                locator.value,
+                rootElement);
 
             // console.log("Find Element Result: "+JSON.stringify(findElementRes));
 
@@ -75,11 +81,65 @@ ghostdriver.WebElementLocator = function(session) {
             if (typeof(findElementRes.status) !== "undefined" && findElementRes.status === 0) {
                 elementId = findElementRes.value["ELEMENT"];
                 // Create and Store a new WebElement if it doesn't exist yet
-                if (typeof(_elements[elementId]) === "undefined") {
+                //if (typeof(_elements[elementId]) === "undefined") {
                     // TODO There is no need to store elements here and have them wrapped in WebElementReqHand
-                    _elements[elementId] = new ghostdriver.WebElementReqHand(elementId, _session);
+                //    _elements[elementId] = new ghostdriver.WebElementReqHand(elementId, _session);
+                //}
+                return _getElement(elementId);
+            }
+        }
+
+        // Not found because of invalid Locator
+        return null;    // TODO Handle unsupported locator strategy error
+    },
+
+    _locateElements = function(locator, rootElementId) {
+        var elementId,
+            findElementsAtom = require("./webdriver_atoms.js").get("find_elements"),
+            findElementsRes;
+
+        // console.log("Locator: "+JSON.stringify(locator)+", Parent: "+rootElementId);
+
+        if (locator && locator.using && locator.value &&         //< if well-formed input
+            _supportedStrategies.indexOf(locator.using) >= 0) {  //< and if strategy is recognized
+
+            var rootElement = undefined;
+            if (typeof(rootElementId) !== "undefined") {
+                rootElement = { "ELEMENT" : rootElementId };
+            }
+
+            // Use Atom "find_result" to search for element in the page
+            findElementsRes = _session.getCurrentWindow().evaluate(
+                findElementsAtom,
+                locator.using,
+                locator.value,
+                rootElement);
+
+            // console.log("Find Element Result: "+JSON.stringify(findElementsRes));
+
+            // TODO Handle Missing Elements and XPath errors
+
+            // De-serialise the result of the Atom execution
+            try {
+                findElementsRes = JSON.parse(findElementsRes);
+            } catch (e) {
+                console.error("Invalid locator received: "+JSON.stringify(locator));
+                return null;
+            }
+
+            // If the Element is found, create a relative WebElement Request Handler and return it
+            if (typeof(findElementsRes.status) !== "undefined" && findElementsRes.status === 0) {
+                var elements = [];
+                for (var i = 0; i < findElementsRes.value.length; i++) {
+                    elementId = findElementsRes.value[i]["ELEMENT"];
+                    elements.push(_getElement(elementId));
                 }
-                return _elements[elementId];
+                // Create and Store a new WebElement if it doesn't exist yet
+                //if (typeof(_elements[elementId]) === "undefined") {
+                    // TODO There is no need to store elements here and have them wrapped in WebElementReqHand
+                //    _elements[elementId] = new ghostdriver.WebElementReqHand(elementId, _session);
+                //}
+                return elements;
             }
         }
 
@@ -95,10 +155,7 @@ ghostdriver.WebElementLocator = function(session) {
             return _elements[id];
         } else {
             // Check if the object exists in the page
-            el = _session.getCurrentWindow().evaluate(
-                    require("./webdriver_atoms.js").get("get_element_from_cache"),
-                    id);
-
+            el = _getElementFromCache(id);
             if (typeof(el) === "object") {
                 // The object exists: we are in the safe
                 _elements[id] = new ghostdriver.WebElementReqHand(id, _session);
@@ -108,9 +165,17 @@ ghostdriver.WebElementLocator = function(session) {
         return null;
     };
 
+    _getElementFromCache = function(id) {
+        el = _session.getCurrentWindow().evaluate(
+                 require("./webdriver_atoms.js").get("get_element_from_cache"),
+                 id);
+        return el;
+    };
+
     // public:
     return {
         locateElement : _locateElement,
+        locateElements : _locateElements,
         getElement : _getElement
     };
 };
