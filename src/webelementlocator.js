@@ -56,7 +56,7 @@ ghostdriver.WebElementLocator = function(session) {
             var rootElement = undefined;
             if (rootElementId) {
                 rootElement = { "ELEMENT" : rootElementId };
-           }
+            }
 
             // Use Atom "find_result" to search for element in the page
             findElementRes = _session.getCurrentWindow().evaluate(
