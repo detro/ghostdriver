@@ -73,14 +73,14 @@ ghostdriver.RequestHandler = function() {
     },
 
     _writeAndCloseDecorator = function(body) {
-        this.setHeader("Content-Length", body.length);
+        this.setHeader("Content-Length", unescape(encodeURIComponent(body)).length);
         this.write(body);
         this.close();
     },
 
     _writeJSONAndCloseDecorator = function(obj) {
         var objStr = JSON.stringify(obj);
-        this.setHeader("Content-Length", objStr.length);
+        this.setHeader("Content-Length", unescape(encodeURIComponent(objStr)).length);
         this.write(objStr);
         this.close();
     },
