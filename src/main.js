@@ -34,8 +34,6 @@ var ghostdriver = {
     router,
     parseURI;
 
-phantom.injectJs("third_party/patch_require.js"); //< TODO - Remove as soon as 'require' is fully implemented in PhantomJS
-
 // Enable "strict mode" for the 'parseURI' library
 parseURI = require("./third_party/parseuri.js");
 parseURI.options.strictMode = true;

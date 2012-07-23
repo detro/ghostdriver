@@ -106,7 +106,7 @@ ghostdriver.Session = function(desiredCapabilities) {
             handlerFunc.apply(thePage, arguments);  //< call the actual handler
             thePage[callbackName] = null;           //< once done, get rid of the handling
         };
-    };
+    },
 
     _createNewWindow = function(page, newWindowHandle) {
         // Decorating...
