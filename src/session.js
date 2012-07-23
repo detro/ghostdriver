@@ -57,7 +57,6 @@ ghostdriver.Session = function(desiredCapabilities) {
         "page load"         : 10000         //< 10s
     },
     _const = {
-        DEFAULT_CURRENT_WINDOW_HANDLE : "1",
         TIMEOUT_NAMES : {
             SCRIPT          : "script",
             ASYNC_SCRIPT    : "async script",
@@ -108,20 +107,47 @@ ghostdriver.Session = function(desiredCapabilities) {
         };
     },
 
-    _createNewWindow = function(page, newWindowHandle) {
-        // Decorating...
-        page.windowHandle = newWindowHandle;
+    // TODO "getWindow(windowNameOrWindowHandle)"
+    // NOTE It's important to maintain a "currentWindow"
+    // TODO I might need to add a "aboutToRelease()" signal to the PhantomJS WebPage object
+
+    _storeNewlyCreatedPages = function(newPage) {
+        _decorateNewWindow(newPage);                //< decorate the new page
+        _windows[newPage.windowHandle] = newPage;   //< store the page/window
+    },
+
+    _decorateNewWindow = function(page) {
+        // Decorating:
+        // 1. Random Window Handle
+        page.windowHandle = "WH-" + new Date().getTime() + '-' + Math.random();
+        // 2. Utility methods
         page.evaluateAndWaitForLoad = _evaluateAndWaitForLoadDecorator;
         page.setOneShotCallback = _setOneShotCallbackDecorator;
+        // 3. Ensure we store every newly created page
+        page.onPageCreated = _storeNewlyCreatedPages;
+
+        return page;
+    },
+
+    _getWindow = function(handleOrName) {
+        var page = null;
+        // Search for window with handle equal "handleOrName"
+        if (_windows.hasOwnProperty(handleOrName)) {
+            page = _windows[handleOrName];
+        } else {
+            // TODO Search "page.name" recursively
+        }
 
         return page;
     },
 
     _getCurrentWindow = function() {
+        var page;
         if (_currentWindowHandle === null) {
             // First call to get the current window: need to create one
-            _currentWindowHandle = _const.DEFAULT_CURRENT_WINDOW_HANDLE;
-            _windows[_currentWindowHandle] = _createNewWindow(require("webpage").create(), _currentWindowHandle);
+            page = _decorateNewWindow(require("webpage").create());
+            _currentWindowHandle = page.windowHandle;
+            _windows[_currentWindowHandle] = page;
         }
         return _windows[_currentWindowHandle];
     },
@@ -131,10 +157,6 @@ ghostdriver.Session = function(desiredCapabilities) {
             _closeWindow(_currentWindowHandle);
             _currentWindowHandle = null;
         }
-    },
-
-    _getWindow = function(windowHandle) {
-        return (typeof(_windows[windowHandle]) !== "undefined") ? _windows[windowHandle] : null;
     },
 
     _getWindowsCount = function() {
