@@ -3,7 +3,6 @@ package ghostdriver;
 import org.junit.After;
 import org.junit.Before;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
@@ -32,6 +31,9 @@ public abstract class BaseTest {
 
     @After
     public void quitDriver() {
-        mDriver.quit();
+        if (mDriver != null) {
+            mDriver.quit();
+            mDriver = null;
+        }
     }
 }
