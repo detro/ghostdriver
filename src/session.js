@@ -109,11 +109,18 @@ ghostdriver.Session = function(desiredCapabilities) {
 
     // TODO "getWindow(windowNameOrWindowHandle)"
     // NOTE It's important to maintain a "currentWindow"
-    // TODO I might need to add a "aboutToRelease()" signal to the PhantomJS WebPage object
 
-    _storeNewlyCreatedPages = function(newPage) {
+    // Add any new page to the "_windows" container of this session
+    _addNewPage = function(newPage) {
         _decorateNewWindow(newPage);                //< decorate the new page
         _windows[newPage.windowHandle] = newPage;   //< store the page/window
+    },
+
+    // Delete any closing page from the "_windows" container of this session
+    _deleteClosingPage = function(closingPage) {
+        if (_windows.hasOwnProperty(closingPage.windowHandle)) {
+            delete _windows[closingPage.windowHandle];
+        }
     },
 
     _decorateNewWindow = function(page) {
@@ -123,8 +130,10 @@ ghostdriver.Session = function(desiredCapabilities) {
         // 2. Utility methods
         page.evaluateAndWaitForLoad = _evaluateAndWaitForLoadDecorator;
         page.setOneShotCallback = _setOneShotCallbackDecorator;
-        // 3. Ensure we store every newly created page
-        page.onPageCreated = _storeNewlyCreatedPages;
+        // 3. Store every newly created page
+        page.onPageCreated = _addNewPage;
+        // 4. Remove every closing page
+        page.onClosing = _deleteClosingPage;
 
         return page;
     },
