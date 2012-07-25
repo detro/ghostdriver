@@ -64,7 +64,7 @@ ghostdriver.Session = function(desiredCapabilities) {
             PAGE_LOAD       : "page load"
         }
     },
-    _windows = {},  //< windows are "webpage" in Phantom-dialect
+    _windows = {},  //< NOTE: windows are "webpage" in Phantom-dialect
     _currentWindowHandle = null,
     _id = (++ghostdriver.Session.instanceCounter) + '', //< must be a string, even if I use progressive integers as unique ID
 
@@ -107,9 +107,6 @@ ghostdriver.Session = function(desiredCapabilities) {
         };
     },
 
-    // TODO "getWindow(windowNameOrWindowHandle)"
-    // NOTE It's important to maintain a "currentWindow"
-
     // Add any new page to the "_windows" container of this session
     _addNewPage = function(newPage) {
         _decorateNewWindow(newPage);                //< decorate the new page
@@ -118,6 +115,7 @@ ghostdriver.Session = function(desiredCapabilities) {
 
     // Delete any closing page from the "_windows" container of this session
     _deleteClosingPage = function(closingPage) {
+        // Need to be defensive, as the "closing" can be cause by Client Commands
         if (_windows.hasOwnProperty(closingPage.windowHandle)) {
             delete _windows[closingPage.windowHandle];
         }
@@ -139,32 +137,61 @@ ghostdriver.Session = function(desiredCapabilities) {
     },
 
     _getWindow = function(handleOrName) {
-        var page = null;
-        // Search for window with handle equal "handleOrName"
+        var page = null,
+            k;
+
         if (_windows.hasOwnProperty(handleOrName)) {
+            // Search by "handle"
             page = _windows[handleOrName];
         } else {
-            // TODO Search "page.name" recursively
+            // Search by "name"
+            for (k in _windows) {
+                if (_windows[k].name === handleOrName) {
+                    page = _windows[k];
+                }
+            }
         }
 
         return page;
     },
 
     _getCurrentWindow = function() {
-        var page;
+        var page = null;
         if (_currentWindowHandle === null) {
             // First call to get the current window: need to create one
             page = _decorateNewWindow(require("webpage").create());
             _currentWindowHandle = page.windowHandle;
             _windows[_currentWindowHandle] = page;
+        } else if (_windows.hasOwnProperty(_currentWindowHandle)) {
+            page = _windows[_currentWindowHandle];
         }
-        return _windows[_currentWindowHandle];
+
+        return page;
+    },
+
+    _switchToWindow = function(handleOrName) {
+        var page = _getWindow(handleOrName);
+
+        if (page !== null) {
+            // Switch current window and return "true"
+            _currentWindowHandle = page.windowHandle;
+            return true;
+        }
+
+        // Couldn't find the window, so return "false"
+        return false;
     },
 
     _closeCurrentWindow = function() {
         if (_currentWindowHandle !== null) {
             _closeWindow(_currentWindowHandle);
-            _currentWindowHandle = null;
+        }
+    },
+
+    _closeWindow = function(windowHandle) {
+        if (_windows.hasOwnProperty(windowHandle)) { //< defensive coding
+            _windows[windowHandle].close();
+            delete _windows[windowHandle];
         }
     },
 
@@ -178,11 +205,6 @@ ghostdriver.Session = function(desiredCapabilities) {
 
     _getWindowHandles = function() {
         return Object.keys(_windows);
-    },
-
-    _closeWindow = function(windowHandle) {
-        _windows[windowHandle].release();
-        delete _windows[windowHandle];
     },
 
     _setTimeout = function(type, ms) {
@@ -213,17 +235,18 @@ ghostdriver.Session = function(desiredCapabilities) {
     return {
         getCapabilities : function() { return _defaultCapabilities; },
         getId : function() { return _id; },
+        switchToWindow : _switchToWindow,
         getCurrentWindow : _getCurrentWindow,
         closeCurrentWindow : _closeCurrentWindow,
         getWindow : _getWindow,
-        getWindowsCount : _getWindowsCount,
         closeWindow : _closeWindow,
+        getWindowsCount : _getWindowsCount,
+        getCurrentWindowHandle : _getCurrentWindowHandle,
+        getWindowHandles : _getWindowHandles,
         aboutToDelete : _aboutToDelete,
         setTimeout : _setTimeout,
         getTimeout : _getTimeout,
-        timeoutNames : _timeoutNames,
-        getCurrentWindowHandle : _getCurrentWindowHandle,
-        getWindowHandles : _getWindowHandles
+        timeoutNames : _timeoutNames
     };
 };
 
