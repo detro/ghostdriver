@@ -123,6 +123,8 @@ ghostdriver.Session = function(desiredCapabilities) {
 
     _decorateNewWindow = function(page) {
         // Decorating:
+        // 0. Pages lifetime will be managed by Driver, not the pages
+        page.ownsPages = false;
         // 1. Random Window Handle
         page.windowHandle = "WH-" + new Date().getTime() + '-' + Math.random();
         // 2. Utility methods
