@@ -766,20 +766,21 @@ bot.color.standardizeColor = function(propertyName, propertyValue) {
 
 
 /**
- * Returns a color in RGBA format - rgba(r,g,b,a).
+ * Returns a color in RGBA format - rgba(r, g, b, a).
  * @param {string} propertyValue The value of the CSS property.
  * @return {string} The value, in RGBA format.
  * @private
  */
 bot.color.standardizeToRgba_ = function(propertyValue) {
-  if (!bot.color.parseRgbaColor(propertyValue).length) {
-    var rgba = bot.color.convertToRgba_(propertyValue);
-    if (rgba.length) {
-      bot.color.addAlphaIfNecessary_(rgba);
-      return bot.color.toRgbaStyle_(rgba);
-    }
+  var rgba = bot.color.parseRgbaColor(propertyValue);
+  if (!rgba.length) {
+    rgba = bot.color.convertToRgba_(propertyValue);
+    bot.color.addAlphaIfNecessary_(rgba);
   }
-  return propertyValue;
+  if (rgba.length != 4) {
+    return propertyValue;
+  }
+  return bot.color.toRgbaStyle_(rgba);
 };
 
 
@@ -1054,11 +1055,11 @@ bot.color.addAlphaIfNecessary_ = function(arr) {
  * Takes an array of [r, g, b, a] and converts it into a string appropriate for
  * CSS styles.
  * @param {!Array.<number>} rgba An array with four elements.
- * @return {string} string of the form 'rgba(r,g,b,a)'.
+ * @return {string} string of the form 'rgba(r, g, b, a)'.
  * @private
  */
 bot.color.toRgbaStyle_ = function(rgba) {
-  return 'rgba(' + rgba.join(',') + ')';
+  return 'rgba(' + rgba.join(', ') + ')';
 };
 
 // Copyright 2011 WebDriver committers
@@ -2372,6 +2373,37 @@ bot.dom.getCascadedStyle_ = function(elem, styleName) {
 
 
 /**
+ * Would a user see scroll bars on the BODY element? In the case where the BODY
+ * has "overflow: hidden", and HTML has "overflow: auto" or "overflow: scroll"
+ * set, there's a scroll bar, so it's as if the BODY has "overflow: auto" set.
+ * In all other cases where BODY has "overflow: hidden", there are no
+ * scrollbars. http://www.w3.org/TR/CSS21/visufx.html#overflow
+ *
+ * @param {!Element} bodyElement The element, which must be a BODY element.
+ * @return {boolean} Whether scrollbars would be visible to a user.
+ * @private
+ */
+bot.dom.isBodyScrollBarShown_ = function(bodyElement) {
+  if (!bot.dom.isElement(bodyElement, goog.dom.TagName.BODY)) {
+    // bail
+  }
+
+  var bodyOverflow = bot.dom.getEffectiveStyle(bodyElement, 'overflow');
+  if (bodyOverflow != 'hidden') {
+    return true;
+  }
+
+  var html = bot.dom.getParentElement(bodyElement);
+  if (!html || !bot.dom.isElement(html, goog.dom.TagName.HTML)) {
+    return true; // Seems like a reasonable default.
+  }
+
+  var viewportOverflow = bot.dom.getEffectiveStyle(html, 'overflow');
+  return viewportOverflow == 'auto' || viewportOverflow == 'scroll';
+};
+
+
+/**
  * @param {!Element} element The element to use.
  * @return {!goog.math.Size} The dimensions of the element.
  */
@@ -2394,7 +2426,7 @@ bot.dom.getElementSize = function(element) {
   if (bot.dom.isElement(element, goog.dom.TagName.BODY)) {
     var doc = goog.dom.getOwnerDocument(element);
     var win = goog.dom.getWindow(doc) || undefined;
-    if (bot.dom.getEffectiveStyle(element, 'overflow') == 'hidden') {
+    if (!bot.dom.isBodyScrollBarShown_(element)) {
       return goog.dom.getViewportSize(win);
     }
     return bot.window.getInteractableSize(win);
@@ -2525,6 +2557,18 @@ bot.dom.isShown = function(elem, opt_ignoreOpacity) {
   // size of the parent
   function isOverflowHiding(e) {
     var parent = goog.style.getOffsetParent(e);
+    var parentNode = goog.userAgent.GECKO || goog.userAgent.IE ?
+        bot.dom.getParentElement(e) : parent;
+
+    // Gecko will skip the BODY tag when calling getOffsetParent. However, the
+    // combination of the overflow values on the BODY _and_ HTML tags determine
+    // whether scroll bars are shown, so we need to guarantee that both values
+    // are checked.
+    if ((goog.userAgent.GECKO || goog.userAgent.IE) &&
+        bot.dom.isElement(parentNode, goog.dom.TagName.BODY)) {
+      parent = parentNode;
+    }
+
     if (parent && bot.dom.getEffectiveStyle(parent, 'overflow') == 'hidden') {
       var sizeOfParent = bot.dom.getElementSize(parent);
       var locOfParent = goog.style.getClientPosition(parent);
@@ -2540,11 +2584,7 @@ bot.dom.isShown = function(elem, opt_ignoreOpacity) {
     return true;
   }
 
-  if (!isOverflowHiding(elem)) {
-    return false;
-  }
-
-  return true;
+  return isOverflowHiding(elem);
 };
 
 
@@ -2594,15 +2634,25 @@ bot.dom.appendVisibleTextLinesFromElement_ = function(elem, lines) {
   if (bot.dom.isElement(elem, goog.dom.TagName.BR)) {
     lines.push('');
   } else {
-    // TODO: properly handle display:run-in
     var isTD = bot.dom.isElement(elem, goog.dom.TagName.TD);
     var display = bot.dom.getEffectiveStyle(elem, 'display');
     // On some browsers, table cells incorrectly show up with block styles.
     var isBlock = !isTD &&
         !goog.array.contains(bot.dom.INLINE_DISPLAY_BOXES_, display);
 
-    // Add a newline before block elems when there is text on the current line.
-    if (isBlock && !goog.string.isEmpty(currLine())) {
+    // Add a newline before block elems when there is text on the current line,
+    // except when the previous sibling has a display: run-in.
+    // Also, do not run-in the previous sibling if this element is floated.
+
+    var previousElementSibling = goog.dom.getPreviousElementSibling(elem);
+    var prevDisplay = (previousElementSibling) ?
+        bot.dom.getEffectiveStyle(previousElementSibling, 'display') : '';
+    // TODO(dawagner): getEffectiveStyle should mask this for us
+    var thisFloat = bot.dom.getEffectiveStyle(elem, 'float') ||
+        bot.dom.getEffectiveStyle(elem, 'cssFloat') ||
+        bot.dom.getEffectiveStyle(elem, 'styleFloat');
+    var runIntoThis = prevDisplay == 'run-in' && thisFloat == 'none';
+    if (isBlock && !runIntoThis && !goog.string.isEmpty(currLine())) {
       lines.push('');
     }
 
@@ -2642,8 +2692,9 @@ bot.dom.appendVisibleTextLinesFromElement_ = function(elem, lines) {
       lines[lines.length - 1] += ' ';
     }
 
-    // Add a newline after block elems when there is text on the current line.
-    if (isBlock && !goog.string.isEmpty(line)) {
+    // Add a newline after block elems when there is text on the current line,
+    // and the current element isn't marked as run-in.
+    if (isBlock && display != 'run-in' && !goog.string.isEmpty(line)) {
       lines.push('');
     }
   }
@@ -3107,11 +3158,12 @@ bot.ErrorCode = {
   NO_MODAL_DIALOG_OPEN: 27,
   SCRIPT_TIMEOUT: 28,
   INVALID_ELEMENT_COORDINATES: 29,
+  IME_NOT_AVAILABLE: 30,
+  IME_ENGINE_ACTIVATION_FAILED: 31,
   INVALID_SELECTOR_ERROR: 32,
-  SQL_DATABASE_ERROR: 33,
+  SESSION_NOT_CREATED: 33,          
   MOVE_TARGET_OUT_OF_BOUNDS: 34,
-  IME_ENGINE_ACTIVATION_FAILED: 35,
-  IME_NOT_AVAILABLE: 36
+  SQL_DATABASE_ERROR: 35
 };
 
 
@@ -4451,13 +4503,28 @@ goog.require('goog.userAgent');
 
 
 /**
+ * @define {boolean} NATIVE_JSON indicates whether the code should rely on the
+ * native {@ocde JSON} functions, if available.
+ *
+ * <p>The JSON functions can be defined by external libraries like Prototype
+ * and setting this flag to false forces the use of Closure's goog.json
+ * implementation.
+ *
+ * <p>If your JavaScript can be loaded by a third_party site and you are wary
+ * about relying on the native functions, specify
+ * "--define bot.json.NATIVE_JSON=false" to the Closure compiler.
+ */
+bot.json.NATIVE_JSON = true;
+
+
+/**
  * Whether the current browser supports the native JSON interface.
  * @type {boolean}
  * @const
  * @see http://caniuse.com/#search=JSON
  * @private
  */
-bot.json.NATIVE_JSON_ =
+bot.json.SUPPORTS_NATIVE_JSON_ =
     // List WebKit and Opera first since every supported version of these
     // browsers supports native JSON (and we can compile away large chunks of
     // code for individual fragments by setting the appropriate compiler flags).
@@ -4475,8 +4542,8 @@ bot.json.NATIVE_JSON_ =
  *     serialization to kick in.
  * @return {string} A JSON string representation of the input object.
  */
-bot.json.stringify = bot.json.NATIVE_JSON_ ? JSON.stringify :
-    goog.json.serialize;
+bot.json.stringify = bot.json.NATIVE_JSON && bot.json.SUPPORTS_NATIVE_JSON_ ?
+    JSON.stringify : goog.json.serialize;
 
 
 /**
@@ -4485,7 +4552,8 @@ bot.json.stringify = bot.json.NATIVE_JSON_ ? JSON.stringify :
  * @return {*} The JSON object.
  * @throws {Error} If the input string is an invalid JSON string.
  */
-bot.json.parse = bot.json.NATIVE_JSON_ ? JSON.parse : goog.json.parse;
+bot.json.parse = bot.json.NATIVE_JSON && bot.json.SUPPORTS_NATIVE_JSON_ ?
+    JSON.parse : goog.json.parse;
 // Copyright 2010 WebDriver committers
 // Copyright 2010 Google Inc.
 //
@@ -4749,6 +4817,7 @@ bot.Keyboard.Keys = {
   // Punctuation keys
   EQUALS: bot.Keyboard.newKey_(
       {gecko: 107, ieWebkit: 187, opera: 61}, '=', '+'),
+  SEPARATOR: bot.Keyboard.newKey_(108, ','),
   HYPHEN: bot.Keyboard.newKey_(
       {gecko: 109, ieWebkit: 189, opera: 109}, '-', '_'),
   COMMA: bot.Keyboard.newKey_(188, ',', '<'),
@@ -8122,8 +8191,10 @@ webdriver.atoms.element.type = function(element, keys, opt_keyboard) {
           case '\b':
             current.push(bot.Keyboard.Keys.BACKSPACE);
             break;
+          default:
+            current.push(key);
+            break;
         }
-        current.push(key);
       }
     });
   });
@@ -8189,6 +8260,7 @@ goog.scope(function() {
   map[key.SUBTRACT] = botKey.NUM_MINUS;
   map[key.DECIMAL] = botKey.NUM_PERIOD;
   map[key.DIVIDE] = botKey.NUM_DIVISION;
+  map[key.SEPARATOR] = botKey.SEPARATOR;
   map[key.F1] = botKey.F1;
   map[key.F2] = botKey.F2;
   map[key.F3] = botKey.F3;

@@ -1,7 +1,7 @@
-2012-06-04 15:27:52
+2012-07-27 02:27:04
 
 ------------------------------------------------------------------------
-r17108 | jmleyba | 2012-06-04 05:06:09 +0200 (Mon, 04 Jun 2012) | 1 line
+r17591 | james.h.evans.jr@gmail.com | 2012-07-26 22:29:35 +0100 (Thu, 26 Jul 2012) | 1 line
 
-JasonLeyba: The page script handler should only respond to messages from its own window.
+JimEvans: Fixed the case verifying whether a page in the browser is an HTML page, and the default browser does not register its MIME type in the (default) value at HKEY_CLASSES_ROOT\<browser HTML page class name>. Fixes issue #4307.
 ------------------------------------------------------------------------
