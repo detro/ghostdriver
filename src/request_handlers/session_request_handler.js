@@ -43,6 +43,8 @@ ghostdriver.SessionReqHand = function(session) {
         WINDOW          : "window",
         CURRENT         : "current",
         SIZE            : "size",
+        POSITION        : "position",
+        MAXIMIZE        : "maximize",
         FORWARD         : "forward",
         BACK            : "back",
         REFRESH         : "refresh",
@@ -91,7 +93,7 @@ ghostdriver.SessionReqHand = function(session) {
             }
             return;
         } else if (req.urlParsed.chunks[0] === _const.WINDOW) {
-            _handleWindow(req, res);
+            _doWindowHandleCommands(req, res);
             return;
         } else if (req.urlParsed.file === _const.ELEMENT && req.method === "POST" && req.urlParsed.chunks.length == 1) {    //< ".../element"
             _postElementCommand(req, res);
@@ -156,24 +158,121 @@ ghostdriver.SessionReqHand = function(session) {
         };
     },
 
-    _handleWindow = function(req, res) {
-        var windowHandle = req.urlParsed.chunks[1],
+    _doWindowHandleCommands = function(req, res) {
+        var windowHandle,
+            command,
+            targetWindow;
+
+        // console.log("_doWindowHandleCommands");
+        // console.log(JSON.stringify(req, null, "  "));
+
+        // Ensure all the parameters are provided
+        if (req.urlParsed.chunks.length === 3) {
+            windowHandle = req.urlParsed.chunks[1];
             command = req.urlParsed.chunks[2];
 
-        // TODO - We need support for multiple windows:
-        // instead of checking request is for "current", we should
-        // check if it's not, and if not then apply to specific window instead
-        // of _session.getCurrentWindow().
-        // TODO handle NoSuchWindow - If the specified window cannot be found.
-        if(windowHandle === _const.CURRENT) {
-            if(command === _const.SIZE && req.method === "POST") {
-                _postWindowSizeCommand(req, res);
-                return;
-            } else if(command === _const.SIZE && req.method === "GET") {
-                _getWindowSizeCommand(req, res);
-                return;
+            // Fetch the right window
+            if (windowHandle === _const.CURRENT) {
+                targetWindow = _session.getCurrentWindow();
+            } else {
+                targetWindow = _session.getWindow(windowHandle);
             }
+
+            // Act on the window (page)
+            if (targetWindow !== null) {
+                if(command === _const.SIZE && req.method === "POST") {
+                    _postWindowSizeCommand(req, res, targetWindow);
+                    return;
+                } else if(command === _const.SIZE && req.method === "GET") {
+                    _getWindowSizeCommand(req, res, targetWindow);
+                    return;
+                } else if(command === _const.POSITION && req.method === "POST") {
+                    _postWindowPositionCommand(req, res, targetWindow);
+                    return;
+                } else if(command === _const.POSITION && req.method === "GET") {
+                    _getWindowPositionCommand(req, res, targetWindow);
+                    return;
+                } else if(command === _const.MAXIMIZE && req.method === "POST") {
+                    _postWindowMaximizeCommand(req, res, targetWindow);
+                    return;
+                }
+
+                // No command matched: error
+                throw _errors.createInvalidReqInvalidCommandMethodEH(req);
+            } else {
+                throw _errors.createFailedCommandEH(
+                    _errors.FAILED_CMD_STATUS.NO_SUCH_WINDOW,   //< error name
+                    "Unable to act on window (closed?)",        //< error message
+                    req,                                        //< request
+                    res,
+                    _session,                                   //< session
+                    "SessionReqHand");                          //< class name
+            }
+        } else {
+            throw _errors.createInvalidReqMissingCommandParameterEH(req);
         }
+    },
+
+    _postWindowSizeCommand = function(req, res, targetWindow) {
+        var params = JSON.parse(req.post),
+            newWidth = params.width,
+            newHeight = params.height;
+
+        // If width/height are passed in string, force them to numbers
+        if (typeof(params.width) === "string") {
+            newWidth = parseInt(params.width, 10);
+        }
+        if (typeof(params.height) === "string") {
+            newHeight = parseInt(params.height, 10);
+        }
+
+        // If a number was not found, the command is
+        if (isNaN(newWidth) || isNaN(newHeight)) {
+            throw _errors.createInvalidReqInvalidCommandMethodEH(req);
+        }
+
+        targetWindow.viewportSize = {
+            width : newWidth,
+            height : newHeight
+        };
+        res.success(_session.getId());
+    },
+
+    _getWindowSizeCommand = function(req, res, targetWindow) {
+        // Returns response in the format "{width: number, height: number}"
+        res.success(_session.getId(), targetWindow.viewportSize);
+    },
+
+    _postWindowPositionCommand = function(req, res, targetWindow) {
+        var params = JSON.parse(req.post),
+            newX = params.x,
+            newY = params.y;
+
+        // If width/height are passed in string, force them to numbers
+        if (typeof(params.x) === "string") {
+            newX = parseInt(params.x, 10);
+        }
+        if (typeof(params.y) === "string") {
+            newY = parseInt(params.y, 10);
+        }
+
+        // If a number was not found, the command is
+        if (isNaN(newX) || isNaN(newY)) {
+            throw _errors.createInvalidReqInvalidCommandMethodEH(req);
+        }
+
+        // NOTE: Nothing to do! PhantomJS is headless. :)
+        res.success(_session.getId());
+    },
+
+    _getWindowPositionCommand = function(req, res, targetWindow) {
+        // Returns response in the format "{width: number, height: number}"
+        res.success(_session.getId(), { x : 0, y : 0 });
+    },
+
+    _postWindowMaximizeCommand = function(req, res, targetWindow) {
+        // NOTE: Nothing to do! PhantomJS is headless. :)
+        res.success(_session.getId());
     },
 
     _refreshCommand = function(req, res) {
@@ -411,7 +510,7 @@ ghostdriver.SessionReqHand = function(session) {
                 // ... otherwise, throw the appropriate exception
                 _errors.handleFailedCommandEH(
                     _errors.FAILED_CMD_STATUS.NO_SUCH_FRAME,    //< error name
-                    "Frame not found",                          //< error message
+                    "Unable to switch to frame",                //< error message
                     req,                                        //< request
                     res,
                     _session,                                   //< session
@@ -459,7 +558,7 @@ ghostdriver.SessionReqHand = function(session) {
         } else {
             throw _errors.createFailedCommandEH(
                     _errors.FAILED_CMD_STATUS.NO_SUCH_WINDOW,   //< error name
-                    "Window not found",                         //< error message
+                    "Unable to close window (closed already?)", //< error message
                     req,                                        //< request
                     res,
                     _session,                                   //< session
@@ -478,7 +577,7 @@ ghostdriver.SessionReqHand = function(session) {
             } else {
                 throw _errors.createFailedCommandEH(
                     _errors.FAILED_CMD_STATUS.NO_SUCH_WINDOW,   //< error name
-                    "Window not found",                         //< error message
+                    "Unable to switch to window (closed?)",     //< error message
                     req,                                        //< request
                     res,
                     _session,                                   //< session
@@ -487,36 +586,6 @@ ghostdriver.SessionReqHand = function(session) {
         } else {
             throw _errors.createInvalidReqMissingCommandParameterEH(req);
         }
-    },
-
-    _postWindowSizeCommand = function(req, res) {
-        var params = JSON.parse(req.post),
-            newWidth = params.width,
-            newHeight = params.height;
-
-        // If width/height are passed in string, force them to numbers
-        if (typeof(params.width) === "string") {
-            newWidth = parseInt(params.width, 10);
-        }
-        if (typeof(params.height) === "string") {
-            newHeight = parseInt(params.height, 10);
-        }
-
-        // If a number was not found, the command is
-        if (isNaN(newWidth) || isNaN(newHeight)) {
-            throw _errors.createInvalidReqInvalidCommandMethodEH(req);
-        }
-
-        _session.getCurrentWindow().viewportSize = {
-            width : newWidth,
-            height : newHeight
-        };
-        res.success(_session.getId());
-    },
-
-    _getWindowSizeCommand = function(req, res) {
-        // Returns response in the format "{width: number, height: number}"
-        res.success(_session.getId(), _session.getCurrentWindow().viewportSize);
     },
 
     _getTitleCommand = function(req, res) {
