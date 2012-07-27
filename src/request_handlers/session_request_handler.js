@@ -85,9 +85,9 @@ ghostdriver.SessionReqHand = function(session) {
             return;
         } else if (req.urlParsed.file === _const.WINDOW) {                              //< ".../window"
             if (req.method === "DELETE") {
-                _deleteWindowCommand(req, res); //< close window
+                _deleteWindowCommand(req, res);     //< close window
             } else if (req.method === "POST") {
-                _postWindowCommand(req, res);   //< change focus to the given window
+                _postWindowCommand(req, res);       //< change focus to the given window
             }
             return;
         } else if (req.urlParsed.chunks[0] === _const.WINDOW) {
@@ -442,14 +442,51 @@ ghostdriver.SessionReqHand = function(session) {
     },
 
     _deleteWindowCommand = function(req, res) {
-        // TODO An optional JSON parameter "name" might be given
-        _session.closeCurrentWindow();
-        res.success(_session.getId());
+        var params = JSON.parse(req.post || "{}"), //< in case nothing is posted at all
+            closed = false;
+
+        // Use the "name" parameter if it was provided
+        if (typeof(params) === "object" && params.hasOwnProperty("name")) {
+            closed = _session.closeWindow(params.name);
+        } else {
+            closed = _session.closeCurrentWindow();
+        }
+
+        // Report a success if we manage to close the window,
+        // otherwise throw a Failed Command Error
+        if (closed) {
+            res.success(_session.getId());
+        } else {
+            throw _errors.createFailedCommandEH(
+                    _errors.FAILED_CMD_STATUS.NO_SUCH_WINDOW,   //< error name
+                    "Window not found",                         //< error message
+                    req,                                        //< request
+                    res,
+                    _session,                                   //< session
+                    "SessionReqHand");                          //< class name
+        }
     },
 
     _postWindowCommand = function(req, res) {
-        // TODO
-        // TODO An optional JSON parameter "name" might be given
+        var params = JSON.parse(req.post);
+
+        if (typeof(params) === "object" && params.hasOwnProperty("name")) {
+            // Report a success if we manage to switch the current window,
+            // otherwise throw a Failed Command Error
+            if (_session.switchToWindow(params.name)) {
+                res.success(_session.getId());
+            } else {
+                throw _errors.createFailedCommandEH(
+                    _errors.FAILED_CMD_STATUS.NO_SUCH_WINDOW,   //< error name
+                    "Window not found",                         //< error message
+                    req,                                        //< request
+                    res,
+                    _session,                                   //< session
+                    "SessionReqHand");                          //< class name
+            }
+        } else {
+            throw _errors.createInvalidReqMissingCommandParameterEH(req);
+        }
     },
 
     _postWindowSizeCommand = function(req, res) {

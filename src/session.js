@@ -148,6 +148,7 @@ ghostdriver.Session = function(desiredCapabilities) {
             for (k in _windows) {
                 if (_windows[k].name === handleOrName) {
                     page = _windows[k];
+                    break;
                 }
             }
         }
@@ -165,6 +166,8 @@ ghostdriver.Session = function(desiredCapabilities) {
         } else if (_windows.hasOwnProperty(_currentWindowHandle)) {
             page = _windows[_currentWindowHandle];
         }
+
+        // TODO Handle "null" cases throwing a "no such window" error
 
         return page;
     },
@@ -184,15 +187,22 @@ ghostdriver.Session = function(desiredCapabilities) {
 
     _closeCurrentWindow = function() {
         if (_currentWindowHandle !== null) {
-            _closeWindow(_currentWindowHandle);
+            return _closeWindow(_currentWindowHandle);
         }
+        return false;
     },
 
-    _closeWindow = function(windowHandle) {
-        if (_windows.hasOwnProperty(windowHandle)) { //< defensive coding
-            _windows[windowHandle].close();
-            delete _windows[windowHandle];
+    _closeWindow = function(handleOrName) {
+        var page = _getWindow(handleOrName),
+            handle;
+
+        if (page !== null) {
+            handle = page.windowHandle;
+            _windows[handle].close();
+            delete _windows[handle];
+            return true;
         }
+        return false;
     },
 
     _getWindowsCount = function() {
