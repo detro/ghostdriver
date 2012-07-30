@@ -53,7 +53,7 @@ ghostdriver.WebElementLocator = function(session) {
         if (locator && locator.using && locator.value &&         //< if well-formed input
             _supportedStrategies.indexOf(locator.using) >= 0) {  //< and if strategy is recognized
 
-            var rootElement = undefined;
+            var rootElement;
             if (rootElementId) {
                 rootElement = { "ELEMENT" : rootElementId };
             }
@@ -103,7 +103,7 @@ ghostdriver.WebElementLocator = function(session) {
         if (locator && locator.using && locator.value &&         //< if well-formed input
             _supportedStrategies.indexOf(locator.using) >= 0) {  //< and if strategy is recognized
 
-            var rootElement = undefined;
+            var rootElement;
             if (typeof(rootElementId) !== "undefined") {
                 rootElement = { "ELEMENT" : rootElementId };
             }
