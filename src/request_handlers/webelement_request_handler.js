@@ -28,10 +28,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 var ghostdriver = ghostdriver || {};
 
-ghostdriver.WebElementReqHand = function(id, session) {
+ghostdriver.WebElementReqHand = function(idOrElement, session) {
     // private:
     var
-    _id = id + '',      //< ensure this is always a string
+    _id = ((typeof(idOrElement) === "object") ? idOrElement["ELEMENT"] : idOrElement),
     _session = session,
     _locator = new ghostdriver.WebElementLocator(_session),
     _protoParent = ghostdriver.WebElementReqHand.prototype,
@@ -133,8 +133,10 @@ ghostdriver.WebElementReqHand = function(id, session) {
 
     _getLocationCommand = function(req, res) {
         var location = _session.getCurrentWindow().evaluate(
-            require("./webdriver_atoms.js").get("get_location"),
-            _getJSON());
+                require("./webdriver_atoms.js").get("execute_script"),
+                "return (" + require("./webdriver_atoms.js").get("get_location") + ")(arguments[0]);",
+                [_getJSON()]);
+
         res.respondBasedOnResult(_session, req, location);
     },
 
@@ -298,7 +300,7 @@ ghostdriver.WebElementReqHand = function(id, session) {
         } while(searchStartTime + _session.getTimeout(_session.timeoutNames().IMPLICIT) >= new Date().getTime());
 
         throw _errors.createInvalidReqVariableResourceNotFoundEH(req);
-    };
+    },
 
     _findElementsCommand = function(req, res) {
         // Search for a WebElement on the Page
@@ -326,7 +328,7 @@ ghostdriver.WebElementReqHand = function(id, session) {
         } while(searchStartTime + _session.getTimeout(_session.timeoutNames().IMPLICIT) >= new Date().getTime());
 
         res.success(_session.getId(), JSON.parse("[" + elementsResponse + "]"));
-    };
+    },
 
 
     /** This method can generate any Element JSON: just provide an ID.
@@ -340,8 +342,13 @@ ghostdriver.WebElementReqHand = function(id, session) {
         };
     },
 
-    _getId = function() { return _id; },
-    _getSession = function() { return _session; };
+    _getId = function() {
+        return _id;
+    },
+    _getSession = function() {
+        return _session;
+    }
+    ;
 
     // public:
     return {

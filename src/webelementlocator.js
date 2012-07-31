@@ -40,7 +40,6 @@ ghostdriver.WebElementLocator = function(session) {
         "tag name", "tagName",                  //< Returns an element whose tag name matches the search value.
         "xpath"                                 //< Returns an element matching an XPath expression.
     ],
-    _elements = {},
     _session = session,
 
     _locateElement = function(locator, rootElementId) {
@@ -79,13 +78,7 @@ ghostdriver.WebElementLocator = function(session) {
 
             // If the Element is found, create a relative WebElement Request Handler and return it
             if (typeof(findElementRes.status) !== "undefined" && findElementRes.status === 0) {
-                elementId = findElementRes.value["ELEMENT"];
-                // Create and Store a new WebElement if it doesn't exist yet
-                //if (typeof(_elements[elementId]) === "undefined") {
-                    // TODO There is no need to store elements here and have them wrapped in WebElementReqHand
-                //    _elements[elementId] = new ghostdriver.WebElementReqHand(elementId, _session);
-                //}
-                return _getElement(elementId);
+                return _getElement(findElementRes.value, _session);
             }
         }
 
@@ -96,14 +89,16 @@ ghostdriver.WebElementLocator = function(session) {
     _locateElements = function(locator, rootElementId) {
         var elementId,
             findElementsAtom = require("./webdriver_atoms.js").get("find_elements"),
-            findElementsRes;
+            findElementsRes,
+            rootElement,
+            elementsRes = [],
+            i, ilen;
 
         // console.log("Locator: "+JSON.stringify(locator)+", Parent: "+rootElementId);
 
         if (locator && locator.using && locator.value &&         //< if well-formed input
             _supportedStrategies.indexOf(locator.using) >= 0) {  //< and if strategy is recognized
 
-            var rootElement;
             if (typeof(rootElementId) !== "undefined") {
                 rootElement = { "ELEMENT" : rootElementId };
             }
@@ -127,19 +122,14 @@ ghostdriver.WebElementLocator = function(session) {
                 return null;
             }
 
-            // If the Element is found, create a relative WebElement Request Handler and return it
+            // If the Elements are found, create all the relative
+            // WebElement Request Handler and return them in an array
             if (typeof(findElementsRes.status) !== "undefined" && findElementsRes.status === 0) {
-                var elements = [];
-                for (var i = 0; i < findElementsRes.value.length; i++) {
-                    elementId = findElementsRes.value[i]["ELEMENT"];
-                    elements.push(_getElement(elementId));
+                for (i = 0, ilen = findElementsRes.value.length; i < ilen; ++i) {
+                    // Add to the result array
+                    elementsRes.push(_getElement(findElementsRes.value[i], _session));
                 }
-                // Create and Store a new WebElement if it doesn't exist yet
-                //if (typeof(_elements[elementId]) === "undefined") {
-                    // TODO There is no need to store elements here and have them wrapped in WebElementReqHand
-                //    _elements[elementId] = new ghostdriver.WebElementReqHand(elementId, _session);
-                //}
-                return elements;
+                return elementsRes;
             }
         }
 
@@ -147,30 +137,25 @@ ghostdriver.WebElementLocator = function(session) {
         return null;    // TODO Handle unsupported locator strategy error
     },
 
-    _getElement = function(id) {
-        var el;
+    _getElement = function(idOrElement) {
+        return new ghostdriver.WebElementReqHand(idOrElement, _session);
+    }
 
-        if (typeof(_elements[id]) !== "undefined") {
-            // If element was previously "found"
-            return _elements[id];
-        } else {
-            // Check if the object exists in the page
-            el = _getElementFromCache(id);
-            if (typeof(el) === "object") {
-                // The object exists: we are in the safe
-                _elements[id] = new ghostdriver.WebElementReqHand(id, _session);
-                return _elements[id];
-            }
-        }
-        return null;
-    };
+    // _getElementFromCache = function(id) {
+    //     var result = _session.getCurrentWindow().evaluate(
+    //             require("./webdriver_atoms.js").get("execute_script"),
+    //             "return (" + require("./webdriver_atoms.js").get("get_element_from_cache") + ")(arguments[0]);",
+    //             [{ "ELEMENT" : id }]);
 
-    _getElementFromCache = function(id) {
-        el = _session.getCurrentWindow().evaluate(
-                 require("./webdriver_atoms.js").get("get_element_from_cache"),
-                 id);
-        return el;
-    };
+    //     console.log("Get elem from cache result => " + JSON.stringify(result, null, "  "));
+
+    //     if (result.hasOwnProperty(status) && result.status === 0) {
+    //         return result.value;
+    //     } else {
+    //         return null;
+    //     }
+    // }
+    ;
 
     // public:
     return {
