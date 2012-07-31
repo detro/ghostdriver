@@ -2,6 +2,7 @@ package ghostdriver;
 
 import org.junit.Test;
 import org.openqa.selenium.*;
+import org.openqa.selenium.internal.Locatable;
 
 import java.util.concurrent.TimeUnit;
 
@@ -40,5 +41,18 @@ public class ElementQueryingTest extends BaseTest {
         assertEquals(radio.isSelected(), true);
         assertEquals(radio.getLocation(), new Point(215, 138));
         assertEquals(radio.getSize(), new Dimension(15, 15));
+    }
+
+    @Test
+    public void scrollElementIntoView() {
+        WebDriver d = getDriver();
+
+        d.get("https://developer.mozilla.org/en/CSS/Attribute_selectors");
+        WebElement aboutGoogleLink = d.findElement(By.partialLinkText("About MDN"));
+        Point locationBeforeScroll = aboutGoogleLink.getLocation();
+        Point locationAfterScroll = ((Locatable) aboutGoogleLink).getLocationOnScreenOnceScrolledIntoView();
+
+        assertTrue(locationBeforeScroll.x >= locationAfterScroll.x);
+        assertTrue(locationBeforeScroll.y >= locationAfterScroll.y);
     }
 }

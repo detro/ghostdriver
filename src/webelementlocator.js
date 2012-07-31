@@ -149,7 +149,7 @@ ghostdriver.WebElementLocator = function(session) {
 
     //     console.log("Get elem from cache result => " + JSON.stringify(result, null, "  "));
 
-    //     if (result.hasOwnProperty(status) && result.status === 0) {
+    //     if (result.hasOwnProperty("status") && result.status === 0) {
     //         return result.value;
     //     } else {
     //         return null;

@@ -36,22 +36,23 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
     _locator = new ghostdriver.WebElementLocator(_session),
     _protoParent = ghostdriver.WebElementReqHand.prototype,
     _const = {
-        ELEMENT         : "element",
-        ELEMENTS        : "elements",
-        VALUE           : "value",
-        SUBMIT          : "submit",
-        DISPLAYED       : "displayed",
-        ENABLED         : "enabled",
-        ATTRIBUTE       : "attribute",
-        NAME            : "name",
-        CLICK           : "click",
-        SELECTED        : "selected",
-        CLEAR           : "clear",
-        CSS             : "css",
-        TEXT            : "text",
-        EQUALS_DIR      : "equals",
-        LOCATION        : "location",
-        SIZE            : "size"
+        ELEMENT             : "element",
+        ELEMENTS            : "elements",
+        VALUE               : "value",
+        SUBMIT              : "submit",
+        DISPLAYED           : "displayed",
+        ENABLED             : "enabled",
+        ATTRIBUTE           : "attribute",
+        NAME                : "name",
+        CLICK               : "click",
+        SELECTED            : "selected",
+        CLEAR               : "clear",
+        CSS                 : "css",
+        TEXT                : "text",
+        EQUALS_DIR          : "equals",
+        LOCATION            : "location",
+        LOCATION_IN_VIEW    : "location_in_view",
+        SIZE                : "size"
     },
     _errors = require("./errors.js"),
 
@@ -107,6 +108,9 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         } else if (req.urlParsed.file === _const.LOCATION && req.method === "GET") {
             _getLocationCommand(req, res);
             return;
+        } else if (req.urlParsed.file === _const.LOCATION_IN_VIEW && req.method === "GET") {
+            _getLocationInViewCommand(req, res);
+            return;
         } else if (req.urlParsed.file === _const.SIZE && req.method === "GET") {
             _getSizeCommand(req, res);
             return;
@@ -131,13 +135,34 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         res.respondBasedOnResult(_session, req, enabled);
     },
 
-    _getLocationCommand = function(req, res) {
-        var location = _session.getCurrentWindow().evaluate(
-                require("./webdriver_atoms.js").get("execute_script"),
-                "return (" + require("./webdriver_atoms.js").get("get_location") + ")(arguments[0]);",
-                [_getJSON()]);
+    _getLocationResult = function() {
+        return _session.getCurrentWindow().evaluate(
+            require("./webdriver_atoms.js").get("execute_script"),
+            "return (" + require("./webdriver_atoms.js").get("get_location") + ")(arguments[0]);",
+            [_getJSON()]);
+    },
 
-        res.respondBasedOnResult(_session, req, location);
+    _getLocationCommand = function(req, res) {
+        var locationRes = _getLocationResult();
+        res.respondBasedOnResult(_session, req, locationRes);
+    },
+
+    _getLocationInViewCommand = function(req, res) {
+        var locationRes = _getLocationResult(),
+            inViewLocationRes;
+
+        if (locationRes.hasOwnProperty("status") && locationRes.status === 0) {
+            // We got a location: let's scroll to it
+            inViewLocationRes = _session.getCurrentWindow().evaluate(
+                require("./webdriver_atoms.js").get("execute_script"),
+                "return (" + require("./webdriver_atoms.js").get("get_in_view_location") + ")(arguments[0]);",
+                [locationRes.value]);
+
+            res.respondBasedOnResult(_session, req, inViewLocationRes);
+        } else {
+            // Result is an error: report it
+            res.respondBasedOnResult(_session, req, locationRes);
+        }
     },
 
     _getSizeCommand = function(req, res) {

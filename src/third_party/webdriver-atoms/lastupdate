@@ -1,7 +1,7 @@
-2012-07-27 02:27:04
+2012-07-31 23:07:31
 
 ------------------------------------------------------------------------
-r17591 | james.h.evans.jr@gmail.com | 2012-07-26 22:29:35 +0100 (Thu, 26 Jul 2012) | 1 line
+r17617 | eran.mes@gmail.com | 2012-07-31 15:48:13 +0100 (Tue, 31 Jul 2012) | 1 line
 
-JimEvans: Fixed the case verifying whether a page in the browser is an HTML page, and the default browser does not register its MIME type in the (default) value at HKEY_CLASSES_ROOT\<browser HTML page class name>. Fixes issue #4307.
+EranMes on behalf of EmmaSoderberg: Document the command for getting available log types.
 ------------------------------------------------------------------------
