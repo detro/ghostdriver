@@ -39,6 +39,7 @@ ghostdriver.SessionReqHand = function(session) {
         ELEMENT         : "element",
         ELEMENTS        : "elements",
         ELEMENT_DIR     : "/element/",
+        ACTIVE          : "active",
         TITLE           : "title",
         WINDOW          : "window",
         CURRENT         : "current",
@@ -101,9 +102,10 @@ ghostdriver.SessionReqHand = function(session) {
         } else if (req.urlParsed.file === _const.ELEMENTS && req.method === "POST" && req.urlParsed.chunks.length == 1) {    //< ".../elements"
             _postElementsCommand(req, res);
             return;
-        } else if (req.urlParsed.directory === _const.ELEMENT_DIR) {                    //< ".../element/:elementId" or ".../element/active"
-            // TODO
-        } else if (req.urlParsed.chunks[0] === _const.ELEMENT) {                        //< ".../element/:elementId/COMMAND"
+        } else if (req.urlParsed.chunks[0] === _const.ELEMENT && req.urlParsed.chunks[1] === _const.ACTIVE && req.method === "POST") {  //< ".../element/active"
+            _postActiveElementCommand(req, res);
+            return;
+        } else if (req.urlParsed.chunks[0] === _const.ELEMENT) {            //< ".../element/:elementId/COMMAND"
             // Get the WebElementRH and, if found, re-route request to it
             element = _locator.getElement(decodeURIComponent(req.urlParsed.chunks[1]));
             if (element !== null) {
@@ -616,18 +618,20 @@ ghostdriver.SessionReqHand = function(session) {
         // Search for a WebElement on the Page
         var elements,
             searchStartTime = new Date().getTime(),
-            elementsResponse = "";
+            elementsResponse = "",
+            i, ilen;
 
         // Try to find at least one element
         //  and retry if "startTime + implicitTimeout" is
         //  greater (or equal) than current time
         do {
             elements = _locator.locateElements(JSON.parse(req.post));
+
             if (elements.length > 0) {
                 // Manually construct the JSON response, since the return
                 // from locateElements is an array of WebElementReqHand
                 // objects.
-                for (var i = 0; i < elements.length; i++) {
+                for (i = 0, ilen = elements.length; i < ilen; ++i) {
                     if (elementsResponse.length > 0) {
                         elementsResponse += ", ";
                     }
@@ -637,8 +641,29 @@ ghostdriver.SessionReqHand = function(session) {
             }
         } while(searchStartTime + _session.getTimeout(_session.timeoutNames().IMPLICIT) >= new Date().getTime());
 
+        // Returns an empty array when no matching elements are found
         res.success(_session.getId(), JSON.parse("[" + elementsResponse + "]"));
-    };
+    },
+
+    _postActiveElementCommand = function(req, res) {
+        // Search for a WebElement on the Page
+        var element,
+            searchStartTime = new Date().getTime();
+
+        // Try to find the element
+        //  and retry if "startTime + implicitTimeout" is
+        //  greater (or equal) than current time
+        do {
+            element = _locator.getActiveElement();
+            if (element) {
+                res.success(_session.getId(), element.getJSON());
+                return;
+            }
+        } while(searchStartTime + _session.getTimeout(_session.timeoutNames().IMPLICIT) >= new Date().getTime());
+
+        throw _errors.createInvalidReqVariableResourceNotFoundEH(req);
+    }
+    ;
 
     // public:
     return {

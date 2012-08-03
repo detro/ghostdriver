@@ -43,6 +43,10 @@ ghostdriver.WebElementLocator = function(session) {
     _session = session,
 
     _locateElement = function(locator, rootElementId) {
+        // TODO Handle NoSuchWindow
+        // TODO Handle NoSuchElement
+        // TODO Handle XPathLookupError
+        // TODO Handle Unsupported Locators (rare)
         var elementId,
             findElementAtom = require("./webdriver_atoms.js").get("find_element"),
             findElementRes;
@@ -64,10 +68,6 @@ ghostdriver.WebElementLocator = function(session) {
                 locator.value,
                 rootElement);
 
-            // console.log("Find Element Result: "+JSON.stringify(findElementRes));
-
-            // TODO Handle Missing Elements and XPath errors
-
             // De-serialise the result of the Atom execution
             try {
                 findElementRes = JSON.parse(findElementRes);
@@ -78,15 +78,19 @@ ghostdriver.WebElementLocator = function(session) {
 
             // If the Element is found, create a relative WebElement Request Handler and return it
             if (typeof(findElementRes.status) !== "undefined" && findElementRes.status === 0) {
-                return _getElement(findElementRes.value, _session);
+                return _getElement(findElementRes.value);
             }
         }
 
         // Not found because of invalid Locator
-        return null;    // TODO Handle unsupported locator strategy error
+        return null;
     },
 
     _locateElements = function(locator, rootElementId) {
+        // TODO Handle NoSuchWindow
+        // TODO Handle NoSuchElement
+        // TODO Handle XPathLookupError
+        // TODO Handle Unsupported Locators (rare)
         var elementId,
             findElementsAtom = require("./webdriver_atoms.js").get("find_elements"),
             findElementsRes,
@@ -110,10 +114,6 @@ ghostdriver.WebElementLocator = function(session) {
                 locator.value,
                 rootElement);
 
-            // console.log("Find Element Result: "+JSON.stringify(findElementsRes));
-
-            // TODO Handle Missing Elements and XPath errors
-
             // De-serialise the result of the Atom execution
             try {
                 findElementsRes = JSON.parse(findElementsRes);
@@ -127,19 +127,19 @@ ghostdriver.WebElementLocator = function(session) {
             if (typeof(findElementsRes.status) !== "undefined" && findElementsRes.status === 0) {
                 for (i = 0, ilen = findElementsRes.value.length; i < ilen; ++i) {
                     // Add to the result array
-                    elementsRes.push(_getElement(findElementsRes.value[i], _session));
+                    elementsRes.push(_getElement(findElementsRes.value[i]));
                 }
                 return elementsRes;
             }
         }
 
         // Not found because of invalid Locator
-        return null;    // TODO Handle unsupported locator strategy error
+        return null;
     },
 
     _getElement = function(idOrElement) {
         return new ghostdriver.WebElementReqHand(idOrElement, _session);
-    }
+    },
 
     // _getElementFromCache = function(id) {
     //     var result = _session.getCurrentWindow().evaluate(
@@ -155,12 +155,34 @@ ghostdriver.WebElementLocator = function(session) {
     //         return null;
     //     }
     // }
+
+    _getActiveElement = function() {
+        // TODO Handle NoSuchWindow
+        // TODO Handle NoSuchElement
+
+        var activeElementRes = _session.getCurrentWindow().evaluate(
+                        require("./webdriver_atoms.js").get("active_element"));
+
+        // De-serialise the result of the Atom execution
+        try {
+            activeElementRes = JSON.parse(activeElementRes);
+        } catch (e) {
+            return null;
+        }
+
+        if (typeof(activeElementRes.status) !== "undefined" && activeElementRes.status === 0) {
+            return _getElement(activeElementRes.value);
+        }
+
+        return null;
+    }
     ;
 
     // public:
     return {
         locateElement : _locateElement,
         locateElements : _locateElements,
-        getElement : _getElement
+        getElement : _getElement,
+        getActiveElement : _getActiveElement
     };
 };

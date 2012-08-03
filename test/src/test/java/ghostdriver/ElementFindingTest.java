@@ -64,4 +64,19 @@ public class ElementFindingTest extends BaseTest {
 
         assertEquals(0, children.size());
     }
+
+    @Test
+    public void findActiveElement() {
+        WebDriver d = getDriver();
+
+        d.get("http://www.google.com");
+        WebElement inputField = d.findElement(By.cssSelector("input[name='q']"));
+        WebElement active = d.switchTo().activeElement();
+
+        assertEquals(inputField.getTagName(), active.getTagName());
+        assertEquals(inputField.getLocation(), active.getLocation());
+        assertEquals(inputField.hashCode(), active.hashCode());
+        assertEquals(inputField.getText(), active.getText());
+        assertTrue(inputField.equals(active));
+    }
 }
