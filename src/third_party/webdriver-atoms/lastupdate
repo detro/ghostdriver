@@ -1,7 +1,7 @@
-2012-07-31 23:07:31
+2012-08-03 21:38:42
 
 ------------------------------------------------------------------------
-r17617 | eran.mes@gmail.com | 2012-07-31 15:48:13 +0100 (Tue, 31 Jul 2012) | 1 line
+r17637 | barancev | 2012-08-03 21:00:39 +0100 (Fri, 03 Aug 2012) | 1 line
 
-EranMes on behalf of EmmaSoderberg: Document the command for getting available log types.
+AlexeiBarantsev: Quit should quit even if there is an unhandled alert. Fixes issue 4343
 ------------------------------------------------------------------------

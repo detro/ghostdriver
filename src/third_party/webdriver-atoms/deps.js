@@ -1094,10 +1094,11 @@ goog.require('goog.userAgent.product');
 
 /**
  * A Device class that provides common functionality for input devices.
- *
+ * @param {bot.Device.ModifiersState=} opt_modifiersState state of modifier
+ * keys. The state is shared, not copied from this parameter.
  * @constructor
  */
-bot.Device = function() {
+bot.Device = function(opt_modifiersState) {
   /**
    * Element being interacted with.
    * @type {!Element}
@@ -1117,6 +1118,13 @@ bot.Device = function() {
   if (activeElement) {
     this.setElement(activeElement);
   }
+
+  /**
+   * State of modifier keys for this device.
+   * @type {bot.Device.ModifiersState}
+   * @protected
+   */
+  this.modifiersState = opt_modifiersState || new bot.Device.ModifiersState();
 };
 
 
@@ -1148,7 +1156,6 @@ bot.Device.prototype.setElement = function(element) {
     this.select_ = null;
   }
 };
-
 
 /**
  * Fires an HTML event given the state of the device.
@@ -1207,10 +1214,10 @@ bot.Device.prototype.fireMouseEvent = function(type, coord, button,
     clientX: coord.x,
     clientY: coord.y,
     button: button,
-    altKey: false,
-    ctrlKey: false,
-    shiftKey: false,
-    metaKey: false,
+    altKey: this.modifiersState.isAltPressed(),
+    ctrlKey: this.modifiersState.isControlPressed(),
+    shiftKey: this.modifiersState.isShiftPressed(),
+    metaKey: this.modifiersState.isMetaPressed(),
     wheelDelta: opt_wheelDelta || 0,
     relatedTarget: opt_related || null
   };
@@ -1239,10 +1246,10 @@ bot.Device.prototype.fireTouchEvent = function(type, id, coord, opt_id2,
     touches: [],
     targetTouches: [],
     changedTouches: [],
-    altKey: false,
-    ctrlKey: false,
-    shiftKey: false,
-    metaKey: false,
+    altKey: this.modifiersState.isAltPressed(),
+    ctrlKey: this.modifiersState.isControlPressed(),
+    shiftKey: this.modifiersState.isShiftPressed(),
+    metaKey: this.modifiersState.isMetaPressed(),
     relatedTarget: null,
     scale: 0,
     rotation: 0
@@ -1682,7 +1689,6 @@ bot.Device.prototype.submitForm = function(form) {
   }
 };
 
-
 /**
  * Regular expression for splitting up a URL into components.
  * @type {!RegExp}
@@ -1738,6 +1744,86 @@ bot.Device.resolveUrl_ = function(base, rel) {
 
   return target.protocol + '//' + target.host + target.pathname +
       target.search + target.hash;
+};
+
+/**
+ * Stores the state of modifier keys
+ *
+ * @constructor
+ */
+bot.Device.ModifiersState = function() {
+  /**
+   * State of the modifier keys.
+   * @type {number}
+   * @private
+   */
+  this.pressedModifiers_ = 0;
+};
+
+/**
+ * An enum for the various modifier keys (keycode-independent).
+ * @enum {number}
+ */
+bot.Device.Modifier = {
+  SHIFT: 0x1,
+  CONTROL: 0x2,
+  ALT: 0x4,
+  META: 0x8
+};
+
+/**
+ * Checks whether a specific modifier is pressed
+ * @param {!bot.Device.Modifier} modifier The modifier to check.
+ * @return {boolean} Whether the modifier is pressed.
+ */
+bot.Device.ModifiersState.prototype.isPressed = function(modifier) {
+  return (this.pressedModifiers_ & modifier) != 0;
+};
+
+/**
+ * Sets the state of a given modifier.
+ * @param {!bot.Device.Modifier} modifier The modifier to set.
+ * @param {boolean} isPressed whether the modifier is set or released.
+ */
+bot.Device.ModifiersState.prototype.setPressed = function(modifier,
+                                                          isPressed) {
+  if (isPressed) {
+    this.pressedModifiers_ = this.pressedModifiers_ | modifier;
+  } else {
+    this.pressedModifiers_ = this.pressedModifiers_ & (~modifier);
+  }
+};
+
+/**
+ *
+ * @return {boolean} State of the Shift key.
+ */
+bot.Device.ModifiersState.prototype.isShiftPressed = function() {
+  return this.isPressed(bot.Device.Modifier.SHIFT);
+};
+
+/**
+ *
+ * @return {boolean} State of the Control key.
+ */
+bot.Device.ModifiersState.prototype.isControlPressed = function() {
+  return this.isPressed(bot.Device.Modifier.CONTROL);
+};
+
+/**
+ *
+ * @return {boolean} State of the Alt key.
+ */
+bot.Device.ModifiersState.prototype.isAltPressed = function() {
+  return this.isPressed(bot.Device.Modifier.ALT);
+};
+
+/**
+ *
+ * @return {boolean} State of the Meta key.
+ */
+bot.Device.ModifiersState.prototype.isMetaPressed = function() {
+  return this.isPressed(bot.Device.Modifier.META);
 };
 // Copyright 2012 Software Freedom Conservancy
 // Copyright 2010 WebDriver committers
@@ -4586,6 +4672,7 @@ goog.require('bot.events.EventType');
 goog.require('goog.array');
 goog.require('goog.dom.selection');
 goog.require('goog.events.KeyCodes');
+goog.require('goog.structs.Map');
 goog.require('goog.structs.Set');
 goog.require('goog.userAgent');
 
@@ -4614,7 +4701,9 @@ bot.Keyboard = function(opt_state) {
   this.pressed_ = new goog.structs.Set();
 
   if (opt_state) {
-    this.pressed_.addAll(opt_state);
+    goog.array.forEach(opt_state, function(key) {
+      this.setKeyPressed_(key, true);
+    }, this);
   }
 };
 goog.inherits(bot.Keyboard, bot.Device);
@@ -4629,7 +4718,6 @@ goog.inherits(bot.Keyboard, bot.Device);
  * @private
  */
 bot.Keyboard.CHAR_TO_KEY_ = {};
-
 
 /**
  * Constructs a new key and, if it is a character key, adds a mapping from the
@@ -4668,8 +4756,6 @@ bot.Keyboard.newKey_ = function(code, opt_char, opt_shiftChar) {
 
   return key;
 };
-
-
 
 /**
  * A key on the keyboard.
@@ -4879,6 +4965,38 @@ bot.Keyboard.MODIFIERS = [
   bot.Keyboard.Keys.SHIFT
 ];
 
+/**
+ * Map of modifier to key.
+ * @type {!goog.structs.Map.<!bot.Device.Modifier, !bot.Keyboard.Key>}
+ * @private
+ */
+bot.Keyboard.MODIFIER_TO_KEY_MAP_ = (function() {
+  var modifiersMap = new goog.structs.Map();
+  modifiersMap.set(bot.Device.Modifier.SHIFT,
+    bot.Keyboard.Keys.SHIFT);
+  modifiersMap.set(bot.Device.Modifier.CONTROL,
+    bot.Keyboard.Keys.CONTROL);
+  modifiersMap.set(bot.Device.Modifier.ALT,
+    bot.Keyboard.Keys.ALT);
+  modifiersMap.set(bot.Device.Modifier.META,
+    bot.Keyboard.Keys.META);
+
+  return modifiersMap;
+})();
+
+/**
+ * The reverse map - key to modifier.
+ * @type {!goog.structs.Map.<number, !bot.Device.Modifier>}
+ * @private
+ */
+bot.Keyboard.KEY_TO_MODIFIER_ = (function(modifiersMap) {
+  var keyToModifierMap = new goog.structs.Map();
+  goog.array.forEach(modifiersMap.getKeys(), function(m) {
+    keyToModifierMap.set(modifiersMap.get(m).code, m);
+  });
+
+  return keyToModifierMap;
+})(bot.Keyboard.MODIFIER_TO_KEY_MAP_);
 
 /**
  * The value used for newlines in the current browser/OS combination. Although
@@ -4902,6 +5020,26 @@ bot.Keyboard.prototype.isPressed = function(key) {
   return this.pressed_.contains(key);
 };
 
+/**
+ * Set the modifier state if the provided key is one, otherwise just add
+ * to the list of pressed keys.
+ * @param {bot.Keyboard.Key} key
+ * @param {boolean} isPressed
+ * @private
+ */
+bot.Keyboard.prototype.setKeyPressed_ = function(key, isPressed) {
+  if (goog.array.contains(bot.Keyboard.MODIFIERS, key)) {
+    var modifier = /** @type {bot.Device.Modifier}*/
+      bot.Keyboard.KEY_TO_MODIFIER_.get(key.code);
+    this.modifiersState.setPressed(modifier, isPressed);
+  }
+
+  if (isPressed) {
+    this.pressed_.add(key);
+  } else {
+    this.pressed_.remove(key);
+  }
+};
 
 /**
  * Presses the given key on the keyboard. Keys that are pressed can be pressed
@@ -4937,7 +5075,7 @@ bot.Keyboard.prototype.pressKey = function(key) {
     }
   }
 
-  this.pressed_.add(key);
+  this.setKeyPressed_(key, true);
 };
 
 
@@ -5042,12 +5180,13 @@ bot.Keyboard.prototype.maybeEditText_ = function(key) {
 bot.Keyboard.prototype.releaseKey = function(key) {
   if (!this.isPressed(key)) {
     throw new bot.Error(bot.ErrorCode.UNKNOWN_ERROR,
-        'Cannot release a key that is not pressed.');
+        'Cannot release a key that is not pressed. (' + key.code + ')');
   }
   if (!goog.isNull(key.code)) {
     this.fireKeyEvent_(bot.events.EventType.KEYUP, key);
   }
-  this.pressed_.remove(key);
+
+  this.setKeyPressed_(key, false);
 };
 
 
@@ -5280,11 +5419,12 @@ goog.require('goog.userAgent');
  * A mouse that provides atomic mouse actions. This mouse currently only
  * supports having one button pressed at a time.
  * @param {bot.Mouse.State=} opt_state The mouse's initial state.
+ * @param {bot.Device.ModifiersState=} opt_modifiersState State of the keyboard.
  * @constructor
  * @extends {bot.Device}
  */
-bot.Mouse = function(opt_state) {
-  goog.base(this);
+bot.Mouse = function(opt_state, opt_modifiersState) {
+  goog.base(this, opt_modifiersState);
 
   /**
    * @type {?bot.Mouse.Button}
@@ -5805,10 +5945,11 @@ goog.require('goog.userAgent.product');
  * The touchscreen supports three actions: press, release, and move.
  *
  * @constructor
+ * @param {bot.Device.ModifiersState=} opt_modifiersState
  * @extends {bot.Device}
  */
-bot.Touchscreen = function() {
-  goog.base(this);
+bot.Touchscreen = function(opt_modifiersState) {
+  goog.base(this, opt_modifiersState);
 
   /**
    * @type {!goog.math.Coordinate}
