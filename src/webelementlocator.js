@@ -161,17 +161,12 @@ ghostdriver.WebElementLocator = function(session) {
         }
 
         return null;
-    },
-
-    _getElement = function(idOrElement) {
-        return new ghostdriver.WebElementReqHand(idOrElement, _session);
     };
 
     // public:
     return {
         locateElement : _locateElement,
         locateElements : _locateElements,
-        locateActiveElement : _locateActiveElement,
-        getElement : _getElement
+        locateActiveElement : _locateActiveElement
     };
 };
