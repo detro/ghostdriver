@@ -107,7 +107,7 @@ ghostdriver.SessionReqHand = function(session) {
             return;
         } else if (req.urlParsed.chunks[0] === _const.ELEMENT) {            //< ".../element/:elementId/COMMAND"
             // Get the WebElementRH and, if found, re-route request to it
-            element = _locator.getElement(decodeURIComponent(req.urlParsed.chunks[1]));
+            element = new ghostdriver.WebElementReqHand(req.urlParsed.chunks[1], _session);
             if (element !== null) {
                 _protoParent.reroute.call(element, req, res, _const.ELEMENT_DIR + req.urlParsed.chunks[1]);
             } else {
@@ -490,13 +490,8 @@ ghostdriver.SessionReqHand = function(session) {
                     frameElement = result.value;
                 }
             } else if (typeof(postObj.id) === "object" && typeof(postObj.id["ELEMENT"]) === "string") {
-                // Search frame by "{ELEMENT : id}" object
-                result = _locator.getElement(decodeURIComponent(postObj.id["ELEMENT"]));
-
-                // Check if the Frame was found
-                if (result !== null && typeof(result) === "object") {
-                    frameElement = result.getJSON();
-                }
+                // Will use the Element JSON as is
+                frameElement = postObj.id;
             } else {
                 throw _errors.createInvalidReqInvalidCommandMethodEH(req);
             }
