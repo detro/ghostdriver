@@ -391,35 +391,26 @@ ghostdriver.SessionReqHand = function(session) {
     _postUrlCommand = function(req, res) {
         // Load the given URL in the Page
         var postObj = JSON.parse(req.post),
-            pageOpenTimeout = _session.getTimeout(_session.timeoutNames().PAGE_LOAD),
-            pageOpenTimedout = false,
-            timer;
+            pageOpenTimeout = _session.getTimeout(_session.timeoutNames().PAGE_LOAD);
 
         if (typeof(postObj) === "object" && postObj.url) {
             // Open the given URL and, when done, return "HTTP 200 OK"
-            _session.getCurrentWindow().open(postObj.url, function(status) {
-                if (!pageOpenTimedout) {
-                    // Callback received: don't need the timer anymore
-                    clearTimeout(timer);
-
-                    if (status === "success") {
-                        res.success(_session.getId());
-                    } else {
-                        _errors.handleInvalidReqInvalidCommandMethodEH(req, res);
-                    }
-                }
-            });
-            timer = setTimeout(function() {
-                // Command Failed (Timed-out)
-                pageOpenTimedout = true;
-                _errors.handleFailedCommandEH(
-                    _errors.FAILED_CMD_STATUS.TIMEOUT,
-                    "URL '"+postObj.url+"' didn't load within "+pageOpenTimeout+"ms",
-                    req,
-                    res,
-                    _session,
-                    "SessionReqHand");
-            }, pageOpenTimeout);
+            _session.getCurrentWindow().evaluateAndWaitForLoad(
+                function(url) {
+                    window.location.assign(url);
+                },
+                function() {
+                    res.success(_session.getId());
+                },
+                function() {
+                    _errors.handleFailedCommandEH(
+                        _errors.FAILED_CMD_STATUS.TIMEOUT,
+                        "URL '"+postObj.url+"' didn't load within "+pageOpenTimeout+"ms",
+                        req,
+                        res,
+                        _session,
+                        "SessionReqHand");
+                }, postObj.url);
         } else {
             throw _errors.createInvalidReqMissingCommandParameterEH(req);
         }

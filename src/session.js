@@ -95,7 +95,6 @@ ghostdriver.Session = function(desiredCapabilities) {
 
         // We are ready to Eval
         this.evaluateAsync.apply(this, args);
-
     },
 
     _setOneShotCallbackDecorator = function(callbackName, handlerFunc) {
@@ -134,6 +133,8 @@ ghostdriver.Session = function(desiredCapabilities) {
         page.onPageCreated = _addNewPage;
         // 4. Remove every closing page
         page.onClosing = _deleteClosingPage;
+
+        // page.onConsoleMessage = function(msg) { console.log(msg); };
 
         return page;
     },
