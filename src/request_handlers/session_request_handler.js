@@ -97,13 +97,13 @@ ghostdriver.SessionReqHand = function(session) {
             _doWindowHandleCommands(req, res);
             return;
         } else if (req.urlParsed.file === _const.ELEMENT && req.method === "POST" && req.urlParsed.chunks.length == 1) {    //< ".../element"
-            _postElementCommand(req, res);
+            _locateElementCommand(req, res, _locator.locateElement);
             return;
         } else if (req.urlParsed.file === _const.ELEMENTS && req.method === "POST" && req.urlParsed.chunks.length == 1) {    //< ".../elements"
-            _postElementsCommand(req, res);
+            _locateElementCommand(req, res, _locator.locateElements);
             return;
         } else if (req.urlParsed.chunks[0] === _const.ELEMENT && req.urlParsed.chunks[1] === _const.ACTIVE && req.method === "POST") {  //< ".../element/active"
-            _postActiveElementCommand(req, res);
+            _locateElementCommand(req, res, _locator.locateActiveElement);
             return;
         } else if (req.urlParsed.chunks[0] === _const.ELEMENT) {            //< ".../element/:elementId/COMMAND"
             // Get the WebElementRH and, if found, re-route request to it
@@ -595,75 +595,29 @@ ghostdriver.SessionReqHand = function(session) {
         res.success(_session.getId(), result);
     },
 
-    _postElementCommand = function(req, res) {
+    _locateElementCommand = function(req, res, locatorMethod) {
         // Search for a WebElement on the Page
-        var element,
+        var elementOrElements,
             searchStartTime = new Date().getTime();
+
+        // If a "locatorMethod" was not provided, default to "locateElement"
+        if(typeof(locatorMethod) !== "function") {
+            locatorMethod = _locator.locateElement;
+        }
 
         // Try to find the element
         //  and retry if "startTime + implicitTimeout" is
         //  greater (or equal) than current time
         do {
-            element = _locator.locateElement(JSON.parse(req.post));
-            if (element) {
-                res.success(_session.getId(), element.getJSON());
+            elementOrElements = locatorMethod("JSON", JSON.parse(req.post));
+            if (elementOrElements) {
+                res.success(_session.getId(), elementOrElements);
                 return;
             }
         } while(searchStartTime + _session.getTimeout(_session.timeoutNames().IMPLICIT) >= new Date().getTime());
 
         throw _errors.createInvalidReqVariableResourceNotFoundEH(req);
     };
-
-    _postElementsCommand = function(req, res) {
-        // Search for a WebElement on the Page
-        var elements,
-            searchStartTime = new Date().getTime(),
-            elementsResponse = "",
-            i, ilen;
-
-        // Try to find at least one element
-        //  and retry if "startTime + implicitTimeout" is
-        //  greater (or equal) than current time
-        do {
-            elements = _locator.locateElements(JSON.parse(req.post));
-
-            if (elements.length > 0) {
-                // Manually construct the JSON response, since the return
-                // from locateElements is an array of WebElementReqHand
-                // objects.
-                for (i = 0, ilen = elements.length; i < ilen; ++i) {
-                    if (elementsResponse.length > 0) {
-                        elementsResponse += ", ";
-                    }
-                    elementsResponse += JSON.stringify(elements[i].getJSON());
-                }
-                break;
-            }
-        } while(searchStartTime + _session.getTimeout(_session.timeoutNames().IMPLICIT) >= new Date().getTime());
-
-        // Returns an empty array when no matching elements are found
-        res.success(_session.getId(), JSON.parse("[" + elementsResponse + "]"));
-    },
-
-    _postActiveElementCommand = function(req, res) {
-        // Search for a WebElement on the Page
-        var element,
-            searchStartTime = new Date().getTime();
-
-        // Try to find the element
-        //  and retry if "startTime + implicitTimeout" is
-        //  greater (or equal) than current time
-        do {
-            element = _locator.getActiveElement();
-            if (element) {
-                res.success(_session.getId(), element.getJSON());
-                return;
-            }
-        } while(searchStartTime + _session.getTimeout(_session.timeoutNames().IMPLICIT) >= new Date().getTime());
-
-        throw _errors.createInvalidReqVariableResourceNotFoundEH(req);
-    }
-    ;
 
     // public:
     return {

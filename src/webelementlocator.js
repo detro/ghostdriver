@@ -42,126 +42,104 @@ ghostdriver.WebElementLocator = function(session) {
     ],
     _session = session,
 
-    _locateElement = function(locator, rootElementId) {
-        // TODO Handle NoSuchWindow
-        // TODO Handle NoSuchElement
-        // TODO Handle XPathLookupError
-        // TODO Handle Unsupported Locators (rare)
-        var elementId,
-            findElementAtom = require("./webdriver_atoms.js").get("find_element"),
-            findElementRes;
+    _find = function(what, locator, rootElement) {
+        var findRes,
+            findAtom = require("./webdriver_atoms.js").get(
+                "find_" +
+                (what.indexOf("element") >= 0 ? what : "element")); //< normalize
 
-        // console.log("Locator: "+JSON.stringify(locator));
-
-        if (locator && locator.using && locator.value &&         //< if well-formed input
+        if (locator && typeof(locator) === "object" &&
+            locator.using && locator.value &&         //< if well-formed input
             _supportedStrategies.indexOf(locator.using) >= 0) {  //< and if strategy is recognized
 
-            var rootElement;
-            if (rootElementId) {
-                rootElement = { "ELEMENT" : rootElementId };
+            // Ensure "rootElement" is valid, otherwise undefine-it
+            if (!rootElement || typeof(rootElement) !== "object" || !rootElement.hasOwnProperty("ELEMENT")) {
+                rootElement = undefined;
             }
 
             // Use Atom "find_result" to search for element in the page
-            findElementRes = _session.getCurrentWindow().evaluate(
-                findElementAtom,
+            findRes = _session.getCurrentWindow().evaluate(
+                findAtom,
                 locator.using,
                 locator.value,
                 rootElement);
 
             // De-serialise the result of the Atom execution
             try {
-                findElementRes = JSON.parse(findElementRes);
+                return JSON.parse(findRes);
             } catch (e) {
                 console.error("Invalid locator received: "+JSON.stringify(locator));
                 return null;
             }
+        }
+        return null;
+    },
 
-            // If the Element is found, create a relative WebElement Request Handler and return it
-            if (typeof(findElementRes.status) !== "undefined" && findElementRes.status === 0) {
+    _locateElement = function(type, locator, rootElement) {
+        // TODO Handle NoSuchWindow
+        // TODO Handle NoSuchElement
+        // TODO Handle XPathLookupError
+        // TODO Handle Unsupported Locators (rare)
+        var findElementRes = _find("element", locator, rootElement);
+
+        // console.log("Locator: "+JSON.stringify(locator));
+
+        // If found
+        if (findElementRes !== null && typeof(findElementRes) === "object" &&
+            typeof(findElementRes.status) !== "undefined" && findElementRes.status === 0) {
+
+            if (type === "JSON") {
+                // Return the Element JSON ID
+                return findElementRes.value;
+            } else {
+                // Return the (Web)Element
                 return _getElement(findElementRes.value);
             }
         }
 
-        // Not found because of invalid Locator
+        // Not found
         return null;
     },
 
-    _locateElements = function(locator, rootElementId) {
+    _locateElements = function(type, locator, rootElement) {
         // TODO Handle NoSuchWindow
         // TODO Handle NoSuchElement
         // TODO Handle XPathLookupError
         // TODO Handle Unsupported Locators (rare)
-        var elementId,
-            findElementsAtom = require("./webdriver_atoms.js").get("find_elements"),
-            findElementsRes,
-            rootElement,
-            elementsRes = [],
+        var findElementsRes = _find("elements", locator, rootElement),
+            elements = [],
             i, ilen;
 
-        // console.log("Locator: "+JSON.stringify(locator)+", Parent: "+rootElementId);
+        // console.log("Locator: "+JSON.stringify(locator));
 
-        if (locator && locator.using && locator.value &&         //< if well-formed input
-            _supportedStrategies.indexOf(locator.using) >= 0) {  //< and if strategy is recognized
+        // If found
+        if (findElementsRes !== null && typeof(findElementsRes) === "object" &&
+            typeof(findElementsRes.status) !== "undefined" && findElementsRes.status === 0) {
 
-            if (typeof(rootElementId) !== "undefined") {
-                rootElement = { "ELEMENT" : rootElementId };
-            }
-
-            // Use Atom "find_result" to search for element in the page
-            findElementsRes = _session.getCurrentWindow().evaluate(
-                findElementsAtom,
-                locator.using,
-                locator.value,
-                rootElement);
-
-            // De-serialise the result of the Atom execution
-            try {
-                findElementsRes = JSON.parse(findElementsRes);
-            } catch (e) {
-                console.error("Invalid locator received: "+JSON.stringify(locator));
-                return null;
-            }
-
-            // If the Elements are found, create all the relative
-            // WebElement Request Handler and return them in an array
-            if (typeof(findElementsRes.status) !== "undefined" && findElementsRes.status === 0) {
+            if (type === "JSON") {
+                // Return the array of Element JSON ID as is
+                return findElementsRes.value;
+            } else {
+                // Return all the (Web)Elements we were able to find
+                // Put all the Elements in an array
                 for (i = 0, ilen = findElementsRes.value.length; i < ilen; ++i) {
                     // Add to the result array
-                    elementsRes.push(_getElement(findElementsRes.value[i]));
+                    elements.push(_getElement(findElementsRes.value[i]));
                 }
-                return elementsRes;
+                return elements;
             }
         }
 
-        // Not found because of invalid Locator
+        // Not found
         return null;
     },
 
-    _getElement = function(idOrElement) {
-        return new ghostdriver.WebElementReqHand(idOrElement, _session);
-    },
-
-    // _getElementFromCache = function(id) {
-    //     var result = _session.getCurrentWindow().evaluate(
-    //             require("./webdriver_atoms.js").get("execute_script"),
-    //             "return (" + require("./webdriver_atoms.js").get("get_element_from_cache") + ")(arguments[0]);",
-    //             [{ "ELEMENT" : id }]);
-
-    //     console.log("Get elem from cache result => " + JSON.stringify(result, null, "  "));
-
-    //     if (result.hasOwnProperty(status) && result.status === 0) {
-    //         return result.value;
-    //     } else {
-    //         return null;
-    //     }
-    // }
-
-    _getActiveElement = function() {
+    _locateActiveElement = function(type) {
         // TODO Handle NoSuchWindow
         // TODO Handle NoSuchElement
 
         var activeElementRes = _session.getCurrentWindow().evaluate(
-                        require("./webdriver_atoms.js").get("active_element"));
+                require("./webdriver_atoms.js").get("active_element"));
 
         // De-serialise the result of the Atom execution
         try {
@@ -170,19 +148,30 @@ ghostdriver.WebElementLocator = function(session) {
             return null;
         }
 
+        // If found
         if (typeof(activeElementRes.status) !== "undefined" && activeElementRes.status === 0) {
-            return _getElement(activeElementRes.value);
+
+            if (type === "JSON") {
+                // Return the Element JSON ID
+                return activeElementRes.value;
+            } else {
+                // Return the (Web)Element
+                return _getElement(activeElementRes.value);
+            }
         }
 
         return null;
-    }
-    ;
+    },
+
+    _getElement = function(idOrElement) {
+        return new ghostdriver.WebElementReqHand(idOrElement, _session);
+    };
 
     // public:
     return {
         locateElement : _locateElement,
         locateElements : _locateElements,
-        getElement : _getElement,
-        getActiveElement : _getActiveElement
+        locateActiveElement : _locateActiveElement,
+        getElement : _getElement
     };
 };

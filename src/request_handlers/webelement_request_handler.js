@@ -63,10 +63,10 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         // TODO lots to do...
 
         if (req.urlParsed.file === _const.ELEMENT && req.method === "POST") {
-            _findElementCommand(req, res);
+            _findElementCommand(req, res, _locator.locateElement);
             return;
         } else if (req.urlParsed.file === _const.ELEMENTS && req.method === "POST") {
-            _findElementsCommand(req, res);
+            _findElementCommand(req, res, _locator.locateElements);
             return;
         } else if (req.urlParsed.file === _const.VALUE && req.method === "POST") {
             _valueCommand(req, res);
@@ -283,18 +283,23 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         throw _errors.createInvalidReqMissingCommandParameterEH(req);
     },
 
-    _findElementCommand = function(req, res) {
+    _findElementCommand = function(req, res, locatorMethod) {
         // Search for a WebElement on the Page
-        var element,
+        var elementOrElements,
             searchStartTime = new Date().getTime();
 
-         // Try to find the element
+        // If a "locatorMethod" was not provided, default to "locateElement"
+        if(typeof(locatorMethod) !== "function") {
+            locatorMethod = _locator.locateElement;
+        }
+
+        // Try to find the element
         //  and retry if "startTime + implicitTimeout" is
         //  greater (or equal) than current time
         do {
-            element = _locator.locateElement(JSON.parse(req.post), _getId());
-            if (element) {
-                res.success(_session.getId(), element.getJSON());
+            elementOrElements = locatorMethod("JSON", JSON.parse(req.post), _getJSON());
+            if (elementOrElements) {
+                res.success(_session.getId(), elementOrElements);
                 return;
             }
         } while(searchStartTime + _session.getTimeout(_session.timeoutNames().IMPLICIT) >= new Date().getTime());
@@ -302,36 +307,8 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         throw _errors.createInvalidReqVariableResourceNotFoundEH(req);
     },
 
-    _findElementsCommand = function(req, res) {
-        // Search for a WebElement on the Page
-        var elements,
-            searchStartTime = new Date().getTime(),
-            elementsResponse = "";
-
-        // Try to find at least one element
-        //  and retry if "startTime + implicitTimeout" is
-        //  greater (or equal) than current time
-        do {
-            elements = _locator.locateElements(JSON.parse(req.post), _getId());
-            if (elements.length > 0) {
-                // Manually construct the JSON response, since the return
-                // from locateElements is an array of WebElementReqHand
-                // objects.
-                for (var i = 0; i < elements.length; i++) {
-                    if (elementsResponse.length > 0) {
-                        elementsResponse += ", ";
-                    }
-                    elementsResponse += JSON.stringify(elements[i].getJSON());
-                }
-                break;
-            }
-        } while(searchStartTime + _session.getTimeout(_session.timeoutNames().IMPLICIT) >= new Date().getTime());
-
-        res.success(_session.getId(), JSON.parse("[" + elementsResponse + "]"));
-    },
-
-
-    /** This method can generate any Element JSON: just provide an ID.
+    /**
+     * This method can generate any Element JSON: just provide an ID.
      * Will return the one of the current Element if no ID is provided.
      * @param elementId ID of the Element to describe in JSON format,
      *      or undefined to get the one fo the current Element.
@@ -347,8 +324,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
     },
     _getSession = function() {
         return _session;
-    }
-    ;
+    };
 
     // public:
     return {
