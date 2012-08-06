@@ -114,6 +114,11 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         } else if (req.urlParsed.file === _const.SIZE && req.method === "GET") {
             _getSizeCommand(req, res);
             return;
+        } else if (req.urlParsed.file === "" && req.method === "GET") {         //< GET "/session/:id/element/:id"
+            // The response to this command is not defined in the specs:
+            // here we just return the Element JSON ID.
+            res.success(_session.getId(), _getJSON());
+            return;
         } // else ...
 
         // TODO lots to do...
