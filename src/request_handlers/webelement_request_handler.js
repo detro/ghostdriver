@@ -177,7 +177,6 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         res.respondBasedOnResult(_session, req, size);
     },
 
-
     _postValueCommand = function(req, res) {
         var i, ilen,
             postObj = JSON.parse(req.post),
@@ -192,9 +191,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
                 _getJSON(),
                 postObj.value);
 
-            // TODO - Error handling based on the value of "typeRes"
-
-            res.success(_session.getId());
+            res.respondBasedOnResult(_session, req, typeRes);
             return;
         }
 
