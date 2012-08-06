@@ -93,7 +93,7 @@ ghostdriver.WebElementLocator = function(session) {
                 return findElementRes.value;
             } else {
                 // Return the (Web)Element
-                return _getElement(findElementRes.value);
+                return new ghostdriver.WebElementReqHand(findElementRes.value, _session);
             }
         }
 
@@ -124,7 +124,7 @@ ghostdriver.WebElementLocator = function(session) {
                 // Put all the Elements in an array
                 for (i = 0, ilen = findElementsRes.value.length; i < ilen; ++i) {
                     // Add to the result array
-                    elements.push(_getElement(findElementsRes.value[i]));
+                    elements.push(new ghostdriver.WebElementReqHand(findElementsRes.value[i], _session));
                 }
                 return elements;
             }
@@ -156,7 +156,7 @@ ghostdriver.WebElementLocator = function(session) {
                 return activeElementRes.value;
             } else {
                 // Return the (Web)Element
-                return _getElement(activeElementRes.value);
+                return new ghostdriver.WebElementReqHand(activeElementRes.value, _session);
             }
         }
 

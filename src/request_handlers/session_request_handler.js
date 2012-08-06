@@ -60,7 +60,8 @@ ghostdriver.SessionReqHand = function(session) {
         WINDOW_HANDLES  : "window_handles",
         FRAME           : "frame",
         SOURCE          : "source",
-        COOKIE          : "cookie"
+        COOKIE          : "cookie",
+        KEYS            : "keys"
     },
     _errors = require("./errors.js"),
 
@@ -113,6 +114,9 @@ ghostdriver.SessionReqHand = function(session) {
             } else {
                 throw _errors.createInvalidReqVariableResourceNotFoundEH(req);
             }
+            return;
+        } else if (req.urlParsed.file === _const.KEYS && req.method === "POST") {
+            _postKeysCommand(req, res);
             return;
         } else if (req.urlParsed.file === _const.FORWARD && req.method === "POST") {
             _forwardCommand(req, res);
@@ -275,6 +279,11 @@ ghostdriver.SessionReqHand = function(session) {
     _postWindowMaximizeCommand = function(req, res, targetWindow) {
         // NOTE: Nothing to do! PhantomJS is headless. :)
         res.success(_session.getId());
+    },
+
+    _postKeysCommand = function(req, res) {
+        var elReqHand = _locator.locateActiveElement("REQ_HAND");
+        elReqHand.postValueCommand(req, res);
     },
 
     _refreshCommand = function(req, res) {

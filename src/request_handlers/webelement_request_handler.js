@@ -178,8 +178,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
     },
 
     _postValueCommand = function(req, res) {
-        var i, ilen,
-            postObj = JSON.parse(req.post),
+        var postObj = JSON.parse(req.post),
             typeAtom = require("./webdriver_atoms.js").get("type"),
             typeRes;
 
@@ -361,9 +360,8 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         handle : _handle,
         getId : _getId,
         getJSON : _getJSON,
-        getSession : _getSession//,
-        // isAttachedToDOM : _isAttachedToDOM,
-        // isVisible : _isVisible
+        getSession : _getSession,
+        postValueCommand : _postValueCommand
     };
 };
 // prototype inheritance:
