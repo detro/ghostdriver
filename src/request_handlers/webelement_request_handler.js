@@ -64,16 +64,16 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         // TODO lots to do...
 
         if (req.urlParsed.file === _const.ELEMENT && req.method === "POST") {
-            _findElementCommand(req, res, _locator.locateElement);
+            _postFindElementCommand(req, res, _locator.locateElement);
             return;
         } else if (req.urlParsed.file === _const.ELEMENTS && req.method === "POST") {
-            _findElementCommand(req, res, _locator.locateElements);
+            _postFindElementCommand(req, res, _locator.locateElements);
             return;
         } else if (req.urlParsed.file === _const.VALUE && req.method === "POST") {
-            _valueCommand(req, res);
+            _postValueCommand(req, res);
             return;
         } else if (req.urlParsed.file === _const.SUBMIT && req.method === "POST") {
-            _submitCommand(req, res);
+            _postSubmitCommand(req, res);
             return;
         } else if (req.urlParsed.file === _const.DISPLAYED && req.method === "GET") {
             _getDisplayedCommand(req, res);
@@ -178,7 +178,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
     },
 
 
-    _valueCommand = function(req, res) {
+    _postValueCommand = function(req, res) {
         var i, ilen,
             postObj = JSON.parse(req.post),
             typeAtom = require("./webdriver_atoms.js").get("type"),
@@ -187,7 +187,10 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         // Ensure all required parameters are available
         if (typeof(postObj) === "object" && typeof(postObj.value) === "object") {
             // Execute the "type" atom
-            typeRes = _getSession().getCurrentWindow().evaluate(typeAtom, _getJSON(), postObj.value);
+            typeRes = _getSession().getCurrentWindow().evaluate(
+                typeAtom,
+                _getJSON(),
+                postObj.value);
 
             // TODO - Error handling based on the value of "typeRes"
 
@@ -252,7 +255,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         throw _errors.createInvalidReqMissingCommandParameterEH(req);
     },
 
-    _submitCommand = function(req, res) {
+    _postSubmitCommand = function(req, res) {
         var submitRes;
 
         // Listen for the page to Finish Loading after the submit
@@ -313,7 +316,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         throw _errors.createInvalidReqMissingCommandParameterEH(req);
     },
 
-    _findElementCommand = function(req, res, locatorMethod) {
+    _postFindElementCommand = function(req, res, locatorMethod) {
         // Search for a WebElement on the Page
         var elementOrElements,
             searchStartTime = new Date().getTime();
