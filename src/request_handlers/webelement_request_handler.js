@@ -153,21 +153,18 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
     },
 
     _getLocationInViewCommand = function(req, res) {
-        var locationRes = _getLocationResult(),
-            inViewLocationRes;
+        var scrollRes = _session.getCurrentWindow().evaluate(
+                require("./webdriver_atoms.js").get("scroll_into_view"),
+                _getJSON());
 
-        if (locationRes.hasOwnProperty("status") && locationRes.status === 0) {
-            // We got a location: let's scroll to it
-            inViewLocationRes = _session.getCurrentWindow().evaluate(
-                require("./webdriver_atoms.js").get("execute_script"),
-                "return (" + require("./webdriver_atoms.js").get("get_in_view_location") + ")(arguments[0]);",
-                [locationRes.value]);
-
-            res.respondBasedOnResult(_session, req, inViewLocationRes);
-        } else {
-            // Result is an error: report it
-            res.respondBasedOnResult(_session, req, locationRes);
+        scrollRes = JSON.parse(scrollRes);
+        if (scrollRes && scrollRes.status === 0) {
+            res.respondBasedOnResult(_session, req, _getLocationResult());
+            return;
         }
+
+        // Something went wrong: report the error
+        res.respondBasedOnResult(_session, req, scrollRes);
     },
 
     _getSizeCommand = function(req, res) {

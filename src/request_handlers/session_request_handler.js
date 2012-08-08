@@ -542,7 +542,7 @@ ghostdriver.SessionReqHand = function(session) {
             closed = false;
 
         // Use the "name" parameter if it was provided
-        if (typeof(params) === "object" && params.hasOwnProperty("name")) {
+        if (typeof(params) === "object" && params.name) {
             closed = _session.closeWindow(params.name);
         } else {
             closed = _session.closeCurrentWindow();
@@ -566,7 +566,7 @@ ghostdriver.SessionReqHand = function(session) {
     _postWindowCommand = function(req, res) {
         var params = JSON.parse(req.post);
 
-        if (typeof(params) === "object" && params.hasOwnProperty("name")) {
+        if (typeof(params) === "object" && params.name) {
             // Report a success if we manage to switch the current window,
             // otherwise throw a Failed Command Error
             if (_session.switchToWindow(params.name)) {

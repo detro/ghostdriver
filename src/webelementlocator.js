@@ -53,7 +53,7 @@ ghostdriver.WebElementLocator = function(session) {
             _supportedStrategies.indexOf(locator.using) >= 0) {  //< and if strategy is recognized
 
             // Ensure "rootElement" is valid, otherwise undefine-it
-            if (!rootElement || typeof(rootElement) !== "object" || !rootElement.hasOwnProperty("ELEMENT")) {
+            if (!rootElement || typeof(rootElement) !== "object" || !rootElement["ELEMENT"]) {
                 rootElement = undefined;
             }
 
