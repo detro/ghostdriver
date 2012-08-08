@@ -249,23 +249,37 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
     },
 
     _postSubmitCommand = function(req, res) {
-        var submitRes;
+        var submitRes,
+            abortCallback = false;
 
         // Listen for the page to Finish Loading after the submit
         _getSession().getCurrentWindow().setOneShotCallback("onLoadFinished", function(status) {
-            if (status === "success") {
-                res.success(_session.getId());
+            if (!abortCallback) {
+                if (status === "success") {
+                    res.success(_session.getId());
+                } else {
+                    _errors.handleFailedCommandEH(
+                        _errors.FAILED_CMD_STATUS.UNKNOWN_ERROR,
+                        "Submit failed",
+                        req,
+                        res,
+                        _session,
+                        "WebElementReqHand");
+                }
             }
-
-            // TODO - what do we do if this fails?
-            // TODO - clear thing up after we are done waiting
         });
 
+        // Submit
         submitRes = _getSession().getCurrentWindow().evaluate(
             require("./webdriver_atoms.js").get("submit"),
             _getJSON());
 
-        // TODO - Error handling based on the value of "submitRes"
+        // If Submit was NOT positive, status will be set to something else than '0'
+        submitRes = JSON.parse(submitRes);
+        if (submitRes && submitRes.status !== 0) {
+            abortCallback = true; //< handling the error here
+            res.respondBasedOnResult(_session, req, submitRes);
+        }
     },
 
     _postClickCommand = function(req, res) {
