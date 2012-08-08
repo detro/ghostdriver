@@ -9511,699 +9511,179 @@ webdriver.atoms.storage.session.key = function(index) {
   return bot.storage.getSessionStorage().key(index);
 };
 
-// Copyright 2011 WebDriver committers
-// Copyright 2011 Google Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+This file is part of the GhostDriver project from Neustar inc.
+
+Copyright (c) 2012, Ivan De Marino <ivan.de.marino@gmail.com> - Neustar inc.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright notice,
+      this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above copyright notice,
+      this list of conditions and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
 
 /**
  * @fileoverview Ready to inject atoms for manipulating the DOM.
  */
 
-goog.provide('webdriver.atoms.inject.action');
+goog.provide('phantomjs.atoms.inject.action');
 
 goog.require('bot.action');
 goog.require('bot.inject');
 goog.require('goog.dom.selection');
 goog.require('webdriver.atoms.element');
 
+/**
+ * Focuses on the given element if it is not already the active element.
+ *
+ * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to focus on.
+ * @return {string} A stringified {@link bot.response.ResponseObject}.
+ * @see bot.action.focusOnElement
+ */
+phantomjs.atoms.inject.action.focusOnElement = function(element) {
+    return bot.inject.executeScript(bot.action.focusOnElement, [element], true);
+};
 
 /**
- * Sends key events to simulating typing on an element.
+ * Moves the mouse over the given {@code element} with a virtual mouse.
  *
- * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to submit.
- * @param {!Array.<string>} keys The keys to type.
+ * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to move to.
+ * @param {!{x:number,y:number}} opt_coords Mouse position relative to the element (optional).
  * @return {string} A stringified {@link bot.response.ResponseObject}.
  */
-webdriver.atoms.inject.action.type = function(element, keys) {
-  return bot.inject.executeScript(webdriver.atoms.element.type,
-      [element, keys], true);
+phantomjs.atoms.inject.action.moveMouse = function(element, opt_coords) {
+    return bot.inject.executeScript(bot.action.moveMouse, [element, opt_coords], true);
 };
 
-
 /**
- * Submits the form containing the given element.
+ * Right-clicks on the given {@code element} with a virtual mouse.
  *
- * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to submit.
+ * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to right-click.
+ * @param {!{x:number,y:number}} opt_coords Mouse position relative to the element (optional).
  * @return {string} A stringified {@link bot.response.ResponseObject}.
  */
-webdriver.atoms.inject.action.submit = function(element) {
-  return bot.inject.executeScript(bot.action.submit, [element], true);
+phantomjs.atoms.inject.action.rightClick = function(element, opt_coords) {
+    return bot.inject.executeScript(bot.action.rightClick, [element, opt_coords], true);
 };
 
-
 /**
- * Clear an element.
+ * Double-clicks on the given {@code element} with a virtual mouse.
  *
- * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to clear.
+ * @param {!{bot.inject.ELEMENT_KEY:string} element The element to double-click.
+ * @param {!{x:number,y:number}} opt_coords Mouse position relative to the element (optional).
  * @return {string} A stringified {@link bot.response.ResponseObject}.
- * @see bot.action.clear
  */
-webdriver.atoms.inject.action.clear = function(element) {
-  return bot.inject.executeScript(bot.action.clear, [element], true);
+phantomjs.atoms.inject.action.doubleClick = function(element, opt_coords) {
+    return bot.inject.executeScript(bot.action.doubleClick, [element, opt_coords], true);
 };
 
-
 /**
- * Click an element.
+ * Scrolls the mouse wheel on the given {@code element} with a virtual mouse.
  *
- * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to click.
+ * @param {!{bot.inject.ELEMENT_KEY:string} element The element to scroll the mouse wheel on.
+ * @param {number} ticks Number of ticks to scroll the mouse wheel;
+ *   a positive number scrolls down and a negative scrolls up.
+ * @param {!{x:number,y:number}} opt_coords Mouse position relative to the element (optional).
  * @return {string} A stringified {@link bot.response.ResponseObject}.
- * @see bot.action.click
  */
-webdriver.atoms.inject.action.click = function(element) {
-  return bot.inject.executeScript(bot.action.click, [element], true);
+phantomjs.atoms.inject.action.scrollMouse = function(element, ticks, opt_coords) {
+    return bot.inject.executeScript(bot.action.scrollMouse, [element, ticks, opt_coords], true);
 };
 
-// Copyright 2012 WebDriver committers
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 /**
- * @fileoverview Ready to inject atoms for handling application cache.
- */
-
-goog.provide('webdriver.atoms.inject.storage.appcache');
-
-goog.require('bot.inject');
-goog.require('webdriver.atoms.storage.appcache');
-
-
-/**
- * Gets the status of the application cache.
+ * Drags the given {@code element} by (dx, dy) with a virtual mouse.
  *
- * @return {number} The status of the application cache.
+ * @param {!{bot.inject.ELEMENT_KEY:string} element The element to drag.
+ * @param {number} dx Increment in x coordinate.
+ * @param {number} dy Increment in y coordinate.
+ * @param {!{x:number,y:number}} opt_coords Drag start position relative to the element.
+ * @return {string} A stringified {@link bot.response.ResponseObject}.
  */
-webdriver.atoms.inject.storage.appcache.getStatus = function() {
-  return bot.inject.executeScript(webdriver.atoms.storage.appcache.getStatus,
-      [], true);
+phantomjs.atoms.inject.action.drag = function(element, dx, dy, opt_coords) {
+    return bot.inject.executeScript(bot.action.drag, [element, dx, dy, opt_coords], true);
 };
 
-
-// Copyright 2011 WebDriver committers
-// Copyright 2011 Google Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 /**
- *@fileoverview Ready to inject atoms for querying the DOM.
- */
-
-goog.provide('webdriver.atoms.inject.dom');
-
-goog.require('bot.action');
-goog.require('bot.dom');
-goog.require('bot.inject');
-goog.require('webdriver.atoms.element');
-
-
-/**
- * Gets the visisble text for the given element.
- * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to query.
- * @return {string} The visible text wrapped in a JSON string as defined by the
- *     WebDriver wire protocol.
- */
-webdriver.atoms.inject.dom.getText = function(element) {
-  return bot.inject.executeScript(bot.dom.getVisibleText, [element], true);
-};
-
-
-/**
- * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to query.
- * @return {string} A boolean describing whether the element is
- *     checked or selected wrapped in a JSON string as defined by
- *     the wire protocol.
- */
-webdriver.atoms.inject.dom.isSelected = function(element) {
-  return bot.inject.executeScript(bot.dom.isSelected, [element], true);
-};
-
-
-/**
- * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to query.
- * @return {string} The coordinates of the top left corner in a JSON
- *     string as defined by the wire protocol.
- */
-webdriver.atoms.inject.dom.getTopLeftCoordinates = function(element) {
-  return bot.inject.executeScript(bot.dom.getLocationInView, [element], true);
-};
-
-
-/**
- * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to query.
- * @param {string} attribute The attribute to look up.
- * @return {string} The requested attribute value in a JSON string
- *     as defined by the wire protocol.
- */
-webdriver.atoms.inject.dom.getAttributeValue = function(element, attribute) {
-  return bot.inject.executeScript(
-      webdriver.atoms.element.getAttribute, [element, attribute], true);
-};
-
-
-/**
- * @param {bot.inject.ELEMENT_KEY:string} element The element to query.
- * @return {string} The element size in a JSON string as
- *     defined by the wire protocol.
- */
-webdriver.atoms.inject.dom.getSize = function(element) {
-  return bot.inject.executeScript(bot.dom.getElementSize, [element], true);
-};
-
-
-/**
- * @param {bot.inject.ELEMENT_KEY:string} element The element to query.
- * @param {string} property The property to look up.
- * @return {string} The value of the requested CSS property in a JSON
- *     string as defined by the wire protocol.
- */
-webdriver.atoms.inject.dom.getValueOfCssProperty = function(element, property) {
-  return bot.inject.executeScript(bot.dom.getEffectiveStyle,
-      [element, property], true);
-};
-
-
-/**
- * @param {bot.inject.ELEMENT_KEY:string} element The element to query.
- * @return {string} A boolean describing whether the element is enabled
- *     in a JSON string as defined by the wire protocol.
- */
-webdriver.atoms.inject.dom.isEnabled = function(element) {
-  return bot.inject.executeScript(bot.dom.isEnabled, [element], true);
-};
-
-
-/**
- * @param {bot.inject.ELEMENT_KEY:string} element The element to check.
- * @return {string} true if the element is visisble, false otherwise.
- *     The result is wrapped in a JSON string as defined by the wire
- *     protocol.
- */
-webdriver.atoms.inject.dom.isDisplayed = function(element) {
-  return bot.inject.executeScript(
-      bot.dom.isShown, [element, /*ignoreOpacity=*/true], true);
-};
-
-// Copyright 2011 WebDriver committers
-// Copyright 2011 Google Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Wrapping execute script to use a serialized window object.
+ * Scrolls the given {@code element} in to the current viewport. Aims to do the
+ * minimum scrolling necessary, but prefers too much scrolling to too little.
  *
+ * @param {!{bot.inject.ELEMENT_KEY:string} element The element to scroll into view.
+ * @param {!{x:number,y:number}} opt_coords Offset relative to the top-left
+ *     corner of the element, to ensure is scrolled in to view.
+ * @return {string} A stringified {@link bot.response.ResponseObject};
+ *     whether the element is in view after scrolling.
  */
-
-goog.provide('webdriver.atoms.inject');
-
-goog.require('bot.inject');
-goog.require('bot.inject.cache');
-
+phantomjs.atoms.inject.action.scrollIntoView = function(element, opt_coords) {
+    return bot.inject.executeScript(bot.action.scrollIntoView, [element, opt_coords], true);
+};
 
 /**
- * Wrapper to allow passing a seliazed window object to executeScript.
+ * Taps on the given {@code element} with a virtual touch screen.
  *
- * @param {!(string|Function)} fn The function to execute.
- * @param {Array.<*>} args Array of arguments to pass to fn.
- * @param {{bot.inject.WINDOW_KEY:string}=} opt_window The serialized window
- *     object to be read from the cache.
- * @return {!(string|bot.response.ResponseObject)} The response object. If
- *     opt_stringify is true, the result will be serialized and returned in
- *     string format.
+ * @param {!{bot.inject.ELEMENT_KEY:string} element The element to tap.
+ * @param {!{x:number,y:number}} opt_coords Finger position relative to the target.
+ * @return {string} A stringified {@link bot.response.ResponseObject}.
  */
-webdriver.atoms.inject.executeScript = function(fn, args, opt_window) {
-  return bot.inject.executeScript(
-      fn, args, true, webdriver.atoms.inject.getWindow_(opt_window));
+phantomjs.atoms.inject.action.tap = function(element, opt_coords) {
+    return bot.inject.executeScript(bot.action.tap, [element, opt_coords], true);
 };
 
-
 /**
+ * Swipes the given {@code element} by (dx, dy) with a virtual touch screen.
  *
- * @param {!(string|function)} fn The function to execute.
- * @param {Array.<*>} args Array of arguments to pass to fn.
- * @param {int} timeout The timeout to wait up to in millis.
- * @param {{bot.inject.WINDOW_KEY:string}=} opt_window The serialized window
- *     object to be read from the cache.
- * @return {!(string|bot.response.ResponseObject)} The response object. If
- *     opt_stringify is true, the result will be serialized and returned in
- *     string format.
+ * @param {!{bot.inject.ELEMENT_KEY:string} element The element to swipe.
+ * @param {number} dx Increment in x coordinate.
+ * @param {number} dy Increment in y coordinate.
+ * @param {!{x:number,y:number}} opt_coords Swipe start position relative to the element.
+ * @return {string} A stringified {@link bot.response.ResponseObject}.
  */
-webdriver.atoms.inject.executeAsyncScript =
-    function(fn, args, timeout, onDone, opt_window) {
-  return bot.inject.executeScript(fn, args, timeout, onDone, true,
-      webdriver.atoms.inject.getWindow_(opt_window));
+phantomjs.atoms.inject.action.swipe = function(element, dx, dy, opt_coords) {
+    return bot.inject.executeScript(bot.action.swipe, [element, dx, dy, opt_coords], true);
 };
 
-
 /**
- * Get the window to use.
+ * Pinches the given {@code element} by the given distance with a virtual touch
+ * screen. A positive distance moves two fingers inward toward each and a
+ * negative distances spreds them outward. The optional coordinate is the point
+ * the fingers move towards (for positive distances) or away from (for negative
+ * distances); and if not provided, defaults to the center of the element.
  *
- * @param {{bot.inject.WINDOW_KEY:string}=} opt_window The serialized window
- *     object to be read from the cache.
- * @return {!Window} A reference to a window.
- * @private
+ * @param {!{bot.inject.ELEMENT_KEY:string} element The element to pinch.
+ * @param {number} distance The distance by which to pinch the element.
+ * @param {!{x:number,y:number}} opt_coords Position relative to the element at the center of the pinch.
+ * @return {string} A stringified {@link bot.response.ResponseObject}.
  */
-webdriver.atoms.inject.getWindow_ = function(opt_window) {
-  var win;
-  if (opt_window) {
-    win = bot.inject.cache.getElement(opt_window[bot.inject.WINDOW_KEY]);
-  } else {
-    win = window;
-  }
-  return win;
-};
-// Copyright 2011 WebDriver committers
-// Copyright 2011 Google Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Ready to inject atoms to find elements in the page.
- */
-
-goog.provide('webdriver.atoms.inject.locators');
-
-goog.require('bot.inject');
-goog.require('bot.locators');
-
-
-/**
- * Finds an element by using the given lookup strategy.
- * @param {string} strategy The strategy to use to locate the element.
- * @param {string} using The locator to use.
- * @param {(Document|Element)=} opt_root The document or element to perform
- *     the search under. If not specified, will use {@code document}
- *     as the root.
- * @return {string} The result wrapped
- *     in a JSON string as defined by the WebDriver wire protocol.
- */
-webdriver.atoms.inject.locators.findElement = function(strategy, using, opt_root) {
-  var locator = {};
-  locator[strategy] = using;
-  return bot.inject.executeScript(bot.locators.findElement,
-      [locator, opt_root], true);
+phantomjs.atoms.inject.action.pinch = function(element, distance, opt_coords) {
+    return bot.inject.executeScript(bot.action.pinch, [element, distance, opt_coords], true);
 };
 
-
 /**
- * Finds all elements by using the given lookup strategy.
- * @param {string} strategy The strategy to use to locate the element.
- * @param {string} using The locator to use.
- * @param {(Document|Element)=} opt_root The document or element to perform
- *     the search under. If not specified, will use {@code document}
- *     as the root.
- * @return {string} The result wrapped
- *     in a JSON string as defined by the WebDriver wire protocol.
- */
-webdriver.atoms.inject.locators.findElements = function(strategy, using, opt_root) {
-  var locator = {};
-  locator[strategy] = using;
-  return bot.inject.executeScript(bot.locators.findElements,
-                                  [locator, opt_root], true);
-};
-// Copyright 2011 WebDriver committers
-// Copyright 2011 Google Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Ready to inject atoms for handling frames.
- */
-
-goog.provide('webdriver.atoms.inject.frame');
-
-goog.require('bot.frame');
-goog.require('bot.inject');
-goog.require('bot.inject.cache');
-
-
-/**
- * Finds a frame by id or name.
+ * Rotates the given {@code element} by the given angle with a virtual touch
+ * screen. A positive angle moves two fingers clockwise and a negative angle
+ * moves them counter-clockwise. The optional coordinate is the point to
+ * rotate around; and if not provided, defaults to the center of the element.
  *
- * @param {string} idOrName The frame id or name.
- * @param {{bot.inject.WINDOW_KEY: string}=} opt_root The wrapped window to
- *     perform the search under. Defaults to window.
- * @return {string} A frame element wrapped in a JSON string as defined by
- *     the wire protocol.
+ * @param {!{bot.inject.ELEMENT_KEY:string} element The element to rotate.
+ * @param {number} angle The angle by which to rotate the element.
+ * @param {!{x:number,y:number}} opt_coords Position relative to the element at the center of the rotation.
+ * @return {string} A stringified {@link bot.response.ResponseObject}.
  */
-webdriver.atoms.inject.frame.findFrameByIdOrName = function(idOrName, opt_root) {
-  return bot.inject.executeScript(bot.frame.findFrameByNameOrId,
-      [idOrName, opt_root], true);
-};
-
-
-/**
- * @return {string} A string representing the currently active element.
- */
-webdriver.atoms.inject.frame.activeElement = function() {
-  return bot.inject.executeScript(bot.frame.activeElement, [], true);
-};
-
-
-/**
- * Finds a frame by index.
- *
- * @param {number} index The index of the frame to search for.
- * @param {!Window=} opt_root The window to perform the search under.
- * If not specified window is used as the default.
- * @return {string} A frame element wrapped in a JSON string as defined by
- *     the wire protocol.
- */
-webdriver.atoms.inject.frame.findFrameByIndex = function(index, opt_root) {
-  return bot.inject.executeScript(bot.frame.findFrameByIndex,
-      [index, opt_root], true);
-};
-
-
-/**
- * @return {string} The default content of the current page,
- *     which is the top window.
- */
-webdriver.atoms.inject.frame.defaultContent = function() {
-  return bot.inject.executeScript(bot.frame.defaultContent,
-      [], true);
-};
-
-
-/**
- * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to query.
- * @return {string} The window corresponding to the frame element
- * wrapped in a JSON string as defined by the wire protocol.
- */
-webdriver.atoms.inject.frame.getFrameWindow = function(element) {
-  return bot.inject.executeScript(bot.frame.getFrameWindow,
-      [element], true);
-};
-// Copyright 2011 WebDriver committers
-// Copyright 2011 Google Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Ready to inject atoms for handling local storage.
- */
-
-goog.provide('webdriver.atoms.inject.storage.local');
-
-goog.require('bot.inject');
-goog.require('webdriver.atoms.storage.local');
-
-
-/**
- * Sets an item in the local storage.
- *
- * @param {string} key The key of the item.
- * @param {*} value The value of the item.
- * @return {!bot.response.ResponseObject} The result wrapped according
- *     to the wire protocol.
- */
-webdriver.atoms.inject.storage.local.setItem = function(key, value) {
-  return bot.inject.executeScript(webdriver.atoms.storage.local.setItem,
-      [key, value], true);
-};
-
-
-/**
- * Gets an item from the local storage.
- *
- * @param {string} key The key of the item.
- * @return {!bot.response.ResponseObject} The result wrapped according
- *     to the wire protocol.
- */
-webdriver.atoms.inject.storage.local.getItem = function(key) {
-  return bot.inject.executeScript(webdriver.atoms.storage.local.getItem,
-      [key], true);
-};
-
-
-/**
- * Gets the key set of the entries.
- *
- * @return {!bot.response.ResponseObject} The result wrapped according
- *     to the wire protocol.
- */
-webdriver.atoms.inject.storage.local.keySet = function() {
-  return bot.inject.executeScript(webdriver.atoms.storage.local.keySet,
-      [], true);
-};
-
-
-/**
- * Removes an item in the local storage.
- *
- * @param {string} key The key of the item.
- * @return {!bot.response.ResponseObject} The result wrapped according
- *     to the wire protocol.
- */
-webdriver.atoms.inject.storage.local.removeItem = function(key) {
-  return bot.inject.executeScript(webdriver.atoms.storage.local.removeItem,
-      [key], true);
-};
-
-
-/**
- * Clears the local storage.
- *
- * @return {!bot.response.ResponseObject} The result wrapped according
- *     to the wire protocol.
- */
-webdriver.atoms.inject.storage.local.clear = function() {
-  return bot.inject.executeScript(webdriver.atoms.storage.local.clear,
-      [], true);
-};
-
-
-/**
- * Gets the size of the local storage.
- *
- * @return {!bot.response.ResponseObject} The result wrapped according
- *     to the wire protocol.
- */
-webdriver.atoms.inject.storage.local.size = function() {
-  return bot.inject.executeScript(webdriver.atoms.storage.local.size,
-      [], true);
-};
-// Copyright 2011 WebDriver committers
-// Copyright 2011 Google Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Ready to inject atoms for handling session storage.
- */
-
-goog.provide('webdriver.atoms.inject.storage.session');
-
-goog.require('bot.inject');
-goog.require('webdriver.atoms.storage.session');
-
-
-/**
- * Sets an item in the session storage.
- *
- * @param {string} key The key of the item.
- * @param {*} value The value of the item.
- * @return {!bot.response.ResponseObject} The result wrapped according
- *     to the wire protocol.
- */
-webdriver.atoms.inject.storage.session.setItem = function(key, value) {
-  return bot.inject.executeScript(webdriver.atoms.storage.session.setItem,
-      [key, value], true);
-};
-
-
-/**
- * Gets an item from the session storage.
- *
- * @param {string} key The key of the item.
- * @return {!bot.response.ResponseObject} The result wrapped according
- *     to the wire protocol.
- */
-webdriver.atoms.inject.storage.session.getItem = function(key) {
-  return bot.inject.executeScript(webdriver.atoms.storage.session.getItem,
-      [key], true);
-};
-
-
-/**
- * Gets the key set of the entries.
- *
- * @return {!bot.response.ResponseObject} The result wrapped according
- *     to the wire protocol.
- */
-webdriver.atoms.inject.storage.session.keySet = function() {
-  return bot.inject.executeScript(webdriver.atoms.storage.session.keySet,
-      [], true);
-};
-
-
-/**
- * Removes an item in the session storage.
- *
- * @param {string} key The key of the item.
- * @return {!bot.response.ResponseObject} The result wrapped according
- *     to the wire protocol.
- */
-webdriver.atoms.inject.storage.session.removeItem = function(key) {
-  return bot.inject.executeScript(webdriver.atoms.storage.session.removeItem,
-      [key], true);
-};
-
-
-/**
- * Clears the session storage.
- *
- * @return {!bot.response.ResponseObject} The result wrapped according
- *     to the wire protocol.
- */
-webdriver.atoms.inject.storage.session.clear = function() {
-  return bot.inject.executeScript(webdriver.atoms.storage.session.clear,
-      [], true);
-};
-
-
-/**
- * Gets the size of the session storage.
- *
- * @return {!bot.response.ResponseObject} The result wrapped according
- *     to the wire protocol.
- */
-webdriver.atoms.inject.storage.session.size = function() {
-  return bot.inject.executeScript(webdriver.atoms.storage.session.size,
-      [], true);
-};
-// Copyright 2011 WebDriver committers
-// Copyright 2011 Google Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Ready to inject atoms for handling web SQL database.
- */
-
-goog.provide('webdriver.atoms.inject.storage.database');
-
-goog.require('bot.Error');
-goog.require('bot.ErrorCode');
-goog.require('bot.inject');
-goog.require('bot.storage.database');
-
-
-/**
- * Executes the given query in the Web SQL database specified.
- *
- * @param {string} databaseName The name of the database.
- * @param {string} query The SQL statement.
- * @param {Array.<*>} args Arguments to pass to the query.
- * @param {!function(string)} onDone The callback to invoke when done. The
- *     result, according to the wire protocol, will be passed to this callback.
- */
-webdriver.atoms.inject.storage.database.executeSql =
-    function(databaseName, query, args, onDone) {
-  var onSuccessCallback = function(tx, result) {
-    onDone(bot.inject.executeScript(function(res) {
-      return result;
-    }, [result], true));
-  };
-
-  var onErrorCallback = function(error) {
-    onDone(bot.inject.executeScript(function() {
-      throw new bot.Error(bot.ErrorCode.SQL_DATABASE_ERROR,
-          'SQL Error Code: ' + error.code + '. SQL Error Message: ' +
-          error.message);
-    }, [], true));
-  };
-
-  bot.storage.database.executeSql(
-      databaseName, query, args, onSuccessCallback, onErrorCallback);
+phantomjs.atoms.inject.action.rotate = function(element, angle, opt_coords) {
+    return bot.inject.executeScript(bot.action.rotate, [element, angle, opt_coords], true);
 };

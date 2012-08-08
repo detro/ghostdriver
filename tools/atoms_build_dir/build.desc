@@ -1,5 +1,43 @@
-# Builds all the atoms that will later be imported in PhantomJS Driver
+# This file is part of the GhostDriver project from Neustar inc.
+#
+# Copyright (c) 2012, Ivan De Marino <ivan.de.marino@gmail.com> - Neustar inc.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without modification,
+# are permitted provided that the following conditions are met:
+#
+#     * Redistributions of source code must retain the above copyright notice,
+#       this list of conditions and the following disclaimer.
+#     * Redistributions in binary form must reproduce the above copyright notice,
+#       this list of conditions and the following disclaimer in the documentation
+#       and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+# Builds all the atoms that will later be imported in GhostDriver
+#
+# Here we have a mix of:
+#
+#    * Atoms from the default WebDriver Atoms directory
+#    * Atoms that were not exposed by the default build configuration of Selenium
+#    * Atoms purposely built for GhostDriver, still based on the default WebDriver Atoms
+#
+
+js_deps(name = "deps",
+  srcs = "*.js",
+  deps = ["//javascript/atoms:deps",
+          "//javascript/webdriver/atoms:deps"])
+
+# Atoms exposed for GhostDriver
 js_fragment(name = "back",
   module = "bot.window",
   function = "bot.window.back",
@@ -15,11 +53,80 @@ js_fragment(name = "get_element_from_cache",
   function = "bot.inject.cache.getElement",
   deps = [ "//javascript/atoms:deps" ])
 
+# Atoms created specifically for GhostDriver
+js_fragment(name = "focus_on_element",
+  module = "phantomjs.atoms.inject.action",
+  function = "phantomjs.atoms.inject.action.focusOnElement",
+  deps = [ ":deps" ])
+
+js_fragment(name = "move_mouse",
+  module = "phantomjs.atoms.inject.action",
+  function = "phantomjs.atoms.inject.action.moveMouse",
+  deps = [ ":deps" ])
+
+js_fragment(name = "right_click",
+  module = "phantomjs.atoms.inject.action",
+  function = "phantomjs.atoms.inject.action.rightClick",
+  deps = [ ":deps" ])
+
+js_fragment(name = "double_click",
+  module = "phantomjs.atoms.inject.action",
+  function = "phantomjs.atoms.inject.action.doubleClick",
+  deps = [ ":deps" ])
+
+js_fragment(name = "scroll_mouse",
+  module = "phantomjs.atoms.inject.action",
+  function = "phantomjs.atoms.inject.action.scrollMouse",
+  deps = [ ":deps" ])
+
+js_fragment(name = "drag",
+  module = "phantomjs.atoms.inject.action",
+  function = "phantomjs.atoms.inject.action.drag",
+  deps = [ ":deps" ])
+
+js_fragment(name = "scroll_into_view",
+  module = "phantomjs.atoms.inject.action",
+  function = "phantomjs.atoms.inject.action.scrollIntoView",
+  deps = [ ":deps" ])
+
+js_fragment(name = "tap",
+  module = "phantomjs.atoms.inject.action",
+  function = "phantomjs.atoms.inject.action.tap",
+  deps = [ ":deps" ])
+
+js_fragment(name = "swipe",
+  module = "phantomjs.atoms.inject.action",
+  function = "phantomjs.atoms.inject.action.swipe",
+  deps = [ ":deps" ])
+
+js_fragment(name = "pinch",
+  module = "phantomjs.atoms.inject.action",
+  function = "phantomjs.atoms.inject.action.pinch",
+  deps = [ ":deps" ])
+
+js_fragment(name = "rotate",
+  module = "phantomjs.atoms.inject.action",
+  function = "phantomjs.atoms.inject.action.rotate",
+  deps = [ ":deps" ])
+
+# List of Atoms that will be compiled for GhostDriver
 js_deps(name = "build_atoms",
   deps = [
     ":back",
     ":forward",
     ":get_element_from_cache",
+
+    ":focus_on_element",
+    ":move_mouse",
+    ":right_click",
+    ":double_click",
+    ":scroll_mouse",
+    ":drag",
+    ":scroll_into_view",
+    ":tap",
+    ":swipe",
+    ":pinch",
+    ":rotate",
 
     "//javascript/webdriver/atoms:execute_script",
     "//javascript/webdriver/atoms:execute_async_script",
