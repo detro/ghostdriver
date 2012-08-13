@@ -147,6 +147,15 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
             [_getJSON()]);
     },
 
+    _getLocation = function() {
+        var result = _getLocationResult();
+        if (result.status === 0) {
+            return result.value;
+        } else {
+            return null;
+        }
+    },
+
     _getLocationCommand = function(req, res) {
         var locationRes = _getLocationResult();
         res.respondBasedOnResult(_session, req, locationRes);
@@ -372,7 +381,8 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         getId : _getId,
         getJSON : _getJSON,
         getSession : _getSession,
-        postValueCommand : _postValueCommand
+        postValueCommand : _postValueCommand,
+        getLocation : _getLocation
     };
 };
 // prototype inheritance:

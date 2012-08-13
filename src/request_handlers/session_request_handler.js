@@ -61,7 +61,12 @@ ghostdriver.SessionReqHand = function(session) {
         FRAME           : "frame",
         SOURCE          : "source",
         COOKIE          : "cookie",
-        KEYS            : "keys"
+        KEYS            : "keys",
+        MOVE_TO         : "moveto",
+        CLICK           : "click",
+        BUTTON_DOWN     : "buttondown",
+        BUTTON_UP       : "buttonup",
+        DOUBLE_CLICK    : "doubleclick"
     },
     _errors = require("./errors.js"),
 
@@ -147,6 +152,21 @@ ghostdriver.SessionReqHand = function(session) {
             return;
         } else if (req.urlParsed.file === _const.SOURCE && req.method === "GET") {
             _getSourceCommand(req, res);
+            return;
+        } else if (req.urlParsed.file === _const.MOVE_TO && req.method === "POST") {
+            _postMouseMoveToCommand(req, res);
+            return;
+        } else if (req.urlParsed.file === _const.CLICK && req.method === "POST") {
+            _postMouseClickCommand(req, res, "click");
+            return;
+        } else if (req.urlParsed.file === _const.BUTTON_DOWN && req.method === "POST") {
+            _postMouseClickCommand(req, res, "mousedown");
+            return;
+        } else if (req.urlParsed.file === _const.BUTTON_UP && req.method === "POST") {
+            _postMouseClickCommand(req, res, "mouseup");
+            return;
+        } else if (req.urlParsed.file === _const.DOUBLE_CLICK && req.method === "POST") {
+            _postMouseClickCommand(req, res, "doubleclick");
             return;
         } else if (req.urlParsed.file === _const.COOKIE) {
             if(req.method === "DELETE") {
@@ -521,6 +541,62 @@ ghostdriver.SessionReqHand = function(session) {
     _getSourceCommand = function(req, res) {
         var source = _session.getCurrentWindow().content;
         res.success(_session.getId(), source);
+    },
+
+    _postMouseMoveToCommand = function(req, res) {
+        var postObj = JSON.parse(req.post),
+            coords = { x : 0, y : 0 },
+            elementLocation;
+
+        // Check that either an Element ID or an X-Y Offset was provided
+        if (typeof(postObj) === "object" &&
+            (postObj.element || (postObj.xoffset && postObj.yoffset))) {
+            // If an Element was provided...
+            if (postObj.element) {
+                // Get Element's Location and add it to the coordinates
+                elementLocation = new ghostdriver.WebElementReqHand(postObj.element, _session).getLocation();
+                // If the Element has a valid location
+                if (elementLocation !== null) {
+                    coords.x += elementLocation.x;
+                    coords.y += elementLocation.y;
+                }
+            }
+
+            // Add up the offset (if any)
+            coords.x += postObj.xoffset || 0;
+            coords.y += postObj.yoffset || 0;
+
+            // Send the Mouse Move as native event
+            _session.getCurrentWindow().sendEvent("mousemove", coords.x, coords.y);
+            res.success(_session.getId());
+        } else {
+            // Neither "element" nor "xoffset/yoffset" were provided
+            throw _errors.createInvalidReqMissingCommandParameterEH(req);
+        }
+    },
+
+    _postMouseClickCommand = function(req, res, clickType) {
+        var postObj = JSON.parse(req.post),
+            mouseButton = "left";
+        // normalize click
+        clickType = clickType || "click";
+
+        // Check that either an Element ID or an X-Y Offset was provided
+        if (typeof(postObj) === "object") {
+            // Determine which button to click
+            if (typeof(postObj.button) === "number") {
+                // 0 is left, 1 is middle, 2 is right
+                mouseButton = (postObj.button === 2) ? "right" : (postObj.button === 1) ? "middle" : "left";
+            }
+            // Send the Mouse Click as native event
+            _session.getCurrentWindow().sendEvent(clickType,
+                0, 0, //< x, y
+                mouseButton);
+            res.success(_session.getId());
+        } else {
+            // Neither "element" nor "xoffset/yoffset" were provided
+            throw _errors.createInvalidReqMissingCommandParameterEH(req);
+        }
     },
 
     _deleteCookieCommand = function(req, res) {
