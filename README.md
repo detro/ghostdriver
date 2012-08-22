@@ -16,8 +16,9 @@ It's going to be a Remote WebDriver that uses PhantomJS as back-end.
 
 ## Presentation and Slides
 
-In April 2012 I (Ivan De Marino) presented GhostDriver at the [Selenium Conference](http://www.seleniumconf.org/speakers/#IDM):
-[slides](http://detro.github.com/ghostdriver/slides/index.html)
+In April 2012 I (Ivan De Marino) presented GhostDriver at the
+[Selenium Conference](http://www.seleniumconf.org/speakers/#IDM):
+[slides](http://cdn.ivandemarino.me/slides/speed_up_selenium_with_phantomjs/index.html)
 and
 [video](http://blog.ivandemarino.me/2012/05/01/Me-the-Selenium-Conference-2012).
 
