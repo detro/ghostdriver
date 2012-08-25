@@ -24,23 +24,20 @@ public class ElementQueryingTest extends BaseTest {
     }
 
     @Test
-    public void checkLocationAndSizeOfGoogleSearchBox() {
+    public void checkLocationAndSizeOfBingSearchBox() {
         WebDriver d = getDriver();
         d.manage().timeouts().pageLoadTimeout(20, TimeUnit.SECONDS);
 
         d.get("http://www.bing.com");
-        WebElement radio = d.findElement(By.cssSelector("input#nofilt[type='radio']"));
-        WebElement radioLabel = d.findElement(By.cssSelector("label[for='nofilt']"));
-
-        assertEquals(radio.getCssValue("color"), "rgb(0, 0, 0)");
-        assertEquals(radioLabel.getText(), "Show all");
-        assertEquals(radio.getAttribute("value"), "all");
-        assertEquals(radio.getTagName(), "input");
-        assertEquals(radio.isEnabled(), true);
-        assertEquals(radio.isDisplayed(), true);
-        assertEquals(radio.isSelected(), true);
-        assertEquals(radio.getLocation(), new Point(215, 138));
-        assertEquals(radio.getSize(), new Dimension(15, 15));
+        WebElement searchBox = d.findElement(By.cssSelector("input[name*='q']"));
+        
+        assertEquals(searchBox.getCssValue("color"), "rgb(0, 0, 0)");
+        assertEquals(searchBox.getAttribute("value"), "");
+        assertEquals(searchBox.getTagName(), "input");
+        assertEquals(searchBox.isEnabled(), true);
+        assertEquals(searchBox.isDisplayed(), true);
+        assertEquals(searchBox.getLocation(), new Point(218, 104));
+        assertEquals(searchBox.getSize(), new Dimension(389, 28));
     }
 
     @Test
