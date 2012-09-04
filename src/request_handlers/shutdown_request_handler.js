@@ -25,36 +25,33 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-// Load dependencies
-// NOTE: We need to provide PhantomJS with the "require" module ASAP. This is a pretty s**t way to load dependencies
-var ghostdriver = {
-        system : require('system')
-    },
-    server = require('webserver').create(),
-    router,
-    parseURI;
+var ghostdriver = ghostdriver || {};
 
-// Enable "strict mode" for the 'parseURI' library
-parseURI = require("./third_party/parseuri.js");
-parseURI.options.strictMode = true;
+ghostdriver.ShutdownReqHand = function() {
+    // private:
+    var
+    _protoParent = ghostdriver.ShutdownReqHand.prototype,
 
-phantom.injectJs("session.js");
-phantom.injectJs("request_handlers/request_handler.js");
-phantom.injectJs("request_handlers/status_request_handler.js");
-phantom.injectJs("request_handlers/shutdown_request_handler.js");
-phantom.injectJs("request_handlers/session_manager_request_handler.js");
-phantom.injectJs("request_handlers/session_request_handler.js");
-phantom.injectJs("request_handlers/webelement_request_handler.js");
-phantom.injectJs("request_handlers/router_request_handler.js");
-phantom.injectJs("webelementlocator.js");
+    _handle = function(req, res) {
+       _protoParent.handle.call(this, req, res);
 
-// HTTP Request Router
-router = new ghostdriver.RouterReqHand();
+        if (req.method === "GET" && req.urlParsed.file === "shutdown") {
+            //res.success(null, null);
+            res.statusCode = 200;
+            res.setHeader("Content-Type", "text/html;charset=UTF-8");
+            res.setHeader("Content-Length", 36);
+            res.write("<html><body>Closing...</body></html>");
+            res.close();
+            return;
+        }
 
-// Start the server
-if (server.listen(ghostdriver.system.args[1] || 8080, router.handle)) {
-    console.log('Ghost Driver running on port ' + server.port);
-} else {
-    console.error("ERROR: Could not start Ghost Driver");
-    phantom.exit();
-}
+        throw require("./errors.js").createInvalidReqInvalidCommandMethodEH(req);
+    };
+
+    // public:
+    return {
+        handle : _handle
+    };
+};
+// prototype inheritance:
+ghostdriver.ShutdownReqHand.prototype = new ghostdriver.RequestHandler();
