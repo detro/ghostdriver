@@ -353,7 +353,14 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
             }
         } while(searchStartTime + _session.getTimeout(_session.timeoutNames().IMPLICIT) >= new Date().getTime());
 
-        throw _errors.createInvalidReqVariableResourceNotFoundEH(req);
+        _errors.handleFailedCommandEH(
+            _errors.FAILED_CMD_STATUS.NO_SUCH_ELEMENT,  //< error name
+            "Unable to find element",                   //< error message
+            req,                                        //< request
+            res,
+            _session,                                   //< session
+            "WebElementReqHand");                       //< class name
+        return;
     },
 
     /**
