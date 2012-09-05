@@ -4,11 +4,13 @@ import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.NoSuchElementException;
 
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class ElementFindingTest extends BaseTest {
     @Test
@@ -78,5 +80,18 @@ public class ElementFindingTest extends BaseTest {
         assertEquals(inputField.hashCode(), active.hashCode());
         assertEquals(inputField.getText(), active.getText());
         assertTrue(inputField.equals(active));
+    }
+
+    @Test
+    public void failToFindNonExistentElement() {
+        WebDriver d = getDriver();
+
+        d.get("http://www.google.com");
+        try {
+            WebElement inputField = d.findElement(By.cssSelector("input[name='idontexist']"));
+            fail();
+        } catch (NoSuchElementException e) {
+            // expected
+        }
     }
 }
