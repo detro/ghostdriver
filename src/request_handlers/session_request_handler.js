@@ -302,7 +302,8 @@ ghostdriver.SessionReqHand = function(session) {
     },
 
     _postKeysCommand = function(req, res) {
-        var elReqHand = _locator.locateActiveElement("REQ_HAND");
+        var activeEl = _locator.locateActiveElement();
+        var elReqHand = new ghostdriver.WebElementReqHand(activeEl.value, _session);
         elReqHand.postValueCommand(req, res);
     },
 
