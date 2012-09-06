@@ -75,10 +75,8 @@ ghostdriver.WebElementLocator = function(session) {
         return null;
     },
 
-    _locateElement = function(type, locator, rootElement) {
+    _locateElement = function(locator, rootElement) {
         // TODO Handle NoSuchWindow
-        // TODO Handle NoSuchElement
-        // TODO Handle XPathLookupError
         // TODO Handle Unsupported Locators (rare)
         var findElementRes = _find("element", locator, rootElement);
 
@@ -86,25 +84,22 @@ ghostdriver.WebElementLocator = function(session) {
 
         // If found
         if (findElementRes !== null && typeof(findElementRes) === "object" &&
-            typeof(findElementRes.status) !== "undefined" && findElementRes.status === 0) {
-
-            if (type === "JSON") {
-                // Return the Element JSON ID
-                return findElementRes.value;
-            } else {
-                // Return the (Web)Element
-                return new ghostdriver.WebElementReqHand(findElementRes.value, _session);
+            typeof(findElementRes.status) !== "undefined") {
+            // If the atom succeeds, but returns a null value, the element
+            // is not found.
+            if (findElementRes.status == 0 && findElementRes.value == null) {
+                findElementRes.status = 7
+                findElementRes.value = { "message": "Unable to find element with " + locator.using + " '" + locator.value + "'"};
             }
+            return findElementRes;
         }
 
         // Not found
         return null;
     },
 
-    _locateElements = function(type, locator, rootElement) {
+    _locateElements = function(locator, rootElement) {
         // TODO Handle NoSuchWindow
-        // TODO Handle NoSuchElement
-        // TODO Handle XPathLookupError
         // TODO Handle Unsupported Locators (rare)
         var findElementsRes = _find("elements", locator, rootElement),
             elements = [],
@@ -114,27 +109,15 @@ ghostdriver.WebElementLocator = function(session) {
 
         // If found
         if (findElementsRes !== null && typeof(findElementsRes) === "object" &&
-            typeof(findElementsRes.status) !== "undefined" && findElementsRes.status === 0) {
-
-            if (type === "JSON") {
-                // Return the array of Element JSON ID as is
-                return findElementsRes.value;
-            } else {
-                // Return all the (Web)Elements we were able to find
-                // Put all the Elements in an array
-                for (i = 0, ilen = findElementsRes.value.length; i < ilen; ++i) {
-                    // Add to the result array
-                    elements.push(new ghostdriver.WebElementReqHand(findElementsRes.value[i], _session));
-                }
-                return elements;
-            }
+            typeof(findElementsRes.status) !== "undefined") {
+            return findElementsRes;
         }
 
         // Not found
         return null;
     },
 
-    _locateActiveElement = function(type) {
+    _locateActiveElement = function() {
         // TODO Handle NoSuchWindow
         // TODO Handle NoSuchElement
 
@@ -149,15 +132,8 @@ ghostdriver.WebElementLocator = function(session) {
         }
 
         // If found
-        if (typeof(activeElementRes.status) !== "undefined" && activeElementRes.status === 0) {
-
-            if (type === "JSON") {
-                // Return the Element JSON ID
-                return activeElementRes.value;
-            } else {
-                // Return the (Web)Element
-                return new ghostdriver.WebElementReqHand(activeElementRes.value, _session);
-            }
+        if (typeof(activeElementRes.status) !== "undefined") {
+            return activeElementRes;
         }
 
         return null;

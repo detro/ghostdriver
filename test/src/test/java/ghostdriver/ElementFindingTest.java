@@ -5,6 +5,7 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.InvalidSelectorException;
 
 import java.util.List;
 
@@ -82,16 +83,27 @@ public class ElementFindingTest extends BaseTest {
         assertTrue(inputField.equals(active));
     }
 
-    @Test
+    @Test(expected = NoSuchElementException.class)
     public void failToFindNonExistentElement() {
         WebDriver d = getDriver();
 
         d.get("http://www.google.com");
-        try {
-            WebElement inputField = d.findElement(By.cssSelector("input[name='idontexist']"));
-            fail();
-        } catch (NoSuchElementException e) {
-            // expected
-        }
+        WebElement inputField = d.findElement(By.cssSelector("input[name='idontexist']"));
+    }
+
+    @Test(expected = InvalidSelectorException.class)
+    public void failFindElementForInvalidXPathLocator() {
+        WebDriver d = getDriver();
+
+        d.get("http://www.google.com");
+        WebElement inputField = d.findElement(By.xpath("this][isnot][valid"));
+    }
+
+    @Test(expected = InvalidSelectorException.class)
+    public void failFindElementsForInvalidXPathLocator() {
+        WebDriver d = getDriver();
+
+        d.get("http://www.google.com");
+        List<WebElement> inputField = d.findElements(By.xpath("this][isnot][valid"));
     }
 }

@@ -680,21 +680,34 @@ ghostdriver.SessionReqHand = function(session) {
         //  and retry if "startTime + implicitTimeout" is
         //  greater (or equal) than current time
         do {
-            elementOrElements = locatorMethod("JSON", JSON.parse(req.post));
+            elementOrElements = locatorMethod(JSON.parse(req.post));
             if (elementOrElements) {
-                res.success(_session.getId(), elementOrElements);
-                return;
+                if (elementOrElements.status == 0) {
+                    // If the value does not have a length property, it's a single element, so return it.
+                    // If the value does have a length property, it's an array, so return the array only
+                    // if it has more than one element. 
+                    if (!elementOrElements.value["length"] || 
+                        (elementOrElements.value["length"] && elementOrElements.value.length > 0)) {
+                        res.success(_session.getId(), elementOrElements.value);
+                        return;
+                    }
+                }
             }
         } while(searchStartTime + _session.getTimeout(_session.timeoutNames().IMPLICIT) >= new Date().getTime());
 
-        _errors.handleFailedCommandEH(
-            _errors.FAILED_CMD_STATUS.NO_SUCH_ELEMENT,  //< error name
-            "Unable to find element",                   //< error message
-            req,                                        //< request
-            res,
-            _session,                                   //< session
-            "SessionReqHand");                          //< class name
-        return;
+        // Error handler. We got a valid response, but it was an error response.
+        if (elementOrElements) {
+            _errors.handleFailedCommandEH(
+                _errors.FAILED_CMD_STATUS_CODES_NAMES[elementOrElements.status],
+                elementOrElements.value.message,
+                req,
+                res,
+                _session,
+                "SessionReqHand");
+            return;
+        }
+
+        throw _errors.createInvalidReqVariableResourceNotFoundEH(req);
     };
 
     // public:
