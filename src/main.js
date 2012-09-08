@@ -41,6 +41,7 @@ parseURI.options.strictMode = true;
 phantom.injectJs("session.js");
 phantom.injectJs("request_handlers/request_handler.js");
 phantom.injectJs("request_handlers/status_request_handler.js");
+phantom.injectJs("request_handlers/shutdown_request_handler.js");
 phantom.injectJs("request_handlers/session_manager_request_handler.js");
 phantom.injectJs("request_handlers/session_request_handler.js");
 phantom.injectJs("request_handlers/webelement_request_handler.js");

@@ -35,12 +35,14 @@ ghostdriver.RouterReqHand = function() {
     var
     _protoParent = ghostdriver.RouterReqHand.prototype,
     _statusRH = new ghostdriver.StatusReqHand(),
+    _shutdownRH = new ghostdriver.ShutdownReqHand(),
     _sessionManRH = new ghostdriver.SessionManagerReqHand(),
     _const = {
         STATUS          : "status",
         SESSION         : "session",
         SESSIONS        : "sessions",
-        SESSION_DIR     : "/session/"
+        SESSION_DIR     : "/session/",
+        SHUTDOWN        : "shutdown"
     },
     _errors = require("./errors.js"),
 
@@ -56,6 +58,9 @@ ghostdriver.RouterReqHand = function() {
         try {
             if (req.urlParsed.file === _const.STATUS) {                             // GET '/status'
                 _statusRH.handle(req, res);
+            } else if (req.urlParsed.file === _const.SHUTDOWN) {                    // GET '/shutdown'
+                _shutdownRH.handle(req, res);
+                phantom.exit();
             } else if (req.urlParsed.file === _const.SESSION ||                     // POST '/session'
                 req.urlParsed.file === _const.SESSIONS ||                           // GET '/sessions'
                 req.urlParsed.directory === _const.SESSION_DIR) {                   // GET or DELETE '/session/:id'
