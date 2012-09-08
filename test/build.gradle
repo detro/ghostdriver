@@ -17,6 +17,7 @@ dependencies {
         testCompile "org.seleniumhq.selenium:$it:$seleniumVersion"
     }
     testCompile "junit:junit-dep:4.8+"
+	testCompile "org.mortbay.jetty:jetty:6.1.21"
 }
 
 tasks.withType(JavaExec) {

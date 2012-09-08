@@ -171,8 +171,19 @@ ghostdriver.SessionReqHand = function(session) {
             return;
         } else if (req.urlParsed.file === _const.COOKIE) {
             if(req.method === "DELETE") {
-                _deleteCookieCommand(req, res);
+                _deleteCookiesCommand(req, res);
                 return;
+            } else if (req.method === "GET") {
+                _getCookieCommand(req, res);
+                return;
+            } else if (req.method === "POST") {
+                _addCookieCommand(req, res);
+                return;
+            }
+        } else if (req.urlParsed.chunks[0] === _const.COOKIE) {
+            if (req.method === "DELETE") {
+                _deleteCookieCommand(req, res);
+                return
             }
         }
 
@@ -607,17 +618,48 @@ ghostdriver.SessionReqHand = function(session) {
         }
     },
 
-    _deleteCookieCommand = function(req, res) {
-        // Delete all cookies visible to the current page.
-        _session.getCurrentWindow().evaluate(function() {
-            var p = document.cookie.split(";"),
-                i, key;
+    _deleteCookiesCommand = function(req, res) {
+        _session.getCurrentWindow().cookies = [];
+        res.success(_session.getId());
+    },
 
-            for(i = p.length -1; i >= 0; --i) {
-                key = p[i].split("=");
-                document.cookie = key + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    _getCookieCommand = function(req, res) {
+        res.success(_session.getId(), JSON.stringify(_session.getCurrentWindow().cookies));
+    },
+
+    _cloneCookiesArrayAndSkipWithName = function(skippedName) {
+        var result = [],
+            cookies = _session.getCurrentWindow().cookies;
+
+        for (var i = 0, l = cookies.length; i < l; i++) {
+            if (cookies[i].name !== skippedName) {
+                result.push(cookies[i]);
             }
+        }
+        return result;
+    },
+
+    _addCookieCommand = function(req, res) {
+        var cookie = JSON.parse(req.post).cookie;
+        var newCookies = _cloneCookiesArrayAndSkipWithName(cookie.name);
+
+        var currentUrl = _session.getCurrentWindow().evaluate(function() { return document.location.href; });
+        var host = require("./third_party/parseuri.js").parse(currentUrl).host;
+
+        newCookies.push({
+            name: cookie.name,
+            value: cookie.value,
+            path: cookie.path,
+            domain: cookie.domain ? cookie.domain : host,
+            secure: cookie.secure
         });
+
+        _session.getCurrentWindow().cookies = newCookies;
+        res.success(_session.getId());
+    },
+
+    _deleteCookieCommand = function(req, res) {
+        _session.getCurrentWindow().cookies = _cloneCookiesArrayAndSkipWithName(req.urlParsed.file);
         res.success(_session.getId());
     },
 
