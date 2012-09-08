@@ -576,10 +576,15 @@ ghostdriver.SessionReqHand = function(session) {
     },
 
     _postMouseClickCommand = function(req, res, clickType) {
-        var postObj = JSON.parse(req.post),
+        var postObj = {},
             mouseButton = "left";
         // normalize click
         clickType = clickType || "click";
+
+        // The protocol allows language bindings to send an empty string
+        if (req.post.length > 0) {
+            postObj = JSON.parse(req.post);
+        }
 
         // Check that either an Element ID or an X-Y Offset was provided
         if (typeof(postObj) === "object") {
