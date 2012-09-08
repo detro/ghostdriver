@@ -346,12 +346,32 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         //  and retry if "startTime + implicitTimeout" is
         //  greater (or equal) than current time
         do {
-            elementOrElements = locatorMethod("JSON", JSON.parse(req.post), _getJSON());
+            elementOrElements = locatorMethod(JSON.parse(req.post), _getJSON());
             if (elementOrElements) {
-                res.success(_session.getId(), elementOrElements);
-                return;
+                if (elementOrElements.status == 0) {
+                    // If the value does not have a length property, it's a single element, so return it.
+                    // If the value does have a length property, it's an array, so return the array only
+                    // if it has more than one element. 
+                    if (!elementOrElements.value["length"] ||
+                        (elementOrElements.value["length"] && elementOrElements.value.length > 0)) {
+                        res.success(_session.getId(), elementOrElements.value);
+                        return;
+                    }
+                }
             }
         } while(searchStartTime + _session.getTimeout(_session.timeoutNames().IMPLICIT) >= new Date().getTime());
+
+        // Error handler. We got a valid response, but it was an error response.
+        if (elementOrElements) {
+            _errors.handleFailedCommandEH(
+                _errors.FAILED_CMD_STATUS_CODES_NAMES[elementOrElements.status],
+                elementOrElements.value.message,
+                req,
+                res,
+                _session,
+                "WebElementReqHand");
+            return;
+        }
 
         throw _errors.createInvalidReqVariableResourceNotFoundEH(req);
     },
