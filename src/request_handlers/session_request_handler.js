@@ -31,6 +31,7 @@ var ghostdriver = ghostdriver || {};
 ghostdriver.SessionReqHand = function(session) {
     // private:
     var
+    _mousePos = {x: 0, y: 0},
     _protoParent = ghostdriver.SessionReqHand.prototype,
     _session = session,
     _locator = new ghostdriver.WebElementLocator(_session),
@@ -568,6 +569,7 @@ ghostdriver.SessionReqHand = function(session) {
 
             // Send the Mouse Move as native event
             _session.getCurrentWindow().sendEvent("mousemove", coords.x, coords.y);
+	    _mousePos = { x: coords.x, y: coords.y };
             res.success(_session.getId());
         } else {
             // Neither "element" nor "xoffset/yoffset" were provided
@@ -595,7 +597,7 @@ ghostdriver.SessionReqHand = function(session) {
             }
             // Send the Mouse Click as native event
             _session.getCurrentWindow().sendEvent(clickType,
-                0, 0, //< x, y
+                _mousePos.x, _mousePos.y, //< x, y
                 mouseButton);
             res.success(_session.getId());
         } else {
