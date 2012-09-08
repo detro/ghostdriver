@@ -1,7 +1,7 @@
-2012-08-08 15:31:04
+2012-09-08 15:13:51
 
 ------------------------------------------------------------------------
-r17643 | david.burns@theautomatedtester.co.uk | 2012-08-08 00:48:56 +0100 (Wed, 08 Aug 2012) | 1 line
+r17774 | dawagner | 2012-09-05 12:50:00 -0700 (Wed, 05 Sep 2012) | 1 line
 
-DavidBurns, on behalf of VianneyCarel, added GET_ELEMENT_LOCATION_WHEN_SCROLLED_INTO_VIEW support. fixes issue 4357
+DanielWagnerHall: Whitespace change to check that CI transition to new hostname worked
 ------------------------------------------------------------------------

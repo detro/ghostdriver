@@ -2643,14 +2643,14 @@ bot.dom.isShown = function(elem, opt_ignoreOpacity) {
   // size of the parent
   function isOverflowHiding(e) {
     var parent = goog.style.getOffsetParent(e);
-    var parentNode = goog.userAgent.GECKO || goog.userAgent.IE ?
+    var parentNode = goog.userAgent.GECKO || goog.userAgent.IE || goog.userAgent.OPERA ?
         bot.dom.getParentElement(e) : parent;
 
     // Gecko will skip the BODY tag when calling getOffsetParent. However, the
     // combination of the overflow values on the BODY _and_ HTML tags determine
     // whether scroll bars are shown, so we need to guarantee that both values
     // are checked.
-    if ((goog.userAgent.GECKO || goog.userAgent.IE) &&
+    if ((goog.userAgent.GECKO || goog.userAgent.IE || goog.userAgent.OPERA) &&
         bot.dom.isElement(parentNode, goog.dom.TagName.BODY)) {
       parent = parentNode;
     }
@@ -5376,7 +5376,17 @@ bot.Keyboard.prototype.moveCursor = function(element) {
 bot.Keyboard.prototype.getState = function() {
   return this.pressed_.getValues();
 };
-// Copyright 2011 WebDriver committers
+
+
+/**
+ * Returns the state of the modifier keys, to be shared with other input
+ * devices.
+ *
+ * @return {bot.Device.ModifiersState} Modifiers state.
+ */
+bot.Keyboard.prototype.getModifiersState = function() {
+  return this.modifiersState
+};// Copyright 2011 WebDriver committers
 // Copyright 2011 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -7442,10 +7452,10 @@ goog.require('bot.html5');
  * @return {boolean} Whether the browser currently has an internet
  *     connection.
  */
-bot.connection.isOnline = function() {
+bot.connection.isOnline = function(aWindow) {
 
-  if (bot.html5.isSupported(bot.html5.API.BROWSER_CONNECTION)) {
-    var win = bot.getWindow();
+  var win = aWindow || bot.getWindow();
+  if (bot.html5.isSupported(bot.html5.API.BROWSER_CONNECTION, win)) {
     return win.navigator.onLine;
   } else {
     throw new bot.Error(bot.ErrorCode.UNKNOWN_ERROR,
