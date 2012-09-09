@@ -46,7 +46,7 @@ public class FrameSwitchingTest extends BaseTest {
 	@Test
     public void testShouldBeAbleToClickInAFrame() throws InterruptedException {
         WebDriver d = getDriver();
-        
+
 		d.get("http://docs.wpm.neustar.biz/testscript-api/index.html");
         d.switchTo().frame("classFrame");
 
@@ -60,7 +60,7 @@ public class FrameSwitchingTest extends BaseTest {
         // driver should still be focused on frame "classFrame" ...
 		String text = d.findElement(By.linkText("clearCookies")).getText();
         assertEquals("clearCookies", text);
-        
+
 		// Make sure it was really frame "classFrame" which was replaced ...
         d.switchTo().defaultContent().switchTo().frame("classFrame");
 

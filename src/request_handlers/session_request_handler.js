@@ -169,11 +169,15 @@ ghostdriver.SessionReqHand = function(session) {
         } else if (req.urlParsed.file === _const.DOUBLE_CLICK && req.method === "POST") {
             _postMouseClickCommand(req, res, "doubleclick");
             return;
-        } else if (req.urlParsed.file === _const.COOKIE) {
-            if(req.method === "DELETE") {
+        } else if (req.urlParsed.chunks[0] === _const.COOKIE) {
+            if (req.method === "POST") {
+                _postCookieCommand(req, res);
+            } else if (req.method === "GET") {
+                _getCookieCommand(req, res);
+            } else if(req.method === "DELETE") {
                 _deleteCookieCommand(req, res);
-                return;
             }
+            return;
         }
 
         throw _errors.createInvalidReqInvalidCommandMethodEH(req);
@@ -607,17 +611,30 @@ ghostdriver.SessionReqHand = function(session) {
         }
     },
 
-    _deleteCookieCommand = function(req, res) {
-        // Delete all cookies visible to the current page.
-        _session.getCurrentWindow().evaluate(function() {
-            var p = document.cookie.split(";"),
-                i, key;
+    _postCookieCommand = function(req, res) {
+        var postObj = JSON.parse(req.post || "{}");
 
-            for(i = p.length -1; i >= 0; --i) {
-                key = p[i].split("=");
-                document.cookie = key + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT";
-            }
-        });
+        if (postObj.cookie) {
+            _session.getCurrentWindow().addCookie(postObj.cookie);
+            res.success(_session.getId());
+        } else {
+            throw _errors.createInvalidReqMissingCommandParameterEH(req);
+        }
+    },
+
+    _getCookieCommand = function(req, res) {
+        var allCookies = _session.getCurrentWindow().cookies();
+        res.success(_session.getId(), allCookies);
+    },
+
+    _deleteCookieCommand = function(req, res) {
+        if (req.urlParsed.chunks.length === 2) {
+            // delete only 1 cookie among the one visible to this page
+            _session.getCurrentWindow().deleteCookie(req.urlParsed.chunks[1]);
+        } else {
+            // delete all the cookies visible to this page
+            _session.getCurrentWindow().clearCookies();
+        }
         res.success(_session.getId());
     },
 
@@ -693,8 +710,8 @@ ghostdriver.SessionReqHand = function(session) {
                 if (elementOrElements.status == 0) {
                     // If the value does not have a length property, it's a single element, so return it.
                     // If the value does have a length property, it's an array, so return the array only
-                    // if it has more than one element. 
-                    if (!elementOrElements.value["length"] || 
+                    // if it has more than one element.
+                    if (!elementOrElements.value["length"] ||
                         (elementOrElements.value["length"] && elementOrElements.value.length > 0)) {
                         res.success(_session.getId(), elementOrElements.value);
                         return;
