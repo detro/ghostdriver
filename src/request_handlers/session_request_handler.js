@@ -623,7 +623,7 @@ ghostdriver.SessionReqHand = function(session) {
     },
 
     _getCookieCommand = function(req, res) {
-        var allCookies = _session.getCurrentWindow().cookies();
+        var allCookies = _session.getCurrentWindow().cookies;
         res.success(_session.getId(), allCookies);
     },
 
