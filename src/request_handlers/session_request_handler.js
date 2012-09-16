@@ -574,7 +574,7 @@ ghostdriver.SessionReqHand = function(session) {
 
             // Send the Mouse Move as native event
             _session.getCurrentWindow().sendEvent("mousemove", coords.x, coords.y);
-	    _mousePos = { x: coords.x, y: coords.y };
+            _mousePos = { x: coords.x, y: coords.y };
             res.success(_session.getId());
         } else {
             // Neither "element" nor "xoffset/yoffset" were provided
@@ -615,27 +615,68 @@ ghostdriver.SessionReqHand = function(session) {
         var postObj = JSON.parse(req.post || "{}");
 
         if (postObj.cookie) {
-            _session.getCurrentWindow().addCookie(postObj.cookie);
-            res.success(_session.getId());
+            if (postObj.cookie.expiry) {
+                // JavaScript deals with Timestamps in "milliseconds since epoch"
+                postObj.cookie.expiry *= 1000;
+            }
+            if (_session.getCurrentWindow().addCookie(postObj.cookie)) {
+                res.success(_session.getId());
+            } else {
+                // Something went wrong while trying to set the cookie
+                if (_session.getCurrentWindow().url.indexOf(postObj.cookie.domain) < 0) {
+                    // Domain mismatch
+                    _errors.handleFailedCommandEH(
+                        _errors.FAILED_CMD_STATUS.INVALID_COOKIE_DOMAIN,
+                        "Can only set Cookies for the current domain",
+                        req,
+                        res,
+                        _session,
+                        "SessionReqHand");
+                } else {
+                    // Something else went wrong
+                    _errors.handleFailedCommandEH(
+                        _errors.FAILED_CMD_STATUS.UNABLE_TO_SET_COOKIE,
+                        "Unable to set Cookie",
+                        req,
+                        res,
+                        _session,
+                        "SessionReqHand");
+                }
+            }
         } else {
             throw _errors.createInvalidReqMissingCommandParameterEH(req);
         }
     },
 
     _getCookieCommand = function(req, res) {
-        var allCookies = _session.getCurrentWindow().cookies;
-        res.success(_session.getId(), allCookies);
+        // Get all the cookies the session at current URL can see/access
+        res.success(
+            _session.getId(),
+            _session.getCurrentWindow().cookies);
     },
 
     _deleteCookieCommand = function(req, res) {
+        var deleted;
         if (req.urlParsed.chunks.length === 2) {
             // delete only 1 cookie among the one visible to this page
-            _session.getCurrentWindow().deleteCookie(req.urlParsed.chunks[1]);
+            deleted = _session.getCurrentWindow().deleteCookie(req.urlParsed.chunks[1]);
         } else {
             // delete all the cookies visible to this page
-            _session.getCurrentWindow().clearCookies();
+            deleted = _session.getCurrentWindow().clearCookies();
         }
-        res.success(_session.getId());
+
+        if (deleted) {
+            res.success(_session.getId());
+        } else {
+            // Something went wrong when trying to delete the cookie
+            _errors.handleFailedCommandEH(
+                _errors.FAILED_CMD_STATUS.UNABLE_TO_SET_COOKIE,
+                "Unable to set Cookie",
+                req,
+                res,
+                _session,
+                "SessionReqHand");
+        }
     },
 
     _deleteWindowCommand = function(req, res) {
