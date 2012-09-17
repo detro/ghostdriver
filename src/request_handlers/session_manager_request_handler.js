@@ -73,7 +73,7 @@ ghostdriver.SessionManagerReqHand = function() {
 
             // Redirect to the newly created Session
             res.statusCode = 303; //< "303 See Other"
-            res.setHeader("Location", "/session/"+newSession.getId());
+            res.setHeader("Location", "http://" + req.headers.Host + "/wd/hub/session/"+newSession.getId());
             res.closeGracefully();
         } catch (e) {
             throw _errors.createInvalidReqMissingCommandParameterEH(req);

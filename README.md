@@ -49,6 +49,19 @@ PhantomJS's speed when it acts as a RemoteWebDriver Server, do the following:
     $> ./gradlew test
     ```
 
+3. Register ghost driver with a selenium grid hub
+
+    ````bash
+    # launch the grid server, which listens on 4444
+    $> java -jar /path/to/selenium-server-standalone-2.25.0.jar -role hub
+    # register with hub
+    $> phantomjs ghostdriver/src/main.js 8080 http://127.0.0.1:4444
+    ```
+
+    Now you can use your normal webdriver client with http://127.0.0.1:4444 and just request browserName: phantomjs!
+
+    Note that simply point your webdriver client to the port GhostDriver listens to also works.
+
 ## Reasoning: pros and cons
 
 ### Pros of using an Headless browser for your Selenium testing

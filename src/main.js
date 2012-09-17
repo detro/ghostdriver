@@ -28,7 +28,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // Load dependencies
 // NOTE: We need to provide PhantomJS with the "require" module ASAP. This is a pretty s**t way to load dependencies
 var ghostdriver = {
-        system : require('system')
+        system : require('system'),
+        hub    : require('./hub_register')
     },
     server = require('webserver').create(),
     router,
@@ -54,6 +55,9 @@ router = new ghostdriver.RouterReqHand();
 // Start the server
 if (server.listen(ghostdriver.system.args[1] || 8080, router.handle)) {
     console.log('Ghost Driver running on port ' + server.port);
+    var reg = ghostdriver.hub.register;
+    if (ghostdriver.system.args[2])
+        reg(ghostdriver.system.args[1], ghostdriver.system.args[2]);
 } else {
     console.error("ERROR: Could not start Ghost Driver");
     phantom.exit();

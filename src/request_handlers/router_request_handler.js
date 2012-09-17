@@ -56,6 +56,10 @@ ghostdriver.RouterReqHand = function() {
         // console.log("Request => " + JSON.stringify(req, null, '  '));
 
         try {
+            if (req.urlParsed.directory.match(/^\/wd\/hub/)) {
+                req.url = req.urlParsed.source.replace(/^\/wd\/hub/, '');
+                req.urlParsed = require("./third_party/parseuri.js").parse(req.url);
+            }
             if (req.urlParsed.file === _const.STATUS) {                             // GET '/status'
                 _statusRH.handle(req, res);
             } else if (req.urlParsed.file === _const.SHUTDOWN) {                    // GET '/shutdown'
