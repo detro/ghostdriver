@@ -1,3 +1,4129 @@
+// Copyright 2012 Google Inc. All Rights Reserved.
+
+/**
+ * @fileoverview A class representing operations on binary expressions.
+ */
+
+
+goog.provide('wgxpath.BinaryExpr');
+
+goog.require('wgxpath.DataType');
+goog.require('wgxpath.Expr');
+goog.require('wgxpath.Node');
+
+
+
+/**
+ * Constructor for BinaryExpr.
+ *
+ * @param {!wgxpath.BinaryExpr.Op} op A binary operator.
+ * @param {!wgxpath.Expr} left The left hand side of the expression.
+ * @param {!wgxpath.Expr} right The right hand side of the expression.
+ * @extends {wgxpath.Expr}
+ * @constructor
+ */
+wgxpath.BinaryExpr = function(op, left, right) {
+  var opCast = /** @type {!wgxpath.BinaryExpr.Op_} */ op;
+  wgxpath.Expr.call(this, opCast.dataType_);
+
+  /**
+   * @private
+   * @type {!wgxpath.BinaryExpr.Op_}
+   */
+  this.op_ = opCast;
+
+  /**
+   * @private
+   * @type {!wgxpath.Expr}
+   */
+  this.left_ = left;
+
+  /**
+   * @private
+   * @type {!wgxpath.Expr}
+   */
+  this.right_ = right;
+
+  this.setNeedContextPosition(left.doesNeedContextPosition() ||
+      right.doesNeedContextPosition());
+  this.setNeedContextNode(left.doesNeedContextNode() ||
+      right.doesNeedContextNode());
+
+  // Optimize [@id="foo"] and [@name="bar"]
+  if (this.op_ == wgxpath.BinaryExpr.Op.EQUAL) {
+    if (!right.doesNeedContextNode() && !right.doesNeedContextPosition() &&
+        right.getDataType() != wgxpath.DataType.NODESET &&
+        right.getDataType() != wgxpath.DataType.VOID && left.getQuickAttr()) {
+      this.setQuickAttr({
+        name: left.getQuickAttr().name,
+        valueExpr: right});
+    } else if (!left.doesNeedContextNode() && !left.doesNeedContextPosition() &&
+        left.getDataType() != wgxpath.DataType.NODESET &&
+        left.getDataType() != wgxpath.DataType.VOID && right.getQuickAttr()) {
+      this.setQuickAttr({
+        name: right.getQuickAttr().name,
+        valueExpr: left});
+    }
+  }
+};
+goog.inherits(wgxpath.BinaryExpr, wgxpath.Expr);
+
+
+/**
+ * Performs comparison between the left hand side and the right hand side.
+ *
+ * @private
+ * @param {function((string|number|boolean), (string|number|boolean))}
+ *        comp A comparison function that takes two parameters.
+ * @param {!wgxpath.Expr} lhs The left hand side of the expression.
+ * @param {!wgxpath.Expr} rhs The right hand side of the expression.
+ * @param {!wgxpath.Context} ctx The context to perform the comparison in.
+ * @param {boolean=} opt_equChk Whether the comparison checks for equality.
+ * @return {boolean} True if comp returns true, false otherwise.
+ */
+wgxpath.BinaryExpr.compare_ = function(comp, lhs, rhs, ctx, opt_equChk) {
+  var left = lhs.evaluate(ctx);
+  var right = rhs.evaluate(ctx);
+  var lIter, rIter, lNode, rNode;
+  if (left instanceof wgxpath.NodeSet && right instanceof wgxpath.NodeSet) {
+    lIter = left.iterator();
+    for (lNode = lIter.next(); lNode; lNode = lIter.next()) {
+      rIter = right.iterator();
+      for (rNode = rIter.next(); rNode; rNode = rIter.next()) {
+        if (comp(wgxpath.Node.getValueAsString(lNode),
+            wgxpath.Node.getValueAsString(rNode))) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+  if ((left instanceof wgxpath.NodeSet) ||
+      (right instanceof wgxpath.NodeSet)) {
+    var nodeset, primitive;
+    if ((left instanceof wgxpath.NodeSet)) {
+      nodeset = left, primitive = right;
+    } else {
+      nodeset = right, primitive = left;
+    }
+    var iter = nodeset.iterator();
+    var type = typeof primitive;
+    for (var node = iter.next(); node; node = iter.next()) {
+      var stringValue;
+      switch (type) {
+        case 'number':
+          stringValue = wgxpath.Node.getValueAsNumber(node);
+          break;
+        case 'boolean':
+          stringValue = wgxpath.Node.getValueAsBool(node);
+          break;
+        case 'string':
+          stringValue = wgxpath.Node.getValueAsString(node);
+          break;
+        default:
+          throw Error('Illegal primitive type for comparison.');
+      }
+      if (comp(stringValue,
+          /** @type {(string|number|boolean)} */ (primitive))) {
+        return true;
+      }
+    }
+    return false;
+  }
+  if (opt_equChk) {
+    if (typeof left == 'boolean' || typeof right == 'boolean') {
+      return comp(!!left, !!right);
+    }
+    if (typeof left == 'number' || typeof right == 'number') {
+      return comp(+left, +right);
+    }
+    return comp(left, right);
+  }
+  return comp(+left, +right);
+};
+
+
+/**
+ * @override
+ * @return {(boolean|number)} The boolean or number result.
+ */
+wgxpath.BinaryExpr.prototype.evaluate = function(ctx) {
+  return this.op_.evaluate_(this.left_, this.right_, ctx);
+};
+
+
+/**
+ * @override
+ */
+wgxpath.BinaryExpr.prototype.toString = function(opt_indent) {
+  var indent = opt_indent || '';
+  var text = indent + 'binary expression: ' + this.op_ + '\n';
+  indent += wgxpath.Expr.INDENT;
+  text += this.left_.toString(indent) + '\n';
+  text += this.right_.toString(indent);
+  return text;
+};
+
+
+
+/**
+ * A binary operator.
+ *
+ * @param {string} opString The operator string.
+ * @param {number} precedence The precedence when evaluated.
+ * @param {!wgxpath.DataType} dataType The dataType to return when evaluated.
+ * @param {function(!wgxpath.Expr, !wgxpath.Expr, !wgxpath.Context)}
+ *         evaluate An evaluation function.
+ * @constructor
+ * @private
+ */
+wgxpath.BinaryExpr.Op_ = function(opString, precedence, dataType, evaluate) {
+
+  /**
+   * @private
+   * @type {string}
+   */
+  this.opString_ = opString;
+
+  /**
+   * @private
+   * @type {number}
+   */
+  this.precedence_ = precedence;
+
+  /**
+   * @private
+   * @type {!wgxpath.DataType}
+   */
+  this.dataType_ = dataType;
+
+  /**
+   * @private
+   * @type {function(!wgxpath.Expr, !wgxpath.Expr, !wgxpath.Context)}
+   */
+  this.evaluate_ = evaluate;
+};
+
+
+/**
+ * Returns the precedence for the operator.
+ *
+ * @return {number} The precedence.
+ */
+wgxpath.BinaryExpr.Op_.prototype.getPrecedence = function() {
+  return this.precedence_;
+};
+
+
+/**
+ * @override
+ */
+wgxpath.BinaryExpr.Op_.prototype.toString = function() {
+  return this.opString_;
+};
+
+
+/**
+ * A mapping from operator strings to operator objects.
+ *
+ * @private
+ * @type {!Object.<string, !wgxpath.BinaryExpr.Op>}
+ */
+wgxpath.BinaryExpr.stringToOpMap_ = {};
+
+
+/**
+ * Creates a binary operator.
+ *
+ * @param {string} opString The operator string.
+ * @param {number} precedence The precedence when evaluated.
+ * @param {!wgxpath.DataType} dataType The dataType to return when evaluated.
+ * @param {function(!wgxpath.Expr, !wgxpath.Expr, !wgxpath.Context)}
+ *         evaluate An evaluation function.
+ * @return {!wgxpath.BinaryExpr.Op} A binary expression operator.
+ * @private
+ */
+wgxpath.BinaryExpr.createOp_ = function(opString, precedence, dataType,
+    evaluate) {
+  if (opString in wgxpath.BinaryExpr.stringToOpMap_) {
+    throw new Error('Binary operator already created: ' + opString);
+  }
+  // The upcast and then downcast for the JSCompiler.
+  var op = (/** @type {!Object} */ new wgxpath.BinaryExpr.Op_(
+      opString, precedence, dataType, evaluate));
+  op = (/** @type {!wgxpath.BinaryExpr.Op} */ op);
+  wgxpath.BinaryExpr.stringToOpMap_[op.toString()] = op;
+  return op;
+};
+
+
+/**
+ * Returns the operator with this opString or null if none.
+ *
+ * @param {string} opString The opString.
+ * @return {!wgxpath.BinaryExpr.Op} The operator.
+ */
+wgxpath.BinaryExpr.getOp = function(opString) {
+  return wgxpath.BinaryExpr.stringToOpMap_[opString] || null;
+};
+
+
+/**
+ * Binary operator enumeration.
+ *
+ * @enum {{getPrecedence: function(): number}}
+ */
+wgxpath.BinaryExpr.Op = {
+  DIV: wgxpath.BinaryExpr.createOp_('div', 6, wgxpath.DataType.NUMBER,
+      function(left, right, ctx) {
+        return left.asNumber(ctx) / right.asNumber(ctx);
+      }),
+  MOD: wgxpath.BinaryExpr.createOp_('mod', 6, wgxpath.DataType.NUMBER,
+      function(left, right, ctx) {
+        return left.asNumber(ctx) % right.asNumber(ctx);
+      }),
+  MULT: wgxpath.BinaryExpr.createOp_('*', 6, wgxpath.DataType.NUMBER,
+      function(left, right, ctx) {
+        return left.asNumber(ctx) * right.asNumber(ctx);
+      }),
+  PLUS: wgxpath.BinaryExpr.createOp_('+', 5, wgxpath.DataType.NUMBER,
+      function(left, right, ctx) {
+        return left.asNumber(ctx) + right.asNumber(ctx);
+      }),
+  MINUS: wgxpath.BinaryExpr.createOp_('-', 5, wgxpath.DataType.NUMBER,
+      function(left, right, ctx) {
+        return left.asNumber(ctx) - right.asNumber(ctx);
+      }),
+  LESSTHAN: wgxpath.BinaryExpr.createOp_('<', 4, wgxpath.DataType.BOOLEAN,
+      function(left, right, ctx) {
+        return wgxpath.BinaryExpr.compare_(function(a, b) {return a < b;},
+            left, right, ctx);
+      }),
+  GREATERTHAN: wgxpath.BinaryExpr.createOp_('>', 4, wgxpath.DataType.BOOLEAN,
+      function(left, right, ctx) {
+        return wgxpath.BinaryExpr.compare_(function(a, b) {return a > b;},
+            left, right, ctx);
+      }),
+  LESSTHAN_EQUAL: wgxpath.BinaryExpr.createOp_(
+      '<=', 4, wgxpath.DataType.BOOLEAN,
+      function(left, right, ctx) {
+        return wgxpath.BinaryExpr.compare_(function(a, b) {return a <= b;},
+            left, right, ctx);
+      }),
+  GREATERTHAN_EQUAL: wgxpath.BinaryExpr.createOp_('>=', 4,
+      wgxpath.DataType.BOOLEAN, function(left, right, ctx) {
+        return wgxpath.BinaryExpr.compare_(function(a, b) {return a >= b;},
+            left, right, ctx);
+      }),
+  EQUAL: wgxpath.BinaryExpr.createOp_('=', 3, wgxpath.DataType.BOOLEAN,
+      function(left, right, ctx) {
+        return wgxpath.BinaryExpr.compare_(function(a, b) {return a == b;},
+            left, right, ctx, true);
+      }),
+  NOT_EQUAL: wgxpath.BinaryExpr.createOp_('!=', 3, wgxpath.DataType.BOOLEAN,
+      function(left, right, ctx) {
+        return wgxpath.BinaryExpr.compare_(function(a, b) {return a != b},
+            left, right, ctx, true);
+      }),
+  AND: wgxpath.BinaryExpr.createOp_('and', 2, wgxpath.DataType.BOOLEAN,
+      function(left, right, ctx) {
+        return left.asBool(ctx) && right.asBool(ctx);
+      }),
+  OR: wgxpath.BinaryExpr.createOp_('or', 1, wgxpath.DataType.BOOLEAN,
+      function(left, right, ctx) {
+        return left.asBool(ctx) || right.asBool(ctx);
+      })
+};
+// Copyright 2012 Google Inc. All Rights Reserved.
+
+/**
+ * @fileoverview Context information about nodes in their nodeset.
+ */
+
+goog.provide('wgxpath.Context');
+
+
+
+/**
+ * Provides information for where something is in the DOM.
+ *
+ * @param {!wgxpath.Node} node A node in the DOM.
+ * @param {number=} opt_position The position of this node in its nodeset,
+ *     defaults to 1.
+ * @param {number=} opt_last Index of the last node in this nodeset,
+ *     defaults to 1.
+ * @constructor
+ */
+wgxpath.Context = function(node, opt_position, opt_last) {
+
+  /**
+    * @private
+    * @type {!wgxpath.Node}
+    */
+  this.node_ = node;
+
+  /**
+   * @private
+   * @type {number}
+   */
+  this.position_ = opt_position || 1;
+
+  /**
+   * @private
+   * @type {number} opt_last
+   */
+  this.last_ = opt_last || 1;
+};
+
+
+/**
+ * Returns the node for this context object.
+ *
+ * @return {!wgxpath.Node} The node for this context object.
+ */
+wgxpath.Context.prototype.getNode = function() {
+  return this.node_;
+};
+
+
+/**
+ * Returns the position for this context object.
+ *
+ * @return {number} The position for this context object.
+ */
+wgxpath.Context.prototype.getPosition = function() {
+  return this.position_;
+};
+
+
+/**
+ * Returns the last field for this context object.
+ *
+ * @return {number} The last field for this context object.
+ */
+wgxpath.Context.prototype.getLast = function() {
+  return this.last_;
+};
+// Copyright 2012 Google Inc. All Rights Reserved.
+
+/**
+ * @fileoverview Enumeration of internal data types.
+ */
+
+goog.provide('wgxpath.DataType');
+
+
+/**
+ * Enum for data types.
+ * @enum {number}
+ */
+wgxpath.DataType = {
+  VOID: 0,
+  NUMBER: 1,
+  BOOLEAN: 2,
+  STRING: 3,
+  NODESET: 4
+};
+/*  JavaScript-XPath 0.1.11
+ *  (c) 2007 Cybozu Labs, Inc.
+ *
+ *  JavaScript-XPath is freely distributable under the terms of an MIT-style
+ *  license. For details, see the JavaScript-XPath web site:
+ *  http://coderepos.org/share/wiki/JavaScript-XPath
+ *
+/*--------------------------------------------------------------------------*/
+
+// Copyright 2012 Google Inc. All Rights Reserved.
+
+/**
+ * @fileoverview Exports the wgxpath.install function.
+ *
+ */
+
+goog.require('wgxpath');
+
+goog.exportSymbol('wgxpath.install', wgxpath.install);
+// Copyright 2012 Google Inc. All Rights Reserved.
+
+/**
+ * @fileoverview An abstract class representing basic expressions.
+ */
+
+goog.provide('wgxpath.Expr');
+
+goog.require('wgxpath.NodeSet');
+
+
+
+/**
+ * Abstract constructor for an XPath expression.
+ *
+ * @param {!wgxpath.DataType} dataType The data type that the expression
+ *                                    will be evaluated into.
+ * @constructor
+ */
+wgxpath.Expr = function(dataType) {
+
+  /**
+   * @type {!wgxpath.DataType}
+   * @private
+   */
+  this.dataType_ = dataType;
+
+  /**
+   * @type {boolean}
+   * @private
+   */
+  this.needContextPosition_ = false;
+
+  /**
+   * @type {boolean}
+   * @private
+   */
+  this.needContextNode_ = false;
+
+  /**
+   * @type {?{name: string, valueExpr: wgxpath.Expr}}
+   * @private
+   */
+  this.quickAttr_ = null;
+};
+
+
+/**
+ * A default indentation for pretty printing.
+ *
+ * @const
+ * @type {string}
+ */
+wgxpath.Expr.INDENT = '  ';
+
+
+/**
+ * Evaluates the expression.
+ *
+ * @param {!wgxpath.Context} ctx The context to evaluate the expression in.
+ * @return {!(string|boolean|number|wgxpath.NodeSet)} The evaluation result.
+ */
+wgxpath.Expr.prototype.evaluate = goog.abstractMethod;
+
+
+/**
+ * Returns the string representation of the expression for debugging.
+ *
+ * @param {string=} opt_indent An optional indentation.
+ * @return {string} The string representation.
+ */
+wgxpath.Expr.prototype.toString = goog.abstractMethod;
+
+
+/**
+ * Returns the data type of the expression.
+ *
+ * @return {!wgxpath.DataType} The data type that the expression
+ *                            will be evaluated into.
+ */
+wgxpath.Expr.prototype.getDataType = function() {
+  return this.dataType_;
+};
+
+
+/**
+ * Returns whether the expression needs context position to be evaluated.
+ *
+ * @return {boolean} Whether context position is needed.
+ */
+wgxpath.Expr.prototype.doesNeedContextPosition = function() {
+  return this.needContextPosition_;
+};
+
+
+/**
+ * Sets whether the expression needs context position to be evaluated.
+ *
+ * @param {boolean} flag Whether context position is needed.
+ */
+wgxpath.Expr.prototype.setNeedContextPosition = function(flag) {
+  this.needContextPosition_ = flag;
+};
+
+
+/**
+ * Returns whether the expression needs context node to be evaluated.
+ *
+ * @return {boolean} Whether context node is needed.
+ */
+wgxpath.Expr.prototype.doesNeedContextNode = function() {
+  return this.needContextNode_;
+};
+
+
+/**
+ * Sets whether the expression needs context node to be evaluated.
+ *
+ * @param {boolean} flag Whether context node is needed.
+ */
+wgxpath.Expr.prototype.setNeedContextNode = function(flag) {
+  this.needContextNode_ = flag;
+};
+
+
+/**
+ * Returns the quick attribute information, if exists.
+ *
+ * @return {?{name: string, valueExpr: wgxpath.Expr}} The attribute
+ *         information.
+ */
+wgxpath.Expr.prototype.getQuickAttr = function() {
+  return this.quickAttr_;
+};
+
+
+/**
+ * Sets up the quick attribute info.
+ *
+ * @param {?{name: string, valueExpr: wgxpath.Expr}} attrInfo The attribute
+ *        information.
+ */
+wgxpath.Expr.prototype.setQuickAttr = function(attrInfo) {
+  this.quickAttr_ = attrInfo;
+};
+
+
+/**
+ * Evaluate and interpret the result as a number.
+ *
+ * @param {!wgxpath.Context} ctx The context to evaluate the expression in.
+ * @return {number} The evaluated number value.
+ */
+wgxpath.Expr.prototype.asNumber = function(ctx) {
+  var exrs = this.evaluate(ctx);
+  if (exrs instanceof wgxpath.NodeSet) {
+    return exrs.number();
+  }
+  return +exrs;
+};
+
+
+/**
+ * Evaluate and interpret the result as a string.
+ *
+ * @param {!wgxpath.Context} ctx The context to evaluate the expression in.
+ * @return {string} The evaluated string.
+ */
+wgxpath.Expr.prototype.asString = function(ctx) {
+  var exrs = this.evaluate(ctx);
+  if (exrs instanceof wgxpath.NodeSet) {
+    return exrs.string();
+  }
+  return '' + exrs;
+};
+
+
+/**
+ * Evaluate and interpret the result as a boolean value.
+ *
+ * @param {!wgxpath.Context} ctx The context to evaluate the expression in.
+ * @return {boolean} The evaluated boolean value.
+ */
+wgxpath.Expr.prototype.asBool = function(ctx) {
+  var exrs = this.evaluate(ctx);
+  if (exrs instanceof wgxpath.NodeSet) {
+    return !!exrs.getLength();
+  }
+  return !!exrs;
+};
+// Copyright 2012 Google Inc. All Rights Reserved.
+
+/**
+ * @fileoverview A class representing operations on filter expressions.
+ */
+
+goog.provide('wgxpath.FilterExpr');
+
+goog.require('wgxpath.Expr');
+
+
+
+/**
+ * Constructor for FilterExpr.
+ *
+ * @param {!wgxpath.Expr} primary The primary expression.
+ * @param {!wgxpath.Predicates} predicates The predicates.
+ * @extends {wgxpath.Expr}
+ * @constructor
+ */
+wgxpath.FilterExpr = function(primary, predicates) {
+  if (predicates.getLength() && primary.getDataType() !=
+      wgxpath.DataType.NODESET) {
+    throw Error('Primary expression must evaluate to nodeset ' +
+        'if filter has predicate(s).');
+  }
+  wgxpath.Expr.call(this, primary.getDataType());
+
+  /**
+   * @type {!wgxpath.Expr}
+   * @private
+   */
+  this.primary_ = primary;
+
+
+  /**
+   * @type {!wgxpath.Predicates}
+   * @private
+   */
+  this.predicates_ = predicates;
+
+  this.setNeedContextPosition(primary.doesNeedContextPosition());
+  this.setNeedContextNode(primary.doesNeedContextNode());
+};
+goog.inherits(wgxpath.FilterExpr, wgxpath.Expr);
+
+
+/**
+ * @override
+ * @return {!wgxpath.NodeSet} The nodeset result.
+ */
+wgxpath.FilterExpr.prototype.evaluate = function(ctx) {
+  var result = this.primary_.evaluate(ctx);
+  return this.predicates_.evaluatePredicates(
+      /** @type {!wgxpath.NodeSet} */ (result));
+};
+
+
+/**
+ * @override
+ */
+wgxpath.FilterExpr.prototype.toString = function(opt_indent) {
+  var indent = opt_indent || '';
+  var text = indent + 'Filter: ' + '\n';
+  indent += wgxpath.Expr.INDENT;
+  text += this.primary_.toString(indent);
+  text += this.predicates_.toString(indent);
+  return text;
+};
+// Copyright 2012 Google Inc. All Rights Reserved.
+
+/**
+ * @fileoverview A function call expression.
+ */
+
+goog.provide('wgxpath.FunctionCall');
+
+goog.require('goog.array');
+goog.require('goog.dom');
+goog.require('goog.dom.NodeType');
+goog.require('goog.string');
+goog.require('wgxpath.Expr');
+goog.require('wgxpath.Node');
+goog.require('wgxpath.NodeSet');
+goog.require('wgxpath.userAgent');
+
+
+
+/**
+ * A function call expression.
+ *
+ * @constructor
+ * @extends {wgxpath.Expr}
+ * @param {!wgxpath.FunctionCall.Func} func Function.
+ * @param {!Array.<!wgxpath.Expr>} args Arguments to the function.
+ */
+wgxpath.FunctionCall = function(func, args) {
+  // Check the provided arguments match the function parameters.
+  if (args.length < func.minArgs_) {
+    throw new Error('Function ' + func.name_ + ' expects at least' +
+        func.minArgs_ + ' arguments, ' + args.length + ' given');
+  }
+  if (!goog.isNull(func.maxArgs_) && args.length > func.maxArgs_) {
+    throw new Error('Function ' + func.name_ + ' expects at most ' +
+        func.maxArgs_ + ' arguments, ' + args.length + ' given');
+  }
+  if (func.nodesetsRequired_) {
+    goog.array.forEach(args, function(arg, i) {
+      if (arg.getDataType() != wgxpath.DataType.NODESET) {
+        throw new Error('Argument ' + i + ' to function ' + func.name_ +
+            ' is not of type Nodeset: ' + arg);
+      }
+    });
+  }
+  wgxpath.Expr.call(this, func.dataType_);
+
+  /**
+   * @type {!wgxpath.FunctionCall.Func}
+   * @private
+   */
+  this.func_ = func;
+
+  /**
+   * @type {!Array.<!wgxpath.Expr>}
+   * @private
+   */
+  this.args_ = args;
+
+  this.setNeedContextPosition(func.needContextPosition_ ||
+      goog.array.some(args, function(arg) {
+        return arg.doesNeedContextPosition();
+      }));
+  this.setNeedContextNode(
+      (func.needContextNodeWithoutArgs_ && !args.length) ||
+      (func.needContextNodeWithArgs_ && !!args.length) ||
+      goog.array.some(args, function(arg) {
+        return arg.doesNeedContextNode();
+      }));
+};
+goog.inherits(wgxpath.FunctionCall, wgxpath.Expr);
+
+
+/**
+ * @override
+ */
+wgxpath.FunctionCall.prototype.evaluate = function(ctx) {
+  var result = this.func_.evaluate_.apply(null,
+      goog.array.concat(ctx, this.args_));
+  return /** @type {!(string|boolean|number|wgxpath.NodeSet)} */ result;
+};
+
+
+/**
+ * @override
+ */
+wgxpath.FunctionCall.prototype.toString = function(opt_indent) {
+  var indent = opt_indent || '';
+  var text = indent + 'Function: ' + this.func_ + '\n';
+  indent += wgxpath.Expr.INDENT;
+  if (this.args_.length) {
+    text += indent + 'Arguments:';
+    indent += wgxpath.Expr.INDENT;
+    text = goog.array.reduce(this.args_, function(prev, curr) {
+      return prev + '\n' + curr.toString(indent);
+    }, text);
+  }
+  return text;
+};
+
+
+
+/**
+ * A function in a function call expression.
+ *
+ * @constructor
+ * @param {string} name Name of the function.
+ * @param {wgxpath.DataType} dataType Datatype of the function return value.
+ * @param {boolean} needContextPosition Whether the function needs a context
+ *     position.
+ * @param {boolean} needContextNodeWithoutArgs Whether the function needs a
+ *     context node when not given arguments.
+ * @param {boolean} needContextNodeWithArgs Whether the function needs a context
+ *     node when the function is given arguments.
+ * @param {function(!wgxpath.Context, ...[!wgxpath.Expr]):*} evaluate
+ *     Evaluates the function in a context with any number of expression
+ *     arguments.
+ * @param {number} minArgs Minimum number of arguments accepted by the function.
+ * @param {?number=} opt_maxArgs Maximum number of arguments accepted by the
+ *     function; null means there is no max; defaults to minArgs.
+ * @param {boolean=} opt_nodesetsRequired Whether the args must be nodesets.
+ * @private
+ */
+wgxpath.FunctionCall.Func_ = function(name, dataType, needContextPosition,
+    needContextNodeWithoutArgs, needContextNodeWithArgs, evaluate, minArgs,
+    opt_maxArgs, opt_nodesetsRequired) {
+
+  /**
+   * @type {string}
+   * @private
+   */
+  this.name_ = name;
+
+  /**
+   * @type {wgxpath.DataType}
+   * @private
+   */
+  this.dataType_ = dataType;
+
+  /**
+   * @type {boolean}
+   * @private
+   */
+  this.needContextPosition_ = needContextPosition;
+
+  /**
+   * @type {boolean}
+   * @private
+   */
+  this.needContextNodeWithoutArgs_ = needContextNodeWithoutArgs;
+
+  /**
+   * @type {boolean}
+   * @private
+   */
+  this.needContextNodeWithArgs_ = needContextNodeWithArgs;
+
+  /**
+   * @type {function(!wgxpath.Context, ...[!wgxpath.Expr]):*}
+   * @private
+   */
+  this.evaluate_ = evaluate;
+
+  /**
+   * @type {number}
+   * @private
+   */
+  this.minArgs_ = minArgs;
+
+  /**
+   * @type {?number}
+   * @private
+   */
+  this.maxArgs_ = goog.isDef(opt_maxArgs) ? opt_maxArgs : minArgs;
+
+  /**
+   * @type {boolean}
+   * @private
+   */
+  this.nodesetsRequired_ = !!opt_nodesetsRequired;
+};
+
+
+/**
+ * @override
+ */
+wgxpath.FunctionCall.Func_.prototype.toString = function() {
+  return this.name_;
+};
+
+
+/**
+ * A mapping from function names to Func objects.
+ *
+ * @private
+ * @type {!Object.<string, !wgxpath.FunctionCall.Func>}
+ */
+wgxpath.FunctionCall.nameToFuncMap_ = {};
+
+
+/**
+ * Constructs a Func and maps its name to it.
+ *
+ * @param {string} name Name of the function.
+ * @param {wgxpath.DataType} dataType Datatype of the function return value.
+ * @param {boolean} needContextPosition Whether the function needs a context
+ *     position.
+ * @param {boolean} needContextNodeWithoutArgs Whether the function needs a
+ *     context node when not given arguments.
+ * @param {boolean} needContextNodeWithArgs Whether the function needs a context
+ *     node when the function is given arguments.
+ * @param {function(!wgxpath.Context, ...[!wgxpath.Expr]):*} evaluate
+ *     Evaluates the function in a context with any number of expression
+ *     arguments.
+ * @param {number} minArgs Minimum number of arguments accepted by the function.
+ * @param {?number=} opt_maxArgs Maximum number of arguments accepted by the
+ *     function; null means there is no max; defaults to minArgs.
+ * @param {boolean=} opt_nodesetsRequired Whether the args must be nodesets.
+ * @return {!wgxpath.FunctionCall.Func} The function created.
+ * @private
+ */
+wgxpath.FunctionCall.createFunc_ = function(name, dataType,
+    needContextPosition, needContextNodeWithoutArgs, needContextNodeWithArgs,
+    evaluate, minArgs, opt_maxArgs, opt_nodesetsRequired) {
+  if (name in wgxpath.FunctionCall.nameToFuncMap_) {
+    throw new Error('Function already created: ' + name + '.');
+  }
+  var func = new wgxpath.FunctionCall.Func_(name, dataType,
+      needContextPosition, needContextNodeWithoutArgs, needContextNodeWithArgs,
+      evaluate, minArgs, opt_maxArgs, opt_nodesetsRequired);
+  func = (/** @type {!wgxpath.FunctionCall.Func} */ func);
+  wgxpath.FunctionCall.nameToFuncMap_[name] = func;
+  return func;
+};
+
+
+/**
+ * Returns the function object for this name.
+ *
+ * @param {string} name The function's name.
+ * @return {wgxpath.FunctionCall.Func} The function object.
+ */
+wgxpath.FunctionCall.getFunc = function(name) {
+  return wgxpath.FunctionCall.nameToFuncMap_[name] || null;
+};
+
+
+/**
+ * An XPath function enumeration.
+ *
+ * <p>A list of XPath 1.0 functions:
+ * http://www.w3.org/TR/xpath/#corelib
+ *
+ * @enum {!Object}
+ */
+wgxpath.FunctionCall.Func = {
+  BOOLEAN: wgxpath.FunctionCall.createFunc_('boolean',
+      wgxpath.DataType.BOOLEAN, false, false, false,
+      function(ctx, expr) {
+        return expr.asBool(ctx);
+      }, 1),
+  CEILING: wgxpath.FunctionCall.createFunc_('ceiling',
+      wgxpath.DataType.NUMBER, false, false, false,
+      function(ctx, expr) {
+        return Math.ceil(expr.asNumber(ctx));
+      }, 1),
+  CONCAT: wgxpath.FunctionCall.createFunc_('concat',
+      wgxpath.DataType.STRING, false, false, false,
+      function(ctx, var_args) {
+        var exprs = goog.array.slice(arguments, 1);
+        return goog.array.reduce(exprs, function(prev, curr) {
+          return prev + curr.asString(ctx);
+        }, '');
+      }, 2, null),
+  CONTAINS: wgxpath.FunctionCall.createFunc_('contains',
+      wgxpath.DataType.BOOLEAN, false, false, false,
+      function(ctx, expr1, expr2) {
+        return goog.string.contains(expr1.asString(ctx), expr2.asString(ctx));
+      }, 2),
+  COUNT: wgxpath.FunctionCall.createFunc_('count',
+      wgxpath.DataType.NUMBER, false, false, false,
+      function(ctx, expr) {
+        return expr.evaluate(ctx).getLength();
+      }, 1, 1, true),
+  FALSE: wgxpath.FunctionCall.createFunc_('false',
+      wgxpath.DataType.BOOLEAN, false, false, false,
+      function(ctx) {
+        return false;
+      }, 0),
+  FLOOR: wgxpath.FunctionCall.createFunc_('floor',
+      wgxpath.DataType.NUMBER, false, false, false,
+      function(ctx, expr) {
+        return Math.floor(expr.asNumber(ctx));
+      }, 1),
+  ID: wgxpath.FunctionCall.createFunc_('id',
+      wgxpath.DataType.NODESET, false, false, false,
+      function(ctx, expr) {
+        var ctxNode = ctx.getNode();
+        var doc = ctxNode.nodeType == goog.dom.NodeType.DOCUMENT ? ctxNode :
+            ctxNode.ownerDocument;
+        var ids = expr.asString(ctx).split(/\s+/);
+        var nsArray = [];
+        goog.array.forEach(ids, function(id) {
+          var elem = idSingle(id);
+          if (elem && !goog.array.contains(nsArray, elem)) {
+            nsArray.push(elem);
+          }
+        });
+        nsArray.sort(goog.dom.compareNodeOrder);
+        var ns = new wgxpath.NodeSet();
+        goog.array.forEach(nsArray, function(n) {
+          ns.add(n);
+        });
+        return ns;
+
+        function idSingle(id) {
+          if (wgxpath.userAgent.IE_DOC_PRE_9) {
+            var allId = doc.all[id];
+            if (allId) {
+              if (allId.nodeType && id == allId.id) {
+                return allId;
+              } else if (allId.length) {
+                return goog.array.find(allId, function(elem) {
+                  return id == elem.id;
+                });
+              }
+            }
+            return null;
+          } else {
+            return doc.getElementById(id);
+          }
+        }
+      }, 1),
+  LANG: wgxpath.FunctionCall.createFunc_('lang',
+      wgxpath.DataType.BOOLEAN, false, false, false,
+      function(ctx, expr) {
+        // TODO(user): Fully implement this.
+        return false;
+      }, 1),
+  LAST: wgxpath.FunctionCall.createFunc_('last',
+      wgxpath.DataType.NUMBER, true, false, false,
+      function(ctx) {
+        if (arguments.length != 1) {
+          throw Error('Function last expects ()');
+        }
+        return ctx.getLast();
+      }, 0),
+  LOCAL_NAME: wgxpath.FunctionCall.createFunc_('local-name',
+      wgxpath.DataType.STRING, false, true, false,
+      function(ctx, opt_expr) {
+        var node = opt_expr ? opt_expr.evaluate(ctx).getFirst() : ctx.getNode();
+        return node ? node.nodeName.toLowerCase() : '';
+      }, 0, 1, true),
+  NAME: wgxpath.FunctionCall.createFunc_('name',
+      wgxpath.DataType.STRING, false, true, false,
+      function(ctx, opt_expr) {
+        // TODO(user): Fully implement this.
+        var node = opt_expr ? opt_expr.evaluate(ctx).getFirst() : ctx.getNode();
+        return node ? node.nodeName.toLowerCase() : '';
+      }, 0, 1, true),
+  NAMESPACE_URI: wgxpath.FunctionCall.createFunc_('namespace-uri',
+      wgxpath.DataType.STRING, true, false, false,
+      function(ctx, opt_expr) {
+        // TODO(user): Fully implement this.
+        return '';
+      }, 0, 1, true),
+  NORMALIZE_SPACE: wgxpath.FunctionCall.createFunc_('normalize-space',
+      wgxpath.DataType.STRING, false, true, false,
+      function(ctx, opt_expr) {
+        var str = opt_expr ? opt_expr.asString(ctx) :
+            wgxpath.Node.getValueAsString(ctx.getNode());
+        return goog.string.collapseWhitespace(str);
+      }, 0, 1),
+  NOT: wgxpath.FunctionCall.createFunc_('not',
+      wgxpath.DataType.BOOLEAN, false, false, false,
+      function(ctx, expr) {
+        return !expr.asBool(ctx);
+      }, 1),
+  NUMBER: wgxpath.FunctionCall.createFunc_('number',
+      wgxpath.DataType.NUMBER, false, true, false,
+      function(ctx, opt_expr) {
+        return opt_expr ? opt_expr.asNumber(ctx) :
+            wgxpath.Node.getValueAsNumber(ctx.getNode());
+      }, 0, 1),
+  POSITION: wgxpath.FunctionCall.createFunc_('position',
+      wgxpath.DataType.NUMBER, true, false, false,
+      function(ctx) {
+        return ctx.getPosition();
+      }, 0),
+  ROUND: wgxpath.FunctionCall.createFunc_('round',
+      wgxpath.DataType.NUMBER, false, false, false,
+      function(ctx, expr) {
+        return Math.round(expr.asNumber(ctx));
+      }, 1),
+  STARTS_WITH: wgxpath.FunctionCall.createFunc_('starts-with',
+      wgxpath.DataType.BOOLEAN, false, false, false,
+      function(ctx, expr1, expr2) {
+        return goog.string.startsWith(expr1.asString(ctx), expr2.asString(ctx));
+      }, 2),
+  STRING: wgxpath.FunctionCall.createFunc_(
+      'string', wgxpath.DataType.STRING, false, true, false,
+      function(ctx, opt_expr) {
+        return opt_expr ? opt_expr.asString(ctx) :
+            wgxpath.Node.getValueAsString(ctx.getNode());
+      }, 0, 1),
+  STRING_LENGTH: wgxpath.FunctionCall.createFunc_('string-length',
+      wgxpath.DataType.NUMBER, false, true, false,
+      function(ctx, opt_expr) {
+        var str = opt_expr ? opt_expr.asString(ctx) :
+            wgxpath.Node.getValueAsString(ctx.getNode());
+        return str.length;
+      }, 0, 1),
+  SUBSTRING: wgxpath.FunctionCall.createFunc_('substring',
+      wgxpath.DataType.STRING, false, false, false,
+      function(ctx, expr1, expr2, opt_expr3) {
+        var startRaw = expr2.asNumber(ctx);
+        if (isNaN(startRaw) || startRaw == Infinity || startRaw == -Infinity) {
+          return '';
+        }
+        var lengthRaw = opt_expr3 ? opt_expr3.asNumber(ctx) : Infinity;
+        if (isNaN(lengthRaw) || lengthRaw === -Infinity) {
+          return '';
+        }
+
+        // XPath indices are 1-based.
+        var startInt = Math.round(startRaw) - 1;
+        var start = Math.max(startInt, 0);
+        var str = expr1.asString(ctx);
+
+        if (lengthRaw == Infinity) {
+          return str.substring(start);
+        } else {
+          var lengthInt = Math.round(lengthRaw);
+          // Length is from startInt, not start!
+          return str.substring(start, startInt + lengthInt);
+        }
+      }, 2, 3),
+  SUBSTRING_AFTER: wgxpath.FunctionCall.createFunc_('substring-after',
+      wgxpath.DataType.STRING, false, false, false,
+      function(ctx, expr1, expr2) {
+        var str1 = expr1.asString(ctx);
+        var str2 = expr2.asString(ctx);
+        var str2Index = str1.indexOf(str2);
+        return str2Index == -1 ? '' : str1.substring(str2Index + str2.length);
+      }, 2),
+  SUBSTRING_BEFORE: wgxpath.FunctionCall.createFunc_('substring-before',
+      wgxpath.DataType.STRING, false, false, false,
+      function(ctx, expr1, expr2) {
+        var str1 = expr1.asString(ctx);
+        var str2 = expr2.asString(ctx);
+        var str2Index = str1.indexOf(str2);
+        return str2Index == -1 ? '' : str1.substring(0, str2Index);
+      }, 2),
+  SUM: wgxpath.FunctionCall.createFunc_('sum',
+      wgxpath.DataType.NUMBER, false, false, false,
+      function(ctx, expr) {
+        var ns = expr.evaluate(ctx);
+        var iter = ns.iterator();
+        var prev = 0;
+        for (var node = iter.next(); node; node = iter.next()) {
+          prev += wgxpath.Node.getValueAsNumber(node);
+        }
+        return prev;
+      }, 1, 1, true),
+  TRANSLATE: wgxpath.FunctionCall.createFunc_('translate',
+      wgxpath.DataType.STRING, false, false, false,
+      function(ctx, expr1, expr2, expr3) {
+        var str1 = expr1.asString(ctx);
+        var str2 = expr2.asString(ctx);
+        var str3 = expr3.asString(ctx);
+
+        var map = [];
+        for (var i = 0; i < str2.length; i++) {
+          var ch = str2.charAt(i);
+          if (!(ch in map)) {
+            // If i >= str3.length, charAt will return the empty string.
+            map[ch] = str3.charAt(i);
+          }
+        }
+
+        var translated = '';
+        for (var i = 0; i < str1.length; i++) {
+          var ch = str1.charAt(i);
+          translated += (ch in map) ? map[ch] : ch;
+        }
+        return translated;
+      }, 3),
+  TRUE: wgxpath.FunctionCall.createFunc_(
+      'true', wgxpath.DataType.BOOLEAN, false, false, false,
+      function(ctx) {
+        return true;
+      }, 0)
+};
+// Copyright 2012 Google Inc. All Rights Reserved.
+
+/**
+ * @fileoverview Wrapper classes for attribute nodes in old IE browsers.
+ */
+
+goog.provide('wgxpath.IEAttrWrapper');
+
+goog.require('goog.dom.NodeType');
+goog.require('wgxpath.userAgent');
+
+
+
+/**
+ * A wrapper for an attribute node in old IE.
+ *
+ * <p> Note: Although sourceIndex is equal to node.sourceIndex, it is
+ * denormalized into a separate parameter for performance, so that clients
+ * constructing multiple IEAttrWrappers can pass in the same sourceIndex
+ * rather than re-querying it each time.
+ *
+ * @constructor
+ * @extends {Attr}
+ * @param {!Node} node The attribute node.
+ * @param {!Node} parent The parent of the attribute node.
+ * @param {string} nodeName The name of the attribute node.
+ * @param {(string|number|boolean)} nodeValue The value of the attribute node.
+ * @param {number} sourceIndex The source index of the parent node.
+ */
+wgxpath.IEAttrWrapper = function(node, parent, nodeName, nodeValue,
+    sourceIndex) {
+  /**
+   * @type {!Node}
+   * @private
+   */
+  this.node_ = node;
+
+  /**
+   * @type {string}
+   */
+  this.nodeName = nodeName;
+
+  /**
+   * @type {(string|number|boolean)}
+   */
+  this.nodeValue = nodeValue;
+
+  /**
+   * @type {goog.dom.NodeType}
+   */
+  this.nodeType = goog.dom.NodeType.ATTRIBUTE;
+
+  /**
+   * @type {!Node}
+   */
+  this.ownerElement = parent;
+
+  /**
+   * @type {number}
+   * @private
+   */
+  this.parentSourceIndex_ = sourceIndex;
+
+  /**
+   * @type {!Node}
+   */
+  this.parentNode = parent;
+};
+
+
+/**
+ * Creates a wrapper for an attribute node in old IE.
+ *
+ * @param {!Node} parent The parent of the attribute node.
+ * @param {!Node} attr The attribute node.
+ * @param {number} sourceIndex The source index of the parent node.
+ * @return {!wgxpath.IEAttrWrapper} The constcuted wrapper.
+ */
+wgxpath.IEAttrWrapper.forAttrOf = function(parent, attr, sourceIndex) {
+  var nodeValue = (wgxpath.userAgent.IE_DOC_PRE_8 && attr.nodeName == 'href') ?
+      parent.getAttribute(attr.nodeName, 2) : attr.nodeValue;
+  return new wgxpath.IEAttrWrapper(attr, parent, attr.nodeName, nodeValue,
+      sourceIndex);
+};
+
+
+/**
+ * Creates a wrapper for a style attribute node in old IE.
+ *
+ * @param {!Node} parent The parent of the attribute node.
+ * @param {number} sourceIndex The source index of the parent node.
+ * @return {!wgxpath.IEAttrWrapper} The constcuted wrapper.
+ */
+wgxpath.IEAttrWrapper.forStyleOf = function(parent, sourceIndex) {
+  return new wgxpath.IEAttrWrapper(parent.style, parent, 'style',
+      parent.style.cssText, sourceIndex);
+};
+
+
+/**
+ * Returns the source index of the parent of the attribute node.
+ *
+ * @return {number} The source index of the parent.
+ */
+wgxpath.IEAttrWrapper.prototype.getParentSourceIndex = function() {
+  return this.parentSourceIndex_;
+};
+
+
+/**
+ * Returns the attribute node contained in the wrapper.
+ *
+ * @return {!Node} The original attribute node.
+ */
+wgxpath.IEAttrWrapper.prototype.getNode = function() {
+  return this.node_;
+};
+// Copyright 2012 Google Inc. All Rights Reserved.
+
+/**
+ * @fileoverview A class implementing the xpath 1.0 subset of the
+ *               KindTest construct.
+ */
+
+goog.provide('wgxpath.KindTest');
+
+goog.require('goog.dom.NodeType');
+goog.require('wgxpath.NodeTest');
+
+
+
+/**
+ * Constructs a subset of KindTest based on the xpath grammar:
+ * http://www.w3.org/TR/xpath20/#prod-xpath-KindTest
+ *
+ * @param {string} typeName Type name to be tested.
+ * @param {wgxpath.Literal=} opt_literal Optional literal for
+ *        processing-instruction nodes.
+ * @constructor
+ * @implements {wgxpath.NodeTest}
+ */
+wgxpath.KindTest = function(typeName, opt_literal) {
+
+  /**
+   * @type {string}
+   * @private
+   */
+  this.typeName_ = typeName;
+
+  /**
+   * @type {wgxpath.Literal}
+   * @private
+   */
+  this.literal_ = goog.isDef(opt_literal) ? opt_literal : null;
+
+  /**
+   * @type {?goog.dom.NodeType}
+   * @private
+   */
+  this.type_ = null;
+  switch (typeName) {
+    case 'comment':
+      this.type_ = goog.dom.NodeType.COMMENT;
+      break;
+    case 'text':
+      this.type_ = goog.dom.NodeType.TEXT;
+      break;
+    case 'processing-instruction':
+      this.type_ = goog.dom.NodeType.PROCESSING_INSTRUCTION;
+      break;
+    case 'node':
+      break;
+    default:
+      throw Error('Unexpected argument');
+  }
+};
+
+
+/**
+ * Checks if a type name is a valid KindTest parameter.
+ *
+ * @param {string} typeName The type name to be checked.
+ * @return {boolean} Whether the type name is legal.
+ */
+wgxpath.KindTest.isValidType = function(typeName) {
+  return typeName == 'comment' || typeName == 'text' ||
+      typeName == 'processing-instruction' || typeName == 'node';
+};
+
+
+/**
+ * @override
+ */
+wgxpath.KindTest.prototype.matches = function(node) {
+  return goog.isNull(this.type_) || this.type_ == node.nodeType;
+};
+
+
+/**
+ * Returns the type of the node.
+ *
+ * @return {?number} The type of the node, or null if any type.
+ */
+wgxpath.KindTest.prototype.getType = function() {
+  return this.type_;
+};
+
+
+/**
+ * @override
+ */
+wgxpath.KindTest.prototype.getName = function() {
+  return this.typeName_;
+};
+
+
+/**
+ * @override
+ * @param {string=} opt_indent Optional indentation.
+ * @return {string} The string representation.
+ */
+wgxpath.KindTest.prototype.toString = function(opt_indent) {
+  var indent = opt_indent || '';
+  var text = indent + 'kindtest: ' + this.typeName_;
+  if (!goog.isNull(this.literal_)) {
+    text += '\n' + this.literal_.toString(indent + wgxpath.Expr.INDENT);
+  }
+  return text;
+};
+// Copyright 2012 Google Inc. All Rights Reserved.
+
+/**
+ * @fileoverview The lexer class for tokenizing xpath expressions.
+ */
+
+goog.provide('wgxpath.Lexer');
+
+
+
+/**
+ * Constructs a lexer.
+ *
+ * @param {!Array.<string>} tokens Tokens to iterate over.
+ * @constructor
+ */
+wgxpath.Lexer = function(tokens) {
+  /**
+   * @type {!Array.<string>}
+   * @private
+   */
+  this.tokens_ = tokens;
+
+  /**
+   * @type {number}
+   * @private
+   */
+  this.index_ = 0;
+};
+
+
+/**
+ * Tokenizes a source string into an array of tokens.
+ *
+ * @param {string} source Source string to tokenize.
+ * @return {!wgxpath.Lexer} Essentially an iterator over the tokens.
+ */
+wgxpath.Lexer.tokenize = function(source) {
+  var tokens = source.match(wgxpath.Lexer.TOKEN_);
+
+  // Removes tokens starting with whitespace from the array.
+  for (var i = 0; i < tokens.length; i++) {
+    if (wgxpath.Lexer.LEADING_WHITESPACE_.test(tokens[i])) {
+      tokens.splice(i, 1);
+    }
+  }
+  return new wgxpath.Lexer(tokens);
+};
+
+
+/**
+ * Regular expressions to match XPath productions.
+ *
+ * @const
+ * @type {!RegExp}
+ * @private
+ */
+wgxpath.Lexer.TOKEN_ = new RegExp(
+    '\\$?(?:(?![0-9-])[\\w-]+:)?(?![0-9-])[\\w-]+' +
+        // Nodename (possibly with namespace) or variable.
+    '|\\/\\/' + // Double slash.
+    '|\\.\\.' + // Double dot.
+    '|::' + // Double colon.
+    '|\\d+(?:\\.\\d*)?' + // Number starting with digit.
+    '|\\.\\d+' + // Number starting with decimal point.
+    '|"[^"]*"' + // Double quoted string.
+    '|\'[^\']*\'' + // Single quoted string.
+    '|[!<>]=' + // Operators
+    '|\\s+' + // Whitespaces.
+    '|.', // Any single character.
+    'g');
+
+
+/**
+ * Regex to check if a string starts with a whitespace character.
+ *
+ * @const
+ * @type {!RegExp}
+ * @private
+ */
+wgxpath.Lexer.LEADING_WHITESPACE_ = /^\s/;
+
+
+/**
+ * Peeks at the lexer. An optional index can be
+ * used to specify the token peek at.
+ *
+ * @param {number=} opt_i Index to peek at. Defaults to zero.
+ * @return {string} Token peeked.
+ */
+wgxpath.Lexer.prototype.peek = function(opt_i) {
+  return this.tokens_[this.index_ + (opt_i || 0)];
+};
+
+
+/**
+ * Returns the next token from the lexer and increments the index.
+ *
+ * @return {string} The next token.
+ */
+wgxpath.Lexer.prototype.next = function() {
+  return this.tokens_[this.index_++];
+};
+
+
+/**
+ * Decrements the index by one.
+ */
+wgxpath.Lexer.prototype.back = function() {
+  this.index_--;
+};
+
+
+/**
+ * Checks whether the lexer is empty.
+ *
+ * @return {boolean} Whether the lexer is empty.
+ */
+wgxpath.Lexer.prototype.empty = function() {
+  return this.tokens_.length <= this.index_;
+};
+// Copyright 2012 Google Inc. All Rights Reserved.
+
+/**
+ * @fileoverview A class representing the string literals.
+ */
+
+goog.provide('wgxpath.Literal');
+
+goog.require('wgxpath.Expr');
+
+
+
+/**
+ * Constructs a string literal expression.
+ *
+ * @param {string} text The text value of the literal.
+ * @constructor
+ * @extends {wgxpath.Expr}
+ */
+wgxpath.Literal = function(text) {
+  wgxpath.Expr.call(this, wgxpath.DataType.STRING);
+
+  /**
+   * @type {string}
+   * @private
+   */
+  this.text_ = text.substring(1, text.length - 1);
+};
+goog.inherits(wgxpath.Literal, wgxpath.Expr);
+
+
+/**
+ * @override
+ * @return {string} The string result.
+ */
+wgxpath.Literal.prototype.evaluate = function(context) {
+  return this.text_;
+};
+
+
+/**
+ * @override
+ */
+wgxpath.Literal.prototype.toString = function(opt_indent) {
+  var indent = opt_indent || '';
+  return indent + 'literal: ' + this.text_;
+};
+// Copyright 2012 Google Inc. All Rights Reserved.
+
+/**
+ * @fileoverview A class implementing the NameTest construct.
+ */
+
+goog.provide('wgxpath.NameTest');
+
+goog.require('goog.dom.NodeType');
+
+
+
+/**
+ * Constructs a NameTest based on the xpath grammar:
+ * http://www.w3.org/TR/xpath/#NT-NameTest
+ *
+ * @param {string} name Name to be tested.
+ * @constructor
+ * @implements {wgxpath.NodeTest}
+ */
+wgxpath.NameTest = function(name) {
+  /**
+   * @type {string}
+   * @private
+   */
+  this.name_ = name.toLowerCase();
+};
+
+
+/**
+ * The default namespace for XHTML nodes.
+ *
+ * @const
+ * @type {string}
+ * @private
+ */
+wgxpath.NameTest.HTML_NAMESPACE_ = 'http://www.w3.org/1999/xhtml';
+
+
+/**
+ * @override
+ */
+wgxpath.NameTest.prototype.matches = function(node) {
+  var type = node.nodeType;
+  if (type == goog.dom.NodeType.ELEMENT ||
+      type == goog.dom.NodeType.ATTRIBUTE) {
+    if (this.name_ == '*' || this.name_ == node.nodeName.toLowerCase()) {
+      return true;
+    } else {
+      var namespace = node.namespaceURI || wgxpath.NameTest.HTML_NAMESPACE_;
+      return this.name_ == namespace + ':*';
+    }
+  }
+};
+
+
+/**
+ * @override
+ */
+wgxpath.NameTest.prototype.getName = function() {
+  return this.name_;
+};
+
+
+/**
+ * @override
+ * @param {string=} opt_indent Optional indentation.
+ * @return {string} The string representation.
+ */
+wgxpath.NameTest.prototype.toString = function(opt_indent) {
+  var indent = opt_indent || '';
+  return indent + 'nametest: ' + this.name_;
+};
+// Copyright 2012 Google Inc. All Rights Reserved.
+
+/**
+ * @fileoverview Node utilities.
+ */
+
+goog.provide('wgxpath.Node');
+
+goog.require('goog.array');
+goog.require('goog.dom.NodeType');
+goog.require('goog.userAgent');
+goog.require('wgxpath.IEAttrWrapper');
+goog.require('wgxpath.userAgent');
+
+
+/** @typedef {!(Node|wgxpath.IEAttrWrapper)} */
+wgxpath.Node = {};
+
+
+/**
+ * Returns whether two nodes are equal.
+ *
+ * @param {wgxpath.Node} a The first node.
+ * @param {wgxpath.Node} b The second node.
+ * @return {boolean} Whether the nodes are equal.
+ */
+wgxpath.Node.equal = function(a, b) {
+  return (a == b) || (a instanceof wgxpath.IEAttrWrapper &&
+      b instanceof wgxpath.IEAttrWrapper && a.getNode() ==
+      b.getNode());
+};
+
+
+/**
+ * Returns the string-value of the required type from a node.
+ *
+ * @param {!wgxpath.Node} node The node to get value from.
+ * @return {string} The value required.
+ */
+wgxpath.Node.getValueAsString = function(node) {
+  var t = null, type = node.nodeType;
+  // Old IE title problem.
+  var needTitleFix = function(node) {
+    return wgxpath.userAgent.IE_DOC_PRE_9 &&
+        node.nodeName.toLowerCase() == 'title';
+  };
+  // goog.dom.getTextContent doesn't seem to work
+  if (type == goog.dom.NodeType.ELEMENT) {
+    t = node.textContent;
+    t = (t == undefined || t == null) ? node.innerText : t;
+    t = (t == undefined || t == null) ? '' : t;
+  }
+  if (typeof t != 'string') {
+    if (needTitleFix(node) && type == goog.dom.NodeType.ELEMENT) {
+      t = node.text;
+    } else if (type == goog.dom.NodeType.DOCUMENT ||
+        type == goog.dom.NodeType.ELEMENT) {
+      node = (type == goog.dom.NodeType.DOCUMENT) ?
+          node.documentElement : node.firstChild;
+      var i = 0, stack = [];
+      for (t = ''; node;) {
+        do {
+          if (node.nodeType != goog.dom.NodeType.ELEMENT) {
+            t += node.nodeValue;
+          }
+          if (needTitleFix(node)) {
+            t += node.text;
+          }
+          stack[i++] = node; // push
+        } while (node = node.firstChild);
+        while (i && !(node = stack[--i].nextSibling)) {}
+      }
+    } else {
+      t = node.nodeValue;
+    }
+  }
+  return '' + t;
+};
+
+
+/**
+ * Returns the string-value of the required type from a node, casted to number.
+ *
+ * @param {!wgxpath.Node} node The node to get value from.
+ * @return {number} The value required.
+ */
+wgxpath.Node.getValueAsNumber = function(node) {
+  return +wgxpath.Node.getValueAsString(node);
+};
+
+
+/**
+ * Returns the string-value of the required type from a node, casted to boolean.
+ *
+ * @param {!wgxpath.Node} node The node to get value from.
+ * @return {boolean} The value required.
+ */
+wgxpath.Node.getValueAsBool = function(node) {
+  return !!wgxpath.Node.getValueAsString(node);
+};
+
+
+/**
+ * Returns if the attribute matches the given value.
+ *
+ * @param {!wgxpath.Node} node The node to get value from.
+ * @param {?string} name The attribute name to match, if any.
+ * @param {?string} value The attribute value to match, if any.
+ * @return {boolean} Whether the node matches the attribute, if any.
+ */
+wgxpath.Node.attrMatches = function(node, name, value) {
+  // No attribute.
+  if (goog.isNull(name)) {
+    return true;
+  }
+  // TODO(user): If possible, figure out why this throws an exception in some
+  // cases on IE < 9.
+  try {
+    if (!node.getAttribute) {
+      return false;
+    }
+  } catch (e) {
+    return false;
+  }
+  if (wgxpath.userAgent.IE_DOC_PRE_8 && name == 'class') {
+    name = 'className';
+  }
+  return value == null ? !!node.getAttribute(name) :
+      (node.getAttribute(name, 2) == value);
+};
+
+
+/**
+ * Returns the descendants of a node.
+ *
+ * @param {!wgxpath.NodeTest} test A NodeTest for matching nodes.
+ * @param {!wgxpath.Node} node The node to get descendants from.
+ * @param {?string=} opt_attrName The attribute name to match, if any.
+ * @param {?string=} opt_attrValue The attribute value to match, if any.
+ * @param {!wgxpath.NodeSet=} opt_nodeset The node set to add descendants to.
+ * @return {!wgxpath.NodeSet} The nodeset with descendants.
+ */
+wgxpath.Node.getDescendantNodes = function(test, node, opt_attrName,
+    opt_attrValue, opt_nodeset) {
+  var nodeset = opt_nodeset || new wgxpath.NodeSet();
+  var func = wgxpath.userAgent.IE_DOC_PRE_9 ?
+      wgxpath.Node.getDescendantNodesIEPre9_ :
+      wgxpath.Node.getDescendantNodesGeneric_;
+  var attrName = goog.isString(opt_attrName) ? opt_attrName : null;
+  var attrValue = goog.isString(opt_attrValue) ? opt_attrValue : null;
+  return func.call(null, test, node, attrName, attrValue, nodeset);
+};
+
+
+/**
+ * Returns the descendants of a node for IE.
+ *
+ * @private
+ * @param {!wgxpath.NodeTest} test A NodeTest for matching nodes.
+ * @param {!wgxpath.Node} node The node to get descendants from.
+ * @param {?string} attrName The attribute name to match, if any.
+ * @param {?string} attrValue The attribute value to match, if any.
+ * @param {!wgxpath.NodeSet} nodeset The node set to add descendants to.
+ * @return {!wgxpath.NodeSet} The nodeset with descendants.
+ */
+wgxpath.Node.getDescendantNodesIEPre9_ = function(test, node, attrName,
+    attrValue, nodeset) {
+  if (wgxpath.Node.doesNeedSpecialHandlingIEPre9_(test, attrName)) {
+    var descendants = node.all;
+    if (!descendants) {
+      return nodeset;
+    }
+    var name = wgxpath.Node.getNameFromTestIEPre9_(test);
+    // all.tags not working.
+    if (name != '*') {
+      descendants = node.getElementsByTagName(name);
+      if (!descendants) {
+        return nodeset;
+      }
+    }
+    if (attrName) {
+      /**
+       * The length property of the "all" collection is overwritten
+       * if there exists an element with id="length", therefore we
+       * have to iterate without knowing the length.
+       */
+      var result = [];
+      var i = 0;
+      while (node = descendants[i++]) {
+        if (wgxpath.Node.attrMatches(node, attrName, attrValue)) {
+          result.push(node);
+        }
+      }
+      descendants = result;
+    }
+    var i = 0;
+    while (node = descendants[i++]) {
+      if (name != '*' || node.tagName != '!') {
+        nodeset.add(node);
+      }
+    }
+    return nodeset;
+  }
+  wgxpath.Node.doRecursiveAttrMatch_(test, node, attrName,
+      attrValue, nodeset);
+  return nodeset;
+};
+
+
+/**
+ * Returns the descendants of a node for browsers other than IE.
+ *
+ * @private
+ * @param {!wgxpath.NodeTest} test A NodeTest for matching nodes.
+ * @param {!wgxpath.Node} node The node to get descendants from.
+ * @param {?string} attrName The attribute name to match, if any.
+ * @param {?string} attrValue The attribute value to match, if any.
+ * @param {!wgxpath.NodeSet} nodeset The node set to add descendants to.
+ * @return {!wgxpath.NodeSet} The nodeset with descendants.
+ */
+wgxpath.Node.getDescendantNodesGeneric_ = function(test, node,
+    attrName, attrValue, nodeset) {
+  if (node.getElementsByName && attrValue && attrName == 'name' &&
+      !goog.userAgent.IE) {
+    var nodes = node.getElementsByName(attrValue);
+    goog.array.forEach(nodes, function(node) {
+      if (test.matches(node)) {
+        nodeset.add(node);
+      }
+    });
+  } else if (node.getElementsByClassName && attrValue && attrName == 'class') {
+    var nodes = node.getElementsByClassName(attrValue);
+    goog.array.forEach(nodes, function(node) {
+      if (node.className == attrValue && test.matches(node)) {
+        nodeset.add(node);
+      }
+    });
+  } else if (test instanceof wgxpath.KindTest) {
+    wgxpath.Node.doRecursiveAttrMatch_(test, node, attrName,
+        attrValue, nodeset);
+  } else if (node.getElementsByTagName) {
+    var nodes = node.getElementsByTagName(test.getName());
+    goog.array.forEach(nodes, function(node) {
+      if (wgxpath.Node.attrMatches(node, attrName, attrValue)) {
+        nodeset.add(node);
+      }
+    });
+  }
+  return nodeset;
+};
+
+
+/**
+ * Returns the child nodes of a node.
+ *
+ * @param {!wgxpath.NodeTest} test A NodeTest for matching nodes.
+ * @param {!wgxpath.Node} node The node to get child nodes from.
+ * @param {?string=} opt_attrName The attribute name to match, if any.
+ * @param {?string=} opt_attrValue The attribute value to match, if any.
+ * @param {!wgxpath.NodeSet=} opt_nodeset The node set to add child nodes to.
+ * @return {!wgxpath.NodeSet} The nodeset with child nodes.
+ */
+wgxpath.Node.getChildNodes = function(test, node,
+    opt_attrName, opt_attrValue, opt_nodeset) {
+  var nodeset = opt_nodeset || new wgxpath.NodeSet();
+  var func = wgxpath.userAgent.IE_DOC_PRE_9 ?
+      wgxpath.Node.getChildNodesIEPre9_ : wgxpath.Node.getChildNodesGeneric_;
+  var attrName = goog.isString(opt_attrName) ? opt_attrName : null;
+  var attrValue = goog.isString(opt_attrValue) ? opt_attrValue : null;
+  return func.call(null, test, node, attrName, attrValue, nodeset);
+};
+
+
+/**
+ * Returns the child nodes of a node for IE browsers.
+ *
+ * @private
+ * @param {!wgxpath.NodeTest} test A NodeTest for matching nodes.
+ * @param {!wgxpath.Node} node The node to get child nodes from.
+ * @param {?string} attrName The attribute name to match, if any.
+ * @param {?string} attrValue The attribute value to match, if any.
+ * @param {!wgxpath.NodeSet} nodeset The node set to add child nodes to.
+ * @return {!wgxpath.NodeSet} The nodeset with child nodes.
+ */
+wgxpath.Node.getChildNodesIEPre9_ = function(test, node,
+    attrName, attrValue, nodeset) {
+  var children;
+  if (wgxpath.Node.doesNeedSpecialHandlingIEPre9_(test, attrName) &&
+      (children = node.childNodes)) { // node.children seems buggy.
+    var name = wgxpath.Node.getNameFromTestIEPre9_(test);
+    if (name != '*') {
+      //children = children.tags(name); // children.tags seems buggy.
+      children = goog.array.filter(children, function(child) {
+        return child.tagName && child.tagName.toLowerCase() == name;
+      });
+      if (!children) {
+        return nodeset;
+      }
+    }
+    if (attrName) {
+      // TODO(user): See if an optimization is possible.
+      children = goog.array.filter(children, function(n) {
+        return wgxpath.Node.attrMatches(n, attrName, attrValue);
+      });
+    }
+    goog.array.forEach(children, function(node) {
+      if (name != '*' || node.tagName != '!' &&
+          !(name == '*' && node.nodeType != goog.dom.NodeType.ELEMENT)) {
+        nodeset.add(node);
+      }
+    });
+    return nodeset;
+  }
+  return wgxpath.Node.getChildNodesGeneric_(test, node, attrName,
+      attrValue, nodeset);
+};
+
+
+/**
+ * Returns the child nodes of a node genericly.
+ *
+ * @private
+ * @param {!wgxpath.NodeTest} test A NodeTest for matching nodes.
+ * @param {!wgxpath.Node} node The node to get child nodes from.
+ * @param {?string} attrName The attribute name to match, if any.
+ * @param {?string} attrValue The attribute value to match, if any.
+ * @param {!wgxpath.NodeSet} nodeset The node set to add child nodes to.
+ * @return {!wgxpath.NodeSet} The nodeset with child nodes.
+ */
+wgxpath.Node.getChildNodesGeneric_ = function(test, node, attrName,
+    attrValue, nodeset) {
+  for (var current = node.firstChild; current; current = current.nextSibling) {
+    if (wgxpath.Node.attrMatches(current, attrName, attrValue)) {
+      if (test.matches(current)) {
+        nodeset.add(current);
+      }
+    }
+  }
+  return nodeset;
+};
+
+
+/**
+ * Returns whether a getting descendants/children call
+ * needs special handling on IE browsers.
+ *
+ * @private
+ * @param {!wgxpath.NodeTest} test A NodeTest for matching nodes.
+ * @param {!wgxpath.Node} node The root node to start the recursive call on.
+ * @param {?string} attrName The attribute name to match, if any.
+ * @param {?string} attrValue The attribute value to match, if any.
+ * @param {!wgxpath.NodeSet} nodeset The NodeSet to add nodes to.
+ */
+wgxpath.Node.doRecursiveAttrMatch_ = function(test, node,
+    attrName, attrValue, nodeset) {
+  for (var n = node.firstChild; n; n = n.nextSibling) {
+    if (wgxpath.Node.attrMatches(n, attrName, attrValue) &&
+        test.matches(n)) {
+      nodeset.add(n);
+    }
+    wgxpath.Node.doRecursiveAttrMatch_(test, n, attrName,
+        attrValue, nodeset);
+  }
+};
+
+
+/**
+ * Returns whether a getting descendants/children call
+ * needs special handling on IE browsers.
+ *
+ * @private
+ * @param {!wgxpath.NodeTest} test A NodeTest for matching nodes.
+ * @param {?string} attrName The attribute name to match, if any.
+ * @return {boolean} Whether the call needs special handling.
+ */
+wgxpath.Node.doesNeedSpecialHandlingIEPre9_ = function(test, attrName) {
+  return test instanceof wgxpath.NameTest ||
+      test.getType() == goog.dom.NodeType.COMMENT ||
+      (!!attrName && goog.isNull(test.getType()));
+};
+
+
+/**
+ * Returns a fixed name of a NodeTest for IE browsers.
+ *
+ * @private
+ * @param {!wgxpath.NodeTest} test A NodeTest.
+ * @return {string} The name of the NodeTest.
+ */
+wgxpath.Node.getNameFromTestIEPre9_ = function(test) {
+  if (test instanceof wgxpath.KindTest) {
+    if (test.getType() == goog.dom.NodeType.COMMENT) {
+      return '!';
+    } else if (goog.isNull(test.getType())) {
+      return '*';
+    }
+  }
+  return test.getName();
+};
+// Copyright 2012 Google Inc. All Rights Reserved.
+
+/**
+ * @fileoverview Context information about nodes in their nodeset.
+ */
+
+goog.provide('wgxpath.NodeSet');
+
+goog.require('goog.dom');
+goog.require('wgxpath.Node');
+
+
+
+/**
+ * A set of nodes sorted by their prefix order in the document.
+ *
+ * @constructor
+ */
+wgxpath.NodeSet = function() {
+  // In violation of standard Closure practice, we initialize properties to
+  // immutable constants in the constructor instead of on the prototype,
+  // because we have empirically measured better performance by doing so.
+
+  /**
+   * A pointer to the first node in the linked list.
+   *
+   * @private
+   * @type {wgxpath.NodeSet.Entry_}
+   */
+  this.first_ = null;
+
+  /**
+   * A pointer to the last node in the linked list.
+   *
+   * @private
+   * @type {wgxpath.NodeSet.Entry_}
+   */
+  this.last_ = null;
+
+  /**
+   * Length of the linked list.
+   *
+   * @private
+   * @type {number}
+   */
+  this.length_ = 0;
+};
+
+
+
+/**
+ * A entry for a node in a linked list
+ *
+ * @param {!wgxpath.Node} node The node to be added.
+ * @constructor
+ * @private
+ */
+wgxpath.NodeSet.Entry_ = function(node) {
+  // In violation of standard Closure practice, we initialize properties to
+  // immutable constants in the constructor instead of on the prototype,
+  // because we have empirically measured better performance by doing so.
+
+  /**
+   * @type {!wgxpath.Node}
+   */
+  this.node = node;
+
+  /**
+   * @type {wgxpath.NodeSet.Entry_}
+   */
+  this.prev = null;
+
+  /**
+   * @type {wgxpath.NodeSet.Entry_}
+   */
+  this.next = null;
+};
+
+
+/**
+ * Merges two nodesets, removing duplicates. This function may modify both
+ * nodesets, and will return a reference to one of the two.
+ *
+ * <p> Note: We assume that the two nodesets are already sorted in DOM order.
+ *
+ * @param {!wgxpath.NodeSet} a The first nodeset.
+ * @param {!wgxpath.NodeSet} b The second nodeset.
+ * @return {!wgxpath.NodeSet} The merged nodeset.
+ */
+wgxpath.NodeSet.merge = function(a, b) {
+  if (!a.first_) {
+    return b;
+  } else if (!b.first_) {
+    return a;
+  }
+  var aCurr = a.first_;
+  var bCurr = b.first_;
+  var merged = a, tail = null, next = null, length = 0;
+  while (aCurr && bCurr) {
+    if (wgxpath.Node.equal(aCurr.node, bCurr.node)) {
+      next = aCurr;
+      aCurr = aCurr.next;
+      bCurr = bCurr.next;
+    } else {
+      var compareResult = goog.dom.compareNodeOrder(
+          /** @type {!Node} */ (aCurr.node),
+          /** @type {!Node} */ (bCurr.node));
+      if (compareResult > 0) {
+        next = bCurr;
+        bCurr = bCurr.next;
+      } else {
+        next = aCurr;
+        aCurr = aCurr.next;
+      }
+    }
+    next.prev = tail;
+    if (tail) {
+      tail.next = next;
+    } else {
+      merged.first_ = next;
+    }
+    tail = next;
+    length++;
+  }
+  next = aCurr || bCurr;
+  while (next) {
+    next.prev = tail;
+    tail.next = next;
+    tail = next;
+    length++;
+    next = next.next;
+  }
+  merged.last_ = tail;
+  merged.length_ = length;
+  return merged;
+};
+
+
+/**
+ * Prepends a node to this nodeset.
+ *
+ * @param {!wgxpath.Node} node The node to be added.
+ */
+wgxpath.NodeSet.prototype.unshift = function(node) {
+  var entry = new wgxpath.NodeSet.Entry_(node);
+  entry.next = this.first_;
+  if (!this.last_) {
+    this.first_ = this.last_ = entry;
+  } else {
+    this.first_.prev = entry;
+  }
+  this.first_ = entry;
+  this.length_++;
+};
+
+
+/**
+ * Adds a node to this nodeset.
+ *
+ * @param {!wgxpath.Node} node The node to be added.
+ */
+wgxpath.NodeSet.prototype.add = function(node) {
+  var entry = new wgxpath.NodeSet.Entry_(node);
+  entry.prev = this.last_;
+  if (!this.first_) {
+    this.first_ = this.last_ = entry;
+  } else {
+    this.last_.next = entry;
+  }
+  this.last_ = entry;
+  this.length_++;
+};
+
+
+/**
+ * Returns the first node of the nodeset.
+ *
+ * @return {?wgxpath.Node} The first node of the nodeset
+                                     if the nodeset is non-empty;
+ *     otherwise null.
+ */
+wgxpath.NodeSet.prototype.getFirst = function() {
+  var first = this.first_;
+  if (first) {
+    return first.node;
+  } else {
+    return null;
+  }
+};
+
+
+/**
+ * Return the length of this nodeset.
+ *
+ * @return {number} The length of the nodeset.
+ */
+wgxpath.NodeSet.prototype.getLength = function() {
+  return this.length_;
+};
+
+
+/**
+ * Returns the string representation of this nodeset.
+ *
+ * @return {string} The string representation of this nodeset.
+ */
+wgxpath.NodeSet.prototype.string = function() {
+  var node = this.getFirst();
+  return node ? wgxpath.Node.getValueAsString(node) : '';
+};
+
+
+/**
+ * Returns the number representation of this nodeset.
+ *
+ * @return {number} The number representation of this nodeset.
+ */
+wgxpath.NodeSet.prototype.number = function() {
+  return +this.string();
+};
+
+
+/**
+ * Returns an iterator over this nodeset. Once this iterator is made, DO NOT
+ *     add to this nodeset until the iterator is done.
+ *
+ * @param {boolean=} opt_reverse Whether to iterate right to left or vice versa.
+ * @return {!wgxpath.NodeSet.Iterator} An iterator over the nodes.
+ */
+wgxpath.NodeSet.prototype.iterator = function(opt_reverse) {
+  return new wgxpath.NodeSet.Iterator(this, !!opt_reverse);
+};
+
+
+
+/**
+ * An iterator over the nodes of this nodeset.
+ *
+ * @param {!wgxpath.NodeSet} nodeset The nodeset to be iterated over.
+ * @param {boolean} reverse Whether to iterate in ascending or descending
+ *     order.
+ * @constructor
+ */
+wgxpath.NodeSet.Iterator = function(nodeset, reverse) {
+  // In violation of standard Closure practice, we initialize properties to
+  // immutable constants in the constructor instead of on the prototype,
+  // because we have empirically measured better performance by doing so.
+
+  /**
+   * @type {!wgxpath.NodeSet}
+   * @private
+   */
+  this.nodeset_ = nodeset;
+
+  /**
+   * @type {boolean}
+   * @private
+   */
+  this.reverse_ = reverse;
+
+  /**
+   * @type {wgxpath.NodeSet.Entry_}
+   * @private
+   */
+  this.current_ = reverse ? nodeset.last_ : nodeset.first_;
+
+  /**
+   * @type {wgxpath.NodeSet.Entry_}
+   * @private
+   */
+  this.lastReturned_ = null;
+};
+
+
+/**
+ * Returns the next value of the iteration or null if passes the end.
+ *
+ * @return {?wgxpath.Node} The next node from this iterator.
+ */
+wgxpath.NodeSet.Iterator.prototype.next = function() {
+  var current = this.current_;
+  if (current == null) {
+    return null;
+  } else {
+    var lastReturned = this.lastReturned_ = current;
+    if (this.reverse_) {
+      this.current_ = current.prev;
+    } else {
+      this.current_ = current.next;
+    }
+    return lastReturned.node;
+  }
+};
+
+
+/**
+ * Deletes the last node that was returned from this iterator.
+ */
+wgxpath.NodeSet.Iterator.prototype.remove = function() {
+  /* TODO: to implement delDescendent(node) we shouldn't have to iterate over
+   * the entire array, only the things whose index comes after node.
+   * If the nodeset is already sorted we know all the descendents lie in a
+   * continguous block starting at nodecould start the iterator at node.
+   */
+  var nodeset = this.nodeset_;
+  var entry = this.lastReturned_;
+  if (!entry) {
+    throw Error('Next must be called at least once before remove.');
+  }
+  var prev = entry.prev;
+  var next = entry.next;
+
+  // Modify the pointers of prev and next
+  if (prev) {
+    prev.next = next;
+  } else {
+    // If there was no prev node entry must've been first_, so update first_.
+    nodeset.first_ = next;
+  }
+  if (next) {
+    next.prev = prev;
+  } else {
+    // If there was no prev node entry must've been last_, so update last_.
+    nodeset.last_ = prev;
+  }
+  nodeset.length_--;
+  this.lastReturned_ = null;
+};
+// Copyright 2012 Google Inc. All Rights Reserved.
+
+/**
+ * @fileoverview An interface for the NodeTest construct.
+ */
+
+goog.provide('wgxpath.NodeTest');
+
+
+
+/**
+ * The NodeTest interface to represent the NodeTest production
+ * in the xpath grammar:
+ * http://www.w3.org/TR/xpath-30/#prod-xpath30-NodeTest
+ *
+ * @interface
+ */
+wgxpath.NodeTest = function() {};
+
+
+/**
+ * Tests if a node matches the stored characteristics.
+ *
+ * @param {wgxpath.Node} node The node to be tested.
+ * @return {boolean} Whether the node passes the test.
+ */
+wgxpath.NodeTest.prototype.matches = goog.abstractMethod;
+
+
+/**
+ * Returns the name of the test.
+ *
+ * @return {string} The name, either nodename or type name.
+ */
+wgxpath.NodeTest.prototype.getName = goog.abstractMethod;
+
+
+/**
+ * Returns the string representation of the NodeTest for debugging.
+ *
+ * @param {string=} opt_indent Optional indentation.
+ * @return {string} The string representation.
+ */
+wgxpath.NodeTest.prototype.toString = goog.abstractMethod;
+// Copyright 2012 Google Inc. All Rights Reserved.
+
+/**
+ * @fileoverview A class representing number literals.
+ */
+
+goog.provide('wgxpath.Number');
+
+goog.require('wgxpath.Expr');
+
+
+
+/**
+ * Constructs a number expression.
+ *
+ * @param {number} value The number value.
+ * @constructor
+ * @extends {wgxpath.Expr}
+ */
+wgxpath.Number = function(value) {
+  wgxpath.Expr.call(this, wgxpath.DataType.NUMBER);
+
+  /**
+   * @type {number}
+   * @private
+   */
+  this.value_ = value;
+};
+goog.inherits(wgxpath.Number, wgxpath.Expr);
+
+
+/**
+ * @override
+ * @return {number} The number result.
+ */
+wgxpath.Number.prototype.evaluate = function(ctx) {
+  return this.value_;
+};
+
+
+/**
+ * @override
+ */
+wgxpath.Number.prototype.toString = function(opt_indent) {
+  var indent = opt_indent || '';
+  return indent + 'number: ' + this.value_;
+};
+// Copyright 2012 Google Inc. All Rights Reserved.
+
+/**
+ * @fileoverview A recursive descent Parser.
+ */
+
+goog.provide('wgxpath.Parser');
+
+goog.require('wgxpath.BinaryExpr');
+goog.require('wgxpath.FilterExpr');
+goog.require('wgxpath.FunctionCall');
+goog.require('wgxpath.KindTest');
+goog.require('wgxpath.Literal');
+goog.require('wgxpath.NameTest');
+goog.require('wgxpath.Number');
+goog.require('wgxpath.PathExpr');
+goog.require('wgxpath.Predicates');
+goog.require('wgxpath.Step');
+goog.require('wgxpath.UnaryExpr');
+goog.require('wgxpath.UnionExpr');
+
+
+
+/**
+ * The recursive descent parser.
+ *
+ * @constructor
+ * @param {!wgxpath.Lexer} lexer The lexer.
+ */
+wgxpath.Parser = function(lexer) {
+
+  /**
+   * @private
+   * @type {!wgxpath.Lexer}
+   */
+  this.lexer_ = lexer;
+};
+
+
+/**
+ * Apply recursive descent parsing on the input to construct an
+ * abstract syntax tree.
+ *
+ * @return {!wgxpath.Expr} The root of the constructed tree.
+ */
+wgxpath.Parser.prototype.parseExpr = function() {
+  var expr, stack = [];
+  while (true) {
+    this.checkNotEmpty_('Missing right hand side of binary expression.');
+    expr = this.parseUnaryExpr_(); // See if it's just a UnaryExpr.
+    var opString = this.lexer_.next();
+    if (!opString) {
+      break; // Done, we have only a UnaryExpr.
+    }
+
+    var op = wgxpath.BinaryExpr.getOp(opString);
+    var precedence = op && op.getPrecedence();
+    if (!precedence) {
+      this.lexer_.back();
+      break;
+    }
+    // Precedence climbing
+    while (stack.length &&
+        precedence <= stack[stack.length - 1].getPrecedence()) {
+      expr = new wgxpath.BinaryExpr(stack.pop(), stack.pop(), expr);
+    }
+    stack.push(expr, op);
+  }
+  while (stack.length) {
+    expr = new wgxpath.BinaryExpr(stack.pop(), stack.pop(),
+        /** @type {!wgxpath.Expr} */ (expr));
+  }
+  return /** @type {!wgxpath.Expr} */ expr;
+};
+
+
+/**
+ * Checks that the lexer is not empty,
+ *     displays the given error message if it is.
+ *
+ * @private
+ * @param {string} msg The error message to display.
+ */
+wgxpath.Parser.prototype.checkNotEmpty_ = function(msg) {
+  if (this.lexer_.empty()) {
+    throw Error(msg);
+  }
+};
+
+
+/**
+ * Checks that the next token of the error message is the expected token.
+ *
+ * @private
+ * @param {string} expected The expected token.
+ */
+wgxpath.Parser.prototype.checkNextEquals_ = function(expected) {
+  var got = this.lexer_.next();
+  if (got != expected) {
+    throw Error('Bad token, expected: ' + expected + ' got: ' + got);
+  }
+};
+
+
+/**
+ * Checks that the next token of the error message is not the given token.
+ *
+ * @private
+ * @param {string} token The token.
+ */
+wgxpath.Parser.prototype.checkNextNotEquals_ = function(token) {
+  var next = this.lexer_.next();
+  if (next != token) {
+    throw Error('Bad token: ' + next);
+  }
+};
+
+
+/**
+ * Attempts to parse the input as a FilterExpr.
+ *
+ * @private
+ * @return {wgxpath.Expr} The root of the constructed tree.
+ */
+wgxpath.Parser.prototype.parseFilterExpr_ = function() {
+  var expr;
+  var token = this.lexer_.peek();
+  var ch = token.charAt(0);
+  switch (ch) {
+    case '$':
+      throw Error('Variable reference not allowed in HTML XPath');
+    case '(':
+      this.lexer_.next();
+      expr = this.parseExpr();
+      this.checkNotEmpty_('unclosed "("');
+      this.checkNextEquals_(')');
+      break;
+    case '"':
+    case "'":
+      expr = this.parseLiteral_();
+      break;
+    default:
+      if (!isNaN(+token)) {
+        expr = this.parseNumber_();
+      } else if (wgxpath.KindTest.isValidType(token)) {
+        return null;
+      } else if (/(?![0-9])[\w]/.test(ch) && this.lexer_.peek(1) == '(') {
+        expr = this.parseFunctionCall_();
+      } else {
+        return null;
+      }
+  }
+  if (this.lexer_.peek() != '[') {
+    return expr;
+  }
+  var predicates = new wgxpath.Predicates(this.parsePredicates_());
+  return new wgxpath.FilterExpr(expr, predicates);
+};
+
+
+/**
+ * Parses FunctionCall.
+ *
+ * @private
+ * @return {!wgxpath.FunctionCall} The parsed expression.
+ */
+wgxpath.Parser.prototype.parseFunctionCall_ = function() {
+  var funcName = this.lexer_.next();
+  var func = wgxpath.FunctionCall.getFunc(funcName);
+  this.lexer_.next();
+
+  var args = [];
+  while (this.lexer_.peek() != ')') {
+    this.checkNotEmpty_('Missing function argument list.');
+    args.push(this.parseExpr());
+    if (this.lexer_.peek() != ',') {
+      break;
+    }
+    this.lexer_.next();
+  }
+  this.checkNotEmpty_('Unclosed function argument list.');
+  this.checkNextNotEquals_(')');
+
+  return new wgxpath.FunctionCall(func, args);
+};
+
+
+/**
+ * Parses the input to construct a KindTest.
+ *
+ * @private
+ * @return {!wgxpath.KindTest} The KindTest constructed.
+ */
+wgxpath.Parser.prototype.parseKindTest_ = function() {
+  var typeName = this.lexer_.next();
+  if (!wgxpath.KindTest.isValidType(typeName)) {
+    throw Error('Invalid type name: ' + typeName);
+  }
+  this.checkNextEquals_('(');
+  this.checkNotEmpty_('Bad nodetype');
+  var ch = this.lexer_.peek().charAt(0);
+
+  var literal = null;
+  if (ch == '"' || ch == "'") {
+    literal = this.parseLiteral_();
+  }
+  this.checkNotEmpty_('Bad nodetype');
+  this.checkNextNotEquals_(')');
+  return new wgxpath.KindTest(typeName, literal);
+};
+
+
+/**
+ * Parses the input to construct a Literal.
+ *
+ * @private
+ * @return {!wgxpath.Literal} The Literal constructed.
+ */
+wgxpath.Parser.prototype.parseLiteral_ = function() {
+  var token = this.lexer_.next();
+  if (token.length < 2) {
+    throw Error('Unclosed literal string');
+  }
+  return new wgxpath.Literal(token);
+};
+
+
+/**
+ * Parses the input to construct a NameTest.
+ *
+ * @private
+ * @return {!wgxpath.NameTest} The NameTest constructed.
+ */
+wgxpath.Parser.prototype.parseNameTest_ = function() {
+  // Has namespace
+  if (this.lexer_.peek() != '*' && this.lexer_.peek(1) == ':' &&
+      this.lexer_.peek(2) == '*') {
+    return new wgxpath.NameTest(this.lexer_.next() + this.lexer_.next() +
+        this.lexer_.next());
+  }
+  return new wgxpath.NameTest(this.lexer_.next());
+};
+
+
+/**
+ * Parses the input to construct a Number.
+ *
+ * @private
+ * @return {!wgxpath.Number} The Number constructed.
+ */
+wgxpath.Parser.prototype.parseNumber_ = function() {
+  return new wgxpath.Number(+this.lexer_.next());
+};
+
+
+/**
+ * Attempts to parse the input as a PathExpr.
+ *
+ * @private
+ * @return {!wgxpath.Expr} The root of the constructed tree.
+ */
+wgxpath.Parser.prototype.parsePathExpr_ = function() {
+  var op, expr;
+  var steps = [];
+  var filterExpr;
+  if (wgxpath.PathExpr.isValidOp(this.lexer_.peek())) {
+    op = this.lexer_.next();
+    var token = this.lexer_.peek();
+    if (op == '/' && (this.lexer_.empty() ||
+        (token != '.' && token != '..' && token != '@' && token != '*' &&
+        !/(?![0-9])[\w]/.test(token)))) {
+      return new wgxpath.PathExpr.RootHelperExpr();
+    }
+    filterExpr = new wgxpath.PathExpr.RootHelperExpr();
+
+    this.checkNotEmpty_('Missing next location step.');
+    expr = this.parseStep_(op);
+    steps.push(expr);
+  } else {
+    expr = this.parseFilterExpr_();
+    if (!expr) {
+      expr = this.parseStep_('/');
+      filterExpr = new wgxpath.PathExpr.ContextHelperExpr();
+      steps.push(expr);
+    } else if (!wgxpath.PathExpr.isValidOp(this.lexer_.peek())) {
+      return expr; // Done.
+    } else {
+      filterExpr = expr;
+    }
+  }
+  while (true) {
+    if (!wgxpath.PathExpr.isValidOp(this.lexer_.peek())) {
+      break;
+    }
+    op = this.lexer_.next();
+    this.checkNotEmpty_('Missing next location step.');
+    expr = this.parseStep_(op);
+    steps.push(expr);
+  }
+  return new wgxpath.PathExpr(filterExpr, steps);
+};
+
+
+/**
+ * Parses Step.
+ *
+ * @private
+ * @param {string} op The op for this step.
+ * @return {!wgxpath.Step} The parsed expression.
+ */
+wgxpath.Parser.prototype.parseStep_ = function(op) {
+  // TODO (evanrthomas) : Let parseStep see op instead of passing it
+  //     as a parameter
+  var test, step, token, predicates;
+  if (op != '/' && op != '//') {
+    throw Error('Step op should be "/" or "//"');
+  }
+  if (this.lexer_.peek() == '.') {
+    step = new wgxpath.Step(wgxpath.Step.Axis.SELF,
+        new wgxpath.KindTest('node'));
+    this.lexer_.next();
+    return step;
+  }
+  else if (this.lexer_.peek() == '..') {
+    step = new wgxpath.Step(wgxpath.Step.Axis.PARENT,
+        new wgxpath.KindTest('node'));
+    this.lexer_.next();
+    return step;
+  } else {
+    // Grab the axis.
+    var axis;
+    if (this.lexer_.peek() == '@') {
+      axis = wgxpath.Step.Axis.ATTRIBUTE;
+      this.lexer_.next();
+      this.checkNotEmpty_('Missing attribute name');
+    } else {
+      if (this.lexer_.peek(1) == '::') {
+        if (!/(?![0-9])[\w]/.test(this.lexer_.peek().charAt(0))) {
+          throw Error('Bad token: ' + this.lexer_.next());
+        }
+        var axisName = this.lexer_.next();
+        axis = wgxpath.Step.getAxis(axisName);
+        if (!axis) {
+          throw Error('No axis with name: ' + axisName);
+        }
+        this.lexer_.next();
+        this.checkNotEmpty_('Missing node name');
+      } else {
+        axis = wgxpath.Step.Axis.CHILD;
+      }
+    }
+
+    // Grab the test.
+    token = this.lexer_.peek();
+    if (!/(?![0-9])[\w]/.test(token.charAt(0))) {
+      if (token == '*') {
+        test = this.parseNameTest_();
+      } else {
+        throw Error('Bad token: ' + this.lexer_.next());
+      }
+    } else {
+      if (this.lexer_.peek(1) == '(') {
+        if (!wgxpath.KindTest.isValidType(token)) {
+          throw Error('Invalid node type: ' + token);
+        }
+        test = this.parseKindTest_();
+      } else {
+        test = this.parseNameTest_();
+      }
+    }
+    predicates = new wgxpath.Predicates(this.parsePredicates_(),
+        axis.isReverse());
+    return step || new wgxpath.Step(axis, test, predicates, op == '//');
+  }
+};
+
+
+/**
+ * Parses and returns the predicates from the this.lexer_.
+ *
+ * @private
+ * @return {!Array.<!wgxpath.Expr>} An array of the predicates.
+ */
+wgxpath.Parser.prototype.parsePredicates_ = function() {
+  var predicates = [];
+  while (this.lexer_.peek() == '[') {
+    this.lexer_.next();
+    this.checkNotEmpty_('Missing predicate expression.');
+    var predicate = this.parseExpr();
+    predicates.push(predicate);
+    this.checkNotEmpty_('Unclosed predicate expression.');
+    this.checkNextEquals_(']');
+  }
+  return predicates;
+};
+
+
+/**
+ * Attempts to parse the input as a unary expression with
+ * recursive descent parsing.
+ *
+ * @private
+ * @return {!wgxpath.Expr} The root of the constructed tree.
+ */
+wgxpath.Parser.prototype.parseUnaryExpr_ = function() {
+  if (this.lexer_.peek() == '-') {
+    this.lexer_.next();
+    return new wgxpath.UnaryExpr(this.parseUnaryExpr_());
+  } else {
+    return this.parseUnionExpr_();
+  }
+};
+
+
+/**
+ * Attempts to parse the input as a union expression with
+ * recursive descent parsing.
+ *
+ * @private
+ * @return {!wgxpath.Expr} The root of the constructed tree.
+ */
+wgxpath.Parser.prototype.parseUnionExpr_ = function() {
+  var expr = this.parsePathExpr_();
+  if (!(this.lexer_.peek() == '|')) {
+    return expr;  // Not a UnionExpr, returning as is.
+  }
+  var paths = [expr];
+  while (this.lexer_.next() == '|') {
+    this.checkNotEmpty_('Missing next union location path.');
+    paths.push(this.parsePathExpr_());
+  }
+  this.lexer_.back();
+  return new wgxpath.UnionExpr(paths);
+};
+// Copyright 2012 Google Inc. All Rights Reserved.
+
+/**
+ * @fileoverview An class representing operations on path expressions.
+ */
+
+goog.provide('wgxpath.PathExpr');
+
+
+goog.require('goog.array');
+goog.require('goog.dom.NodeType');
+goog.require('wgxpath.DataType');
+goog.require('wgxpath.Expr');
+goog.require('wgxpath.NodeSet');
+
+
+
+/**
+ * Constructor for PathExpr.
+ *
+ * @param {!wgxpath.Expr} filter A filter expression.
+ * @param {!Array.<!wgxpath.Step>} steps The steps in the location path.
+ * @extends {wgxpath.Expr}
+ * @constructor
+ */
+wgxpath.PathExpr = function(filter, steps) {
+  wgxpath.Expr.call(this, filter.getDataType());
+
+  /**
+   * @type {!wgxpath.Expr}
+   * @private
+   */
+  this.filter_ = filter;
+
+  /**
+   * @type {!Array.<!wgxpath.Step>}
+   * @private
+   */
+  this.steps_ = steps;
+
+  this.setNeedContextPosition(filter.doesNeedContextPosition());
+  this.setNeedContextNode(filter.doesNeedContextNode());
+  if (this.steps_.length == 1) {
+    var firstStep = this.steps_[0];
+    if (!firstStep.doesIncludeDescendants() &&
+        firstStep.getAxis() == wgxpath.Step.Axis.ATTRIBUTE) {
+      var test = firstStep.getTest();
+      if (test.getName() != '*') {
+        this.setQuickAttr({
+          name: test.getName(),
+          valueExpr: null
+        });
+      }
+    }
+  }
+};
+goog.inherits(wgxpath.PathExpr, wgxpath.Expr);
+
+
+
+/**
+ * Constructor for RootHelperExpr.
+ *
+ * @extends {wgxpath.Expr}
+ * @constructor
+ */
+wgxpath.PathExpr.RootHelperExpr = function() {
+  wgxpath.Expr.call(this, wgxpath.DataType.NODESET);
+};
+goog.inherits(wgxpath.PathExpr.RootHelperExpr, wgxpath.Expr);
+
+
+/**
+ * Evaluates the root-node helper expression.
+ *
+ * @param {!wgxpath.Context} ctx The context to evaluate the expression in.
+ * @return {!wgxpath.NodeSet} The evaluation result.
+ */
+wgxpath.PathExpr.RootHelperExpr.prototype.evaluate = function(ctx) {
+  var nodeset = new wgxpath.NodeSet();
+  var node = ctx.getNode();
+  if (node.nodeType == goog.dom.NodeType.DOCUMENT) {
+    nodeset.add(node);
+  } else {
+    nodeset.add(/** @type {!Node} */ (node.ownerDocument));
+  }
+  return nodeset;
+};
+
+
+/**
+ * Returns the string representation of the RootHelperExpr for debugging.
+ *
+ * @param {string=} opt_indent An optional indentation.
+ * @return {string} The string representation.
+ */
+wgxpath.PathExpr.RootHelperExpr.prototype.toString = function(opt_indent) {
+  return opt_indent + 'RootHelperExpr';
+};
+
+
+
+/**
+ * Constructor for ContextHelperExpr.
+ *
+ * @extends {wgxpath.Expr}
+ * @constructor
+ */
+wgxpath.PathExpr.ContextHelperExpr = function() {
+  wgxpath.Expr.call(this, wgxpath.DataType.NODESET);
+};
+goog.inherits(wgxpath.PathExpr.ContextHelperExpr, wgxpath.Expr);
+
+
+/**
+ * Evaluates the context-node helper expression.
+ *
+ * @param {!wgxpath.Context} ctx The context to evaluate the expression in.
+ * @return {!wgxpath.NodeSet} The evaluation result.
+ */
+wgxpath.PathExpr.ContextHelperExpr.prototype.evaluate = function(ctx) {
+  var nodeset = new wgxpath.NodeSet();
+  nodeset.add(ctx.getNode());
+  return nodeset;
+};
+
+
+/**
+ * Returns the string representation of the ContextHelperExpr for debugging.
+ *
+ * @param {string=} opt_indent An optional indentation.
+ * @return {string} The string representation.
+ */
+wgxpath.PathExpr.ContextHelperExpr.prototype.toString = function(opt_indent) {
+  return opt_indent + 'ContextHelperExpr';
+};
+
+
+/**
+ * Returns whether the token is a valid PathExpr operator.
+ *
+ * @param {string} token The token to be checked.
+ * @return {boolean} Whether the token is a valid operator.
+ */
+wgxpath.PathExpr.isValidOp = function(token) {
+  return token == '/' || token == '//';
+};
+
+
+/**
+ * @override
+ * @return {!wgxpath.NodeSet} The nodeset result.
+ */
+wgxpath.PathExpr.prototype.evaluate = function(ctx) {
+  var nodeset = this.filter_.evaluate(ctx);
+  if (!(nodeset instanceof wgxpath.NodeSet)) {
+    throw Error('FilterExpr must evaluate to nodeset.');
+  }
+  var steps = this.steps_;
+  for (var i = 0, l0 = steps.length; i < l0 && nodeset.getLength(); i++) {
+    var step = steps[i];
+    var reverse = step.getAxis().isReverse();
+    var iter = nodeset.iterator(reverse);
+    nodeset = null;
+    var node, next;
+    if (!step.doesNeedContextPosition() &&
+        step.getAxis() == wgxpath.Step.Axis.FOLLOWING) {
+      for (node = iter.next(); next = iter.next(); node = next) {
+        if (node.contains && !node.contains(next)) {
+          break;
+        } else {
+          if (!(next.compareDocumentPosition(/** @type {!Node} */ (node)) &
+              8)) {
+            break;
+          }
+        }
+      }
+      nodeset = step.evaluate(new
+          wgxpath.Context(/** @type {wgxpath.Node} */ (node)));
+    } else if (!step.doesNeedContextPosition() &&
+        step.getAxis() == wgxpath.Step.Axis.PRECEDING) {
+      node = iter.next();
+      nodeset = step.evaluate(new
+          wgxpath.Context(/** @type {wgxpath.Node} */ (node)));
+    } else {
+      node = iter.next();
+      nodeset = step.evaluate(new
+          wgxpath.Context(/** @type {wgxpath.Node} */ (node)));
+      while ((node = iter.next()) != null) {
+        var result = step.evaluate(new
+            wgxpath.Context(/** @type {wgxpath.Node} */ (node)));
+        nodeset = wgxpath.NodeSet.merge(nodeset, result);
+      }
+    }
+  }
+  return /** @type {!wgxpath.NodeSet} */ nodeset;
+};
+
+
+/**
+ * @override
+ */
+wgxpath.PathExpr.prototype.toString = function(opt_indent) {
+  var indent = opt_indent || '';
+  var text = indent + 'PathExpr:' + '\n';
+  indent += wgxpath.Expr.INDENT;
+  text += this.filter_.toString(indent);
+  if (this.steps_.length) {
+    text += indent + 'Steps:' + '\n';
+    indent += wgxpath.Expr.INDENT;
+    goog.array.forEach(this.steps_, function(step) {
+      text += step.toString(indent);
+    });
+  }
+  return text;
+};
+// Copyright 2012 Google Inc. All Rights Reserved.
+
+/**
+ * @fileoverview An abstract class representing expressions with predicates.
+ *     baseExprWithPredictes are immutable objects that evaluate their
+ *     predicates against nodesets and return the modified nodesets.
+ *
+ */
+
+
+goog.provide('wgxpath.Predicates');
+
+goog.require('goog.array');
+goog.require('wgxpath.Context');
+goog.require('wgxpath.Expr');
+
+
+
+/**
+ * An abstract class for expressions with predicates.
+ *
+ * @constructor
+ * @param {!Array.<!wgxpath.Expr>} predicates The array of predicates.
+ * @param {boolean=} opt_reverse Whether to iterate over the nodeset in reverse.
+ */
+wgxpath.Predicates = function(predicates, opt_reverse) {
+
+  /**
+   * List of predicates
+   *
+   * @private
+   * @type {!Array.<!wgxpath.Expr>}
+   */
+  this.predicates_ = predicates;
+
+
+  /**
+   * Which direction to iterate over the predicates
+   *
+   * @private
+   * @type {boolean}
+   */
+  this.reverse_ = !!opt_reverse;
+};
+
+
+/**
+ * Evaluates the predicates against the given nodeset.
+ *
+ * @param {!wgxpath.NodeSet} nodeset The nodes against which to evaluate
+ *     the predicates.
+ * @param {number=} opt_start The index of the first predicate to evaluate,
+ *     defaults to 0.
+ * @return {!wgxpath.NodeSet} nodeset The filtered nodeset.
+ */
+wgxpath.Predicates.prototype.evaluatePredicates =
+    function(nodeset, opt_start) {
+  for (var i = opt_start || 0; i < this.predicates_.length; i++) {
+    var predicate = this.predicates_[i];
+    var iter = nodeset.iterator();
+    var l = nodeset.getLength();
+    var node;
+    for (var j = 0; node = iter.next(); j++) {
+      var position = this.reverse_ ? (l - j) : (j + 1);
+      var exrs = predicate.evaluate(new
+          wgxpath.Context(/** @type {wgxpath.Node} */ (node), position, l));
+      var keep;
+      if (typeof exrs == 'number') {
+        keep = (position == exrs);
+      } else if (typeof exrs == 'string' || typeof exrs == 'boolean') {
+        keep = !!exrs;
+      } else if (exrs instanceof wgxpath.NodeSet) {
+        keep = (exrs.getLength() > 0);
+      } else {
+        throw Error('Predicate.evaluate returned an unexpected type.');
+      }
+      if (!keep) {
+        iter.remove();
+      }
+    }
+  }
+  return nodeset;
+};
+
+
+/**
+ * Returns the quickAttr info.
+ *
+ * @return {?{name: string, valueExpr: wgxpath.Expr}}
+ */
+wgxpath.Predicates.prototype.getQuickAttr = function() {
+  return this.predicates_.length > 0 ?
+      this.predicates_[0].getQuickAttr() : null;
+};
+
+
+/**
+ * Returns whether this set of predicates needs context position.
+ *
+ * @return {boolean} Whether something needs context position.
+ */
+wgxpath.Predicates.prototype.doesNeedContextPosition = function() {
+  for (var i = 0; i < this.predicates_.length; i++) {
+    var predicate = this.predicates_[i];
+    if (predicate.doesNeedContextPosition() ||
+        predicate.getDataType() == wgxpath.DataType.NUMBER ||
+        predicate.getDataType() == wgxpath.DataType.VOID) {
+      return true;
+    }
+  }
+  return false;
+};
+
+
+/**
+ * Returns the length of this set of predicates.
+ *
+ * @return {number} The number of expressions.
+ */
+wgxpath.Predicates.prototype.getLength = function() {
+  return this.predicates_.length;
+};
+
+
+/**
+ * Returns a string represendation of this set of predicates for debugging.
+ *
+ * @param {string=} opt_indent An optional indentation.
+ * @return {string} The string representation.
+ */
+wgxpath.Predicates.prototype.toString = function(opt_indent) {
+  var indent = opt_indent || '';
+  var header = indent + 'Predicates:';
+  indent += wgxpath.Expr.INDENT;
+  return goog.array.reduce(this.predicates_, function(prev, curr) {
+    return prev + '\n' + indent + curr.toString(indent);
+  }, header);
+};
+goog.provide('wgxpath.Step');
+
+goog.require('goog.dom.NodeType');
+goog.require('wgxpath.DataType');
+goog.require('wgxpath.Expr');
+goog.require('wgxpath.KindTest');
+goog.require('wgxpath.Node');
+goog.require('wgxpath.Predicates');
+goog.require('wgxpath.userAgent');
+
+
+
+/**
+ * Class for a step in a path expression
+ * http://www.w3.org/TR/xpath20/#id-steps.
+ *
+ * @extends {wgxpath.Expr}
+ * @constructor
+ * @param {!wgxpath.Step.Axis} axis The axis for this Step.
+ * @param {!wgxpath.NodeTest} test The test for this Step.
+ * @param {!wgxpath.Predicates=} opt_predicates The predicates for this
+ *     Step.
+ * @param {boolean=} opt_descendants Whether descendants are to be included in
+ *     this step ('//' vs '/').
+ */
+wgxpath.Step = function(axis, test, opt_predicates, opt_descendants) {
+  var axisCast = /** @type {!wgxpath.Step.Axis_} */ axis;
+  wgxpath.Expr.call(this, wgxpath.DataType.NODESET);
+
+  /**
+   * @type {!wgxpath.Step.Axis_}
+   * @private
+   */
+  this.axis_ = axisCast;
+
+
+  /**
+   * @type {!wgxpath.NodeTest}
+   * @private
+   */
+  this.test_ = test;
+
+  /**
+   * @type {!wgxpath.Predicates}
+   * @private
+   */
+  this.predicates_ = opt_predicates || new wgxpath.Predicates([]);
+
+
+  /**
+   * Whether decendants are included in this step
+   *
+   * @private
+   * @type {boolean}
+   */
+  this.descendants_ = !!opt_descendants;
+
+  var quickAttrInfo = this.predicates_.getQuickAttr();
+  if (axis.supportsQuickAttr_ && quickAttrInfo) {
+    var attrName = quickAttrInfo.name;
+    attrName = wgxpath.userAgent.IE_DOC_PRE_9 ?
+        attrName.toLowerCase() : attrName;
+    var attrValueExpr = quickAttrInfo.valueExpr;
+    this.setQuickAttr({
+      name: attrName,
+      valueExpr: attrValueExpr
+    });
+  }
+  this.setNeedContextPosition(this.predicates_.doesNeedContextPosition());
+};
+goog.inherits(wgxpath.Step, wgxpath.Expr);
+
+
+/**
+ * @override
+ * @return {!wgxpath.NodeSet} The nodeset result.
+ */
+wgxpath.Step.prototype.evaluate = function(ctx) {
+  var node = ctx.getNode();
+  var nodeset = null;
+  var quickAttr = this.getQuickAttr();
+  var attrName = null;
+  var attrValue = null;
+  var pstart = 0;
+  if (quickAttr) {
+    attrName = quickAttr.name;
+    attrValue = quickAttr.valueExpr ?
+        quickAttr.valueExpr.asString(ctx) : null;
+    pstart = 1;
+  }
+  if (this.descendants_) {
+    if (!this.doesNeedContextPosition() &&
+        this.axis_ == wgxpath.Step.Axis.CHILD) {
+      nodeset = wgxpath.Node.getDescendantNodes(this.test_, node,
+          attrName, attrValue);
+      nodeset = this.predicates_.evaluatePredicates(nodeset, pstart);
+    } else {
+      var step = new wgxpath.Step(wgxpath.Step.Axis.DESCENDANT_OR_SELF,
+          new wgxpath.KindTest('node'));
+      var iter = step.evaluate(ctx).iterator();
+      var n = iter.next();
+      if (!n) {
+        nodeset = new wgxpath.NodeSet();
+      } else {
+        nodeset = this.evaluate_(/** @type {!wgxpath.Node} */ (n),
+            attrName, attrValue, pstart);
+        while ((n = iter.next()) != null) {
+          nodeset = wgxpath.NodeSet.merge(nodeset,
+              this.evaluate_(/** @type {!wgxpath.Node} */ (n), attrName,
+              attrValue, pstart));
+        }
+      }
+    }
+  } else {
+    nodeset = this.evaluate_(ctx.getNode(), attrName, attrValue, pstart);
+  }
+  return nodeset;
+};
+
+
+/**
+ * Evaluates this step on the given context to a nodeset.
+ *     (assumes this.descendants_ = false)
+ *
+ * @private
+ * @param {!wgxpath.Node} node The context node.
+ * @param {?string} attrName The name of the attribute.
+ * @param {?string} attrValue The value of the attribute.
+ * @param {number} pstart The first predicate to evaluate.
+ * @return {!wgxpath.NodeSet} The nodeset from evaluating this Step.
+ */
+wgxpath.Step.prototype.evaluate_ = function(
+    node, attrName, attrValue, pstart) {
+  var nodeset = this.axis_.func_(this.test_, node, attrName, attrValue);
+  nodeset = this.predicates_.evaluatePredicates(nodeset, pstart);
+  return nodeset;
+};
+
+
+/**
+ * Returns whether the step evaluation should include descendants.
+ *
+ * @return {boolean} Whether descendants are included.
+ */
+wgxpath.Step.prototype.doesIncludeDescendants = function() {
+  return this.descendants_;
+};
+
+
+/**
+ * Returns the step's axis.
+ *
+ * @return {!wgxpath.Step.Axis} The axis.
+ */
+wgxpath.Step.prototype.getAxis = function() {
+  return (/** @type {!wgxpath.Step.Axis} */ this.axis_);
+};
+
+
+/**
+ * Returns the test for this step.
+ *
+ * @return {!wgxpath.NodeTest} The test for this step.
+ */
+wgxpath.Step.prototype.getTest = function() {
+  return this.test_;
+};
+
+
+/**
+ * @override
+ */
+wgxpath.Step.prototype.toString = function(opt_indent) {
+  var indent = opt_indent || '';
+  var text = indent + 'Step: ' + '\n';
+  indent += wgxpath.Expr.INDENT;
+  text += indent + 'Operator: ' + (this.descendants_ ? '//' : '/') + '\n';
+  if (this.axis_.name_) {
+    text += indent + 'Axis: ' + this.axis_ + '\n';
+  }
+  text += this.test_.toString(indent);
+  if (this.predicates_.length) {
+    text += indent + 'Predicates: ' + '\n';
+    for (var i = 0; i < this.predicates_.length; i++) {
+      var tail = i < this.predicates_.length - 1 ? ', ' : '';
+      text += this.predicates_[i].toString(indent) + tail;
+    }
+  }
+  return text;
+};
+
+
+
+/**
+ * A step axis.
+ *
+ * @constructor
+ * @param {string} name The axis name.
+ * @param {function(!wgxpath.NodeTest, wgxpath.Node, ?string, ?string):
+ *     !wgxpath.NodeSet} func The function for this axis.
+ * @param {boolean} reverse Whether to iterate over the nodeset in reverse.
+ * @param {boolean} supportsQuickAttr Whether quickAttr should be enabled for
+ *     this axis.
+ * @private
+ */
+wgxpath.Step.Axis_ = function(name, func, reverse, supportsQuickAttr) {
+
+  /**
+   * @private
+   * @type {string}
+   */
+  this.name_ = name;
+
+  /**
+   * @private
+   * @type {function(!wgxpath.NodeTest, wgxpath.Node, ?string, ?string):
+   *     !wgxpath.NodeSet}
+   */
+  this.func_ = func;
+
+  /**
+   * @private
+   * @type {boolean}
+   */
+  this.reverse_ = reverse;
+
+  /**
+   * @private
+   * @type {boolean}
+   */
+  this.supportsQuickAttr_ = supportsQuickAttr;
+};
+
+
+/**
+ * Returns whether the nodes in the step should be iterated over in reverse.
+ *
+ * @return {boolean} Whether the nodes should be iterated over in reverse.
+ */
+wgxpath.Step.Axis_.prototype.isReverse = function() {
+  return this.reverse_;
+};
+
+
+/**
+ * @override
+ */
+wgxpath.Step.Axis_.prototype.toString = function() {
+  return this.name_;
+};
+
+
+/**
+ * A map from axis name to Axis.
+ *
+ * @type {!Object.<string, !wgxpath.Step.Axis>}
+ * @private
+ */
+wgxpath.Step.nameToAxisMap_ = {};
+
+
+/**
+ * Creates an axis and maps the axis's name to that axis.
+ *
+ * @param {string} name The axis name.
+ * @param {function(!wgxpath.NodeTest, wgxpath.Node, ?string, ?string):
+ *     !wgxpath.NodeSet} func The function for this axis.
+ * @param {boolean} reverse Whether to iterate over nodesets in reverse.
+ * @param {boolean=} opt_supportsQuickAttr Whether quickAttr can be enabled
+ *     for this axis.
+ * @return {!wgxpath.Step.Axis} The axis.
+ * @private
+ */
+wgxpath.Step.createAxis_ =
+    function(name, func, reverse, opt_supportsQuickAttr) {
+  if (name in wgxpath.Step.nameToAxisMap_) {
+    throw Error('Axis already created: ' + name);
+  }
+  // The upcast and then downcast for the JSCompiler.
+  var axis = (/** @type {!Object} */ new wgxpath.Step.Axis_(
+      name, func, reverse, !!opt_supportsQuickAttr));
+  axis = (/** @type {!wgxpath.Step.Axis} */ axis);
+  wgxpath.Step.nameToAxisMap_[name] = axis;
+  return axis;
+};
+
+
+/**
+ * Returns the axis for this axisname or null if none.
+ *
+ * @param {string} name The axis name.
+ * @return {wgxpath.Step.Axis} The axis.
+ */
+wgxpath.Step.getAxis = function(name) {
+  return wgxpath.Step.nameToAxisMap_[name] || null;
+};
+
+
+/**
+ * Axis enumeration.
+ *
+ * @enum {{isReverse: function(): boolean}}
+ */
+wgxpath.Step.Axis = {
+  ANCESTOR: wgxpath.Step.createAxis_('ancestor',
+      function(test, node) {
+        var nodeset = new wgxpath.NodeSet();
+        var parent = node;
+        while (parent = parent.parentNode) {
+          if (test.matches(parent)) {
+            nodeset.unshift(parent);
+          }
+        }
+        return nodeset;
+      }, true),
+  ANCESTOR_OR_SELF: wgxpath.Step.createAxis_('ancestor-or-self',
+      function(test, node) {
+        var nodeset = new wgxpath.NodeSet();
+        var toMatch = node;
+        do {
+          if (test.matches(toMatch)) {
+            nodeset.unshift(toMatch);
+          }
+        } while (toMatch = toMatch.parentNode);
+        return nodeset;
+      }, true),
+  ATTRIBUTE: wgxpath.Step.createAxis_('attribute',
+      function(test, node) {
+        var nodeset = new wgxpath.NodeSet();
+        var testName = test.getName();
+        // IE8 doesn't allow access to the style attribute using getNamedItem.
+        // It returns an object with nodeValue = null.
+        if (testName == 'style' && node.style &&
+            wgxpath.userAgent.IE_DOC_PRE_9) {
+          nodeset.add(wgxpath.IEAttrWrapper.forStyleOf(
+              /** @type {!Node} */ (node), node.sourceIndex));
+          return nodeset;
+        }
+        var attrs = node.attributes;
+        if (attrs) {
+          if ((test instanceof wgxpath.KindTest &&
+              goog.isNull(test.getType())) || testName == '*') {
+            var sourceIndex = node.sourceIndex;
+            for (var i = 0, attr; attr = attrs[i]; i++) {
+              if (wgxpath.userAgent.IE_DOC_PRE_9) {
+                if (attr.nodeValue) {
+                  nodeset.add(wgxpath.IEAttrWrapper.forAttrOf(
+                      /** @type {!Node} */ (node), attr, sourceIndex));
+                }
+              } else {
+                nodeset.add(attr);
+              }
+            }
+          } else {
+            var attr = attrs.getNamedItem(testName);
+            if (attr) {
+              if (wgxpath.userAgent.IE_DOC_PRE_9) {
+                if (attr.nodeValue) {
+                  nodeset.add(wgxpath.IEAttrWrapper.forAttrOf(
+                      /** @type {!Node} */ (node), attr, node.sourceIndex));
+                }
+              } else {
+                nodeset.add(attr);
+              }
+            }
+          }
+        }
+        return nodeset;
+      }, false),
+  CHILD: wgxpath.Step.createAxis_('child',
+      wgxpath.Node.getChildNodes, false, true),
+  DESCENDANT: wgxpath.Step.createAxis_('descendant',
+      wgxpath.Node.getDescendantNodes, false, true),
+  DESCENDANT_OR_SELF: wgxpath.Step.createAxis_('descendant-or-self',
+      function(test, node, attrName, attrValue) {
+        var nodeset = new wgxpath.NodeSet();
+        if (wgxpath.Node.attrMatches(node, attrName, attrValue)) {
+          if (test.matches(node)) {
+            nodeset.add(node);
+          }
+        }
+        return wgxpath.Node.getDescendantNodes(test, node,
+            attrName, attrValue, nodeset);
+      }, false, true),
+  FOLLOWING: wgxpath.Step.createAxis_('following',
+      function(test, node, attrName, attrValue) {
+        var nodeset = new wgxpath.NodeSet();
+        var parent = node;
+        do {
+          var child = parent;
+          while (child = child.nextSibling) {
+            if (wgxpath.Node.attrMatches(child, attrName, attrValue)) {
+              if (test.matches(child)) {
+                nodeset.add(child);
+              }
+            }
+            nodeset = wgxpath.Node.getDescendantNodes(test, child,
+                attrName, attrValue, nodeset);
+          }
+        } while (parent = parent.parentNode);
+        return nodeset;
+      }, false, true),
+  FOLLOWING_SIBLING: wgxpath.Step.createAxis_('following-sibling',
+      function(test, node) {
+        var nodeset = new wgxpath.NodeSet();
+        var toMatch = node;
+        while (toMatch = toMatch.nextSibling) {
+          if (test.matches(toMatch)) {
+            nodeset.add(toMatch);
+          }
+        }
+        return nodeset;
+      }, false),
+  NAMESPACE: wgxpath.Step.createAxis_('namespace',
+      function(test, node) {
+        // not implemented
+        return new wgxpath.NodeSet();
+      }, false),
+  PARENT: wgxpath.Step.createAxis_('parent',
+      function(test, node) {
+        var nodeset = new wgxpath.NodeSet();
+        if (node.nodeType == goog.dom.NodeType.DOCUMENT) {
+          return nodeset;
+        } else if (node.nodeType == goog.dom.NodeType.ATTRIBUTE) {
+          nodeset.add(node.ownerElement);
+          return nodeset;
+        }
+        var parent = /** @type {!Node} */ node.parentNode;
+        if (test.matches(parent)) {
+          nodeset.add(parent);
+        }
+        return nodeset;
+      }, false),
+  PRECEDING: wgxpath.Step.createAxis_('preceding',
+      function(test, node, attrName, attrValue) {
+        var nodeset = new wgxpath.NodeSet();
+        var parents = [];
+        var parent = node;
+        do {
+          parents.unshift(parent);
+        } while (parent = parent.parentNode);
+        for (var i = 1, l0 = parents.length; i < l0; i++) {
+          var siblings = [];
+          node = parents[i];
+          while (node = node.previousSibling) {
+            siblings.unshift(node);
+          }
+          for (var j = 0, l1 = siblings.length; j < l1; j++) {
+            node = siblings[j];
+            if (wgxpath.Node.attrMatches(node, attrName, attrValue)) {
+              if (test.matches(node)) nodeset.add(node);
+            }
+            nodeset = wgxpath.Node.getDescendantNodes(test, node,
+                attrName, attrValue, nodeset);
+          }
+        }
+        return nodeset;
+      }, true, true),
+  PRECEDING_SIBLING: wgxpath.Step.createAxis_('preceding-sibling',
+      function(test, node) {
+        var nodeset = new wgxpath.NodeSet();
+        var toMatch = node;
+        while (toMatch = toMatch.previousSibling) {
+          if (test.matches(toMatch)) {
+            nodeset.unshift(toMatch);
+          }
+        }
+        return nodeset;
+      }, true),
+  SELF: wgxpath.Step.createAxis_('self',
+      function(test, node) {
+        var nodeset = new wgxpath.NodeSet();
+        if (test.matches(node)) {
+          nodeset.add(node);
+        }
+        return nodeset;
+      }, false)
+};
+// This file was autogenerated by calcdeps.py
+goog.addDependency("../../../wicked-good-xpath/test_js_deps.js", [], []);
+goog.addDependency("../../../wicked-good-xpath/functionCall.js", ['wgxpath.FunctionCall'], ['goog.array', 'goog.dom', 'goog.dom.NodeType', 'goog.string', 'wgxpath.Expr', 'wgxpath.Node', 'wgxpath.NodeSet', 'wgxpath.userAgent']);
+goog.addDependency("../../../wicked-good-xpath/unaryExpr.js", ['wgxpath.UnaryExpr'], ['wgxpath.DataType', 'wgxpath.Expr']);
+goog.addDependency("../../../wicked-good-xpath/nodeset.js", ['wgxpath.NodeSet'], ['goog.dom', 'wgxpath.Node']);
+goog.addDependency("../../../wicked-good-xpath/pathExpr.js", ['wgxpath.PathExpr'], ['goog.array', 'goog.dom.NodeType', 'wgxpath.DataType', 'wgxpath.Expr', 'wgxpath.NodeSet']);
+goog.addDependency("../../../wicked-good-xpath/literal.js", ['wgxpath.Literal'], ['wgxpath.Expr']);
+goog.addDependency("../../../wicked-good-xpath/node.js", ['wgxpath.Node'], ['goog.array', 'goog.dom.NodeType', 'goog.userAgent', 'wgxpath.IEAttrWrapper', 'wgxpath.userAgent']);
+goog.addDependency("../../../wicked-good-xpath/step.js", ['wgxpath.Step'], ['goog.dom.NodeType', 'wgxpath.DataType', 'wgxpath.Expr', 'wgxpath.KindTest', 'wgxpath.Node', 'wgxpath.Predicates', 'wgxpath.userAgent']);
+goog.addDependency("../../../wicked-good-xpath/parser.js", ['wgxpath.Parser'], ['wgxpath.BinaryExpr', 'wgxpath.FilterExpr', 'wgxpath.FunctionCall', 'wgxpath.KindTest', 'wgxpath.Literal', 'wgxpath.NameTest', 'wgxpath.Number', 'wgxpath.PathExpr', 'wgxpath.Predicates', 'wgxpath.Step', 'wgxpath.UnaryExpr', 'wgxpath.UnionExpr']);
+goog.addDependency("../../../wicked-good-xpath/ieAttrWrapper.js", ['wgxpath.IEAttrWrapper'], ['goog.dom.NodeType', 'wgxpath.userAgent']);
+goog.addDependency("../../../wicked-good-xpath/expr.js", ['wgxpath.Expr'], ['wgxpath.NodeSet']);
+goog.addDependency("../../../wicked-good-xpath/number.js", ['wgxpath.Number'], ['wgxpath.Expr']);
+goog.addDependency("../../../wicked-good-xpath/kindTest.js", ['wgxpath.KindTest'], ['goog.dom.NodeType', 'wgxpath.NodeTest']);
+goog.addDependency("../../../wicked-good-xpath/lexer.js", ['wgxpath.Lexer'], []);
+goog.addDependency("../../../wicked-good-xpath/wgxpath.js", ['wgxpath'], ['wgxpath.Context', 'wgxpath.IEAttrWrapper', 'wgxpath.Lexer', 'wgxpath.NodeSet', 'wgxpath.Parser']);
+goog.addDependency("../../../wicked-good-xpath/nameTest.js", ['wgxpath.NameTest'], ['goog.dom.NodeType']);
+goog.addDependency("../../../wicked-good-xpath/unionExpr.js", ['wgxpath.UnionExpr'], ['goog.array', 'wgxpath.DataType', 'wgxpath.Expr']);
+goog.addDependency("../../../wicked-good-xpath/userAgent.js", ['wgxpath.userAgent'], ['goog.userAgent']);
+goog.addDependency("../../../wicked-good-xpath/binaryExpr.js", ['wgxpath.BinaryExpr'], ['wgxpath.DataType', 'wgxpath.Expr', 'wgxpath.Node']);
+goog.addDependency("../../../wicked-good-xpath/export.js", [], ['wgxpath']);
+goog.addDependency("../../../wicked-good-xpath/dataType.js", ['wgxpath.DataType'], []);
+goog.addDependency("../../../wicked-good-xpath/filterExpr.js", ['wgxpath.FilterExpr'], ['wgxpath.Expr']);
+goog.addDependency("../../../wicked-good-xpath/nodeTest.js", ['wgxpath.NodeTest'], []);
+goog.addDependency("../../../wicked-good-xpath/context.js", ['wgxpath.Context'], []);
+goog.addDependency("../../../wicked-good-xpath/predicates.js", ['wgxpath.Predicates'], ['goog.array', 'wgxpath.Context', 'wgxpath.Expr']);
+goog.addDependency("../../../wicked-good-xpath/test/test_js_deps.js", [], []);
+goog.addDependency("../../../wicked-good-xpath/test/test.js", ['wgxpath.test'], ['goog.dom', 'goog.dom.NodeType', 'goog.userAgent']);
+// Copyright 2012 Google Inc. All Rights Reserved.
+
+/**
+ * @fileoverview A class representing operations on unary expressions.
+ */
+
+goog.provide('wgxpath.UnaryExpr');
+
+goog.require('wgxpath.DataType');
+goog.require('wgxpath.Expr');
+
+
+
+/**
+ * Constructor for UnaryExpr.
+ *
+ * @param {!wgxpath.Expr} expr The unary expression.
+ * @extends {wgxpath.Expr}
+ * @constructor
+ */
+wgxpath.UnaryExpr = function(expr) {
+  wgxpath.Expr.call(this, wgxpath.DataType.NUMBER);
+
+  /**
+   * @private
+   * @type {!wgxpath.Expr}
+   */
+  this.expr_ = expr;
+
+  this.setNeedContextPosition(expr.doesNeedContextPosition());
+  this.setNeedContextNode(expr.doesNeedContextNode());
+};
+goog.inherits(wgxpath.UnaryExpr, wgxpath.Expr);
+
+
+/**
+ * @override
+ * @return {number} The number result.
+ */
+wgxpath.UnaryExpr.prototype.evaluate = function(ctx) {
+  return -this.expr_.asNumber(ctx);
+};
+
+
+/**
+ * @override
+ */
+wgxpath.UnaryExpr.prototype.toString = function(opt_indent) {
+  var indent = opt_indent || '';
+  var text = indent + 'UnaryExpr: -' + '\n';
+  indent += wgxpath.Expr.INDENT;
+  text += this.expr_.toString(indent);
+  return text;
+};
+// Copyright 2012 Google Inc. All Rights Reserved.
+
+/**
+ * @fileoverview A class representing operations on union expressions.
+ */
+
+goog.provide('wgxpath.UnionExpr');
+
+goog.require('goog.array');
+goog.require('wgxpath.DataType');
+goog.require('wgxpath.Expr');
+
+
+
+/**
+ * Constructor for UnionExpr.
+ *
+ * @param {!Array.<!wgxpath.Expr>} paths The paths in the union.
+ * @extends {wgxpath.Expr}
+ * @constructor
+ */
+wgxpath.UnionExpr = function(paths) {
+  wgxpath.Expr.call(this, wgxpath.DataType.NODESET);
+
+  /**
+   * @type {!Array.<!wgxpath.Expr>}
+   * @private
+   */
+  this.paths_ = paths;
+  this.setNeedContextPosition(goog.array.some(this.paths_, function(p) {
+    return p.doesNeedContextPosition();
+  }));
+  this.setNeedContextNode(goog.array.some(this.paths_, function(p) {
+    return p.doesNeedContextNode();
+  }));
+};
+goog.inherits(wgxpath.UnionExpr, wgxpath.Expr);
+
+
+/**
+ * @override
+ * @return {!wgxpath.NodeSet} The nodeset result.
+ */
+wgxpath.UnionExpr.prototype.evaluate = function(ctx) {
+  var nodeset = new wgxpath.NodeSet();
+  goog.array.forEach(this.paths_, function(p) {
+    var result = p.evaluate(ctx);
+    if (!(result instanceof wgxpath.NodeSet)) {
+      throw Error('PathExpr must evaluate to NodeSet.');
+    }
+    nodeset = wgxpath.NodeSet.merge(nodeset, result);
+  });
+  return nodeset;
+};
+
+
+/**
+ * @override
+ */
+wgxpath.UnionExpr.prototype.toString = function(opt_indent) {
+  var indent = opt_indent || '';
+  var text = indent + 'UnionExpr:' + '\n';
+  indent += wgxpath.Expr.INDENT;
+  goog.array.forEach(this.paths_, function(p) {
+    text += p.toString(indent) + '\n';
+  });
+  return text.substring(0, text.length); // Remove trailing newline.
+};
+// Copyright 2012 Google Inc. All Rights Reserved.
+
+/**
+ * @fileoverview Constants for user agent detection.
+ */
+
+goog.provide('wgxpath.userAgent');
+
+goog.require('goog.userAgent');
+
+
+/**
+ * @type {boolean}
+ * @const
+ */
+wgxpath.userAgent.IE_DOC_PRE_9 = goog.userAgent.IE &&
+    !goog.userAgent.isDocumentMode(9);
+
+
+/**
+ * @type {boolean}
+ * @const
+ */
+wgxpath.userAgent.IE_DOC_PRE_8 = goog.userAgent.IE &&
+    !goog.userAgent.isDocumentMode(8);
+/*  JavaScript-XPath 0.1.11
+ *  (c) 2007 Cybozu Labs, Inc.
+ *
+ *  JavaScript-XPath is freely distributable under the terms of an MIT-style
+ *  license. For details, see the JavaScript-XPath web site:
+ *  http://coderepos.org/share/wiki/JavaScript-XPath
+ *
+/*--------------------------------------------------------------------------*/
+
+// Copyright 2012 Google Inc. All Rights Reserved.
+
+/**
+ * Wicked Good XPath
+ *
+ * @fileoverview A cross-browser XPath library forked from the
+ * JavaScript-XPath project by Cybozu Labs.
+ *
+ */
+
+goog.provide('wgxpath');
+
+goog.require('wgxpath.Context');
+goog.require('wgxpath.IEAttrWrapper');
+goog.require('wgxpath.Lexer');
+goog.require('wgxpath.NodeSet');
+goog.require('wgxpath.Parser');
+
+
+/**
+ * Enum for XPathResult types.
+ *
+ * @private
+ * @enum {number}
+ */
+wgxpath.XPathResultType_ = {
+  ANY_TYPE: 0,
+  NUMBER_TYPE: 1,
+  STRING_TYPE: 2,
+  BOOLEAN_TYPE: 3,
+  UNORDERED_NODE_ITERATOR_TYPE: 4,
+  ORDERED_NODE_ITERATOR_TYPE: 5,
+  UNORDERED_NODE_SNAPSHOT_TYPE: 6,
+  ORDERED_NODE_SNAPSHOT_TYPE: 7,
+  ANY_UNORDERED_NODE_TYPE: 8,
+  FIRST_ORDERED_NODE_TYPE: 9
+};
+
+
+
+/**
+ * The exported XPathExpression type.
+ *
+ * @constructor
+ * @extends {XPathExpression}
+ * @param {string} expr The expression string.
+ * @private
+ */
+wgxpath.XPathExpression_ = function(expr) {
+  if (!expr.length) {
+    throw Error('Empty XPath expression.');
+  }
+
+  var lexer = wgxpath.Lexer.tokenize(expr);
+
+  if (lexer.empty()) {
+    throw Error('Invalid XPath expression.');
+  }
+  var gexpr = new wgxpath.Parser(lexer).parseExpr();
+  if (!lexer.empty()) {
+    throw Error('Bad token: ' + lexer.next());
+  }
+  this['evaluate'] = function(node, type) {
+    var value = gexpr.evaluate(new wgxpath.Context(node));
+    return new wgxpath.XPathResult_(value, type);
+  };
+};
+
+
+
+/**
+ * The exported XPathResult type.
+ *
+ * @constructor
+ * @extends {XPathResult}
+ * @param {(!wgxpath.NodeSet|number|string|boolean)} value The result value.
+ * @param {number} type The result type.
+ * @private
+ */
+wgxpath.XPathResult_ = function(value, type) {
+  if (type == wgxpath.XPathResultType_.ANY_TYPE) {
+    if (value instanceof wgxpath.NodeSet) {
+      type = wgxpath.XPathResultType_.UNORDERED_NODE_ITERATOR_TYPE;
+    } else if (typeof value == 'string') {
+      type = wgxpath.XPathResultType_.STRING_TYPE;
+    } else if (typeof value == 'number') {
+      type = wgxpath.XPathResultType_.NUMBER_TYPE;
+    } else if (typeof value == 'boolean') {
+      type = wgxpath.XPathResultType_.BOOLEAN_TYPE;
+    } else {
+      throw Error('Unexpected evaluation result.');
+    }
+  }
+  if (type != wgxpath.XPathResultType_.STRING_TYPE &&
+      type != wgxpath.XPathResultType_.NUMBER_TYPE &&
+      type != wgxpath.XPathResultType_.BOOLEAN_TYPE &&
+      !(value instanceof wgxpath.NodeSet)) {
+    throw Error('document.evaluate called with wrong result type.');
+  }
+  this['resultType'] = type;
+  var nodes;
+  switch (type) {
+    case wgxpath.XPathResultType_.STRING_TYPE:
+      this['stringValue'] = (value instanceof wgxpath.NodeSet) ?
+          value.string() : '' + value;
+      break;
+    case wgxpath.XPathResultType_.NUMBER_TYPE:
+      this['numberValue'] = (value instanceof wgxpath.NodeSet) ?
+          value.number() : +value;
+      break;
+    case wgxpath.XPathResultType_.BOOLEAN_TYPE:
+      this['booleanValue'] = (value instanceof wgxpath.NodeSet) ?
+          value.getLength() > 0 : !!value;
+      break;
+    case wgxpath.XPathResultType_.UNORDERED_NODE_ITERATOR_TYPE:
+    case wgxpath.XPathResultType_.ORDERED_NODE_ITERATOR_TYPE:
+    case wgxpath.XPathResultType_.UNORDERED_NODE_SNAPSHOT_TYPE:
+    case wgxpath.XPathResultType_.ORDERED_NODE_SNAPSHOT_TYPE:
+      var iter = value.iterator();
+      nodes = [];
+      for (var node = iter.next(); node; node = iter.next()) {
+        nodes.push(node instanceof wgxpath.IEAttrWrapper ?
+            node.getNode() : node);
+      }
+      this['snapshotLength'] = value.getLength();
+      this['invalidIteratorState'] = false;
+      break;
+    case wgxpath.XPathResultType_.ANY_UNORDERED_NODE_TYPE:
+    case wgxpath.XPathResultType_.FIRST_ORDERED_NODE_TYPE:
+      var firstNode = value.getFirst();
+      this['singleNodeValue'] =
+          firstNode instanceof wgxpath.IEAttrWrapper ?
+          firstNode.getNode() : firstNode;
+      break;
+    default:
+      throw Error('Unknown XPathResult type.');
+  }
+  var index = 0;
+  this['iterateNext'] = function() {
+    if (type != wgxpath.XPathResultType_.UNORDERED_NODE_ITERATOR_TYPE &&
+        type != wgxpath.XPathResultType_.ORDERED_NODE_ITERATOR_TYPE) {
+      throw Error('iterateNext called with wrong result type.');
+    }
+    return (index >= nodes.length) ? null : nodes[index++];
+  };
+  this['snapshotItem'] = function(i) {
+    if (type != wgxpath.XPathResultType_.UNORDERED_NODE_SNAPSHOT_TYPE &&
+        type != wgxpath.XPathResultType_.ORDERED_NODE_SNAPSHOT_TYPE) {
+      throw Error('snapshotItem called with wrong result type.');
+    }
+    return (i >= nodes.length || i < 0) ? null : nodes[i];
+  };
+};
+wgxpath.XPathResult_['ANY_TYPE'] = wgxpath.XPathResultType_.ANY_TYPE;
+wgxpath.XPathResult_['NUMBER_TYPE'] = wgxpath.XPathResultType_.NUMBER_TYPE;
+wgxpath.XPathResult_['STRING_TYPE'] = wgxpath.XPathResultType_.STRING_TYPE;
+wgxpath.XPathResult_['BOOLEAN_TYPE'] = wgxpath.XPathResultType_.BOOLEAN_TYPE;
+wgxpath.XPathResult_['UNORDERED_NODE_ITERATOR_TYPE'] =
+    wgxpath.XPathResultType_.UNORDERED_NODE_ITERATOR_TYPE;
+wgxpath.XPathResult_['ORDERED_NODE_ITERATOR_TYPE'] =
+    wgxpath.XPathResultType_.ORDERED_NODE_ITERATOR_TYPE;
+wgxpath.XPathResult_['UNORDERED_NODE_SNAPSHOT_TYPE'] =
+    wgxpath.XPathResultType_.UNORDERED_NODE_SNAPSHOT_TYPE;
+wgxpath.XPathResult_['ORDERED_NODE_SNAPSHOT_TYPE'] =
+    wgxpath.XPathResultType_.ORDERED_NODE_SNAPSHOT_TYPE;
+wgxpath.XPathResult_['ANY_UNORDERED_NODE_TYPE'] =
+    wgxpath.XPathResultType_.ANY_UNORDERED_NODE_TYPE;
+wgxpath.XPathResult_['FIRST_ORDERED_NODE_TYPE'] =
+    wgxpath.XPathResultType_.FIRST_ORDERED_NODE_TYPE;
+
+
+/**
+ * Installs the library. This is a noop if native XPath is available.
+ *
+ * @param {Window=} opt_win The window to install the library on.
+ */
+wgxpath.install = function(opt_win) {
+  var win = opt_win || goog.global;
+  var doc = win.document;
+
+  // Installation is a noop if native XPath is available.
+  if (!doc['evaluate']) {
+    win['XPathResult'] = wgxpath.XPathResult_;
+    doc['evaluate'] = function(expr, context, nsresolver, type, result) {
+      return new wgxpath.XPathExpression_(expr).evaluate(context, type);
+    };
+    doc['createExpression'] = function(expr) {
+      return new wgxpath.XPathExpression_(expr);
+    };
+  }
+};
 // Copyright 2010 WebDriver committers
 // Copyright 2010 Google Inc.
 //
@@ -32,15 +4158,13 @@ goog.require('bot.Touchscreen');
 goog.require('bot.dom');
 goog.require('bot.events');
 goog.require('bot.events.EventType');
-goog.require('bot.locators');
 goog.require('bot.userAgent');
 goog.require('goog.array');
 goog.require('goog.dom');
-goog.require('goog.dom.NodeType');
-goog.require('goog.dom.TagName');
 goog.require('goog.math.Coordinate');
 goog.require('goog.math.Rect');
 goog.require('goog.math.Vec2');
+goog.require('goog.style');
 goog.require('goog.userAgent');
 
 
@@ -138,7 +4262,7 @@ bot.action.focusOnElement = function(element) {
 bot.action.type = function(element, values, opt_keyboard) {
   bot.action.checkShown_(element);
   bot.action.checkInteractable_(element);
-  var keyboard = opt_keyboard || new bot.Keyboard();
+  var keyboard = opt_keyboard || new bot.Keyboard(null);
   keyboard.moveCursor(element);
 
   function typeValue(value) {
@@ -516,7 +4640,7 @@ bot.action.prepareToInteractWith_ = function(element, opt_coords) {
   // necessary, not scrolling at all if the element is already in view.
   var doc = goog.dom.getOwnerDocument(element);
   goog.style.scrollIntoContainerView(element,
-      goog.userAgent.WEBKIT || goog.userAgent.IE ? doc.body : doc.documentElement);
+      goog.userAgent.WEBKIT ? doc.body : doc.documentElement);
 
   // NOTE(user): Ideally, we would check that any provided coordinates fall
   // within the bounds of the element, but this has proven difficult, because:
@@ -672,9 +4796,6 @@ bot.action.scrollIntoView = function(element, opt_coords) {
 
 
 goog.provide('bot');
-
-
-goog.require('goog.userAgent');
 
 
 /**
@@ -1086,16 +5207,20 @@ goog.provide('bot.Device');
 
 goog.require('bot');
 goog.require('bot.dom');
+goog.require('bot.locators');
 goog.require('bot.userAgent');
+goog.require('goog.array');
+goog.require('goog.dom');
+goog.require('goog.dom.TagName');
 goog.require('goog.userAgent');
 goog.require('goog.userAgent.product');
-
 
 
 /**
  * A Device class that provides common functionality for input devices.
  * @param {bot.Device.ModifiersState=} opt_modifiersState state of modifier
  * keys. The state is shared, not copied from this parameter.
+ *
  * @constructor
  */
 bot.Device = function(opt_modifiersState) {
@@ -1156,6 +5281,7 @@ bot.Device.prototype.setElement = function(element) {
     this.select_ = null;
   }
 };
+
 
 /**
  * Fires an HTML event given the state of the device.
@@ -1689,6 +5815,7 @@ bot.Device.prototype.submitForm = function(form) {
   }
 };
 
+
 /**
  * Regular expression for splitting up a URL into components.
  * @type {!RegExp}
@@ -1785,14 +5912,15 @@ bot.Device.ModifiersState.prototype.isPressed = function(modifier) {
  * @param {!bot.Device.Modifier} modifier The modifier to set.
  * @param {boolean} isPressed whether the modifier is set or released.
  */
-bot.Device.ModifiersState.prototype.setPressed = function(modifier,
-                                                          isPressed) {
+bot.Device.ModifiersState.prototype.setPressed =
+    function(modifier, isPressed) {
   if (isPressed) {
     this.pressedModifiers_ = this.pressedModifiers_ | modifier;
   } else {
     this.pressedModifiers_ = this.pressedModifiers_ & (~modifier);
   }
 };
+
 
 /**
  *
@@ -1802,6 +5930,7 @@ bot.Device.ModifiersState.prototype.isShiftPressed = function() {
   return this.isPressed(bot.Device.Modifier.SHIFT);
 };
 
+
 /**
  *
  * @return {boolean} State of the Control key.
@@ -1810,6 +5939,7 @@ bot.Device.ModifiersState.prototype.isControlPressed = function() {
   return this.isPressed(bot.Device.Modifier.CONTROL);
 };
 
+
 /**
  *
  * @return {boolean} State of the Alt key.
@@ -1817,6 +5947,7 @@ bot.Device.ModifiersState.prototype.isControlPressed = function() {
 bot.Device.ModifiersState.prototype.isAltPressed = function() {
   return this.isPressed(bot.Device.Modifier.ALT);
 };
+
 
 /**
  *
@@ -1853,14 +5984,14 @@ goog.require('bot.userAgent');
 goog.require('bot.window');
 goog.require('goog.array');
 goog.require('goog.dom');
-goog.require('goog.dom.NodeIterator');
 goog.require('goog.dom.NodeType');
 goog.require('goog.dom.TagName');
+goog.require('goog.math.Box');
 goog.require('goog.math.Coordinate');
 goog.require('goog.math.Rect');
-goog.require('goog.math.Size');
 goog.require('goog.string');
 goog.require('goog.style');
+goog.require('goog.userAgent');
 
 
 /**
@@ -1900,12 +6031,12 @@ bot.dom.isElement = function(node, opt_tagName) {
  */
 bot.dom.isInteractable = function(element) {
   return bot.dom.isShown(element, /*ignoreOpacity=*/true) &&
-         bot.dom.isEnabled(element) &&
-         // check pointer-style isn't 'none'
-         // Although IE, Opera, FF < 3.6 don't care about this property.
-         (goog.userAgent.IE || goog.userAgent.OPERA || 
-           (bot.userAgent.FIREFOX_EXTENSION && bot.userAgent.isProductVersion(3.6)) ||
-           bot.dom.getEffectiveStyle(element, 'pointer-events') != 'none');
+      bot.dom.isEnabled(element) &&
+      // check pointer-style isn't 'none'
+      // Although IE, Opera, FF < 3.6 don't care about this property.
+      (goog.userAgent.IE || goog.userAgent.OPERA ||
+          (bot.userAgent.FIREFOX_EXTENSION && bot.userAgent.isProductVersion(3.6)) ||
+        bot.dom.getEffectiveStyle(element, 'pointer-events') != 'none');
 };
 
 
@@ -2040,8 +6171,8 @@ bot.dom.getProperty = function(element, propertyName) {
   if (propertyName == 'value' &&
       bot.dom.isElement(element, goog.dom.TagName.OPTION) &&
       !bot.dom.hasAttribute(element, propertyName)) {
-    // See http://www.w3.org/TR/1999/REC-html401-19991224/interact/forms.html#adef-value-OPTION
-    // IE does not adhere to this behaviour, so we hack it in.
+    // IE does not adhere to this behaviour, so we hack it in. See:
+    // http://www.w3.org/TR/1999/REC-html401-19991224/interact/forms.html#adef-value-OPTION
     value = goog.dom.getRawTextContent(element);
   }
   return value;
@@ -2125,7 +6256,7 @@ bot.dom.SPLIT_STYLE_ATTRIBUTE_ON_SEMICOLONS_REGEXP_ =
  * @return {boolean} Whether the specified attribute is a boolean attribute.
  */
 bot.dom.isBooleanAttribute = function(attributeName) {
-  return goog.array.contains(bot.dom.BOOLEAN_ATTRIBUTES_, attributeName);
+    return goog.array.contains(bot.dom.BOOLEAN_ATTRIBUTES_, attributeName);
 };
 
 
@@ -2194,7 +6325,7 @@ bot.dom.getAttribute = function(element, attributeName) {
   // out when compiled for non-IE browsers.
   if (goog.userAgent.IE) {
     if (!attr && goog.userAgent.isVersion(8) &&
-        bot.dom.isBooleanAttribute(attributeName)) {
+        goog.array.contains(bot.dom.BOOLEAN_ATTRIBUTES_, attributeName)) {
       attr = element[attributeName];
     }
   }
@@ -2209,8 +6340,8 @@ bot.dom.getAttribute = function(element, attributeName) {
   // that is sometimes false for user-specified boolean attributes.
   // IE does consistently yield 'true' or 'false' strings for boolean attribute
   // values, and so we know 'false' attribute values were not user-specified.
-  if (bot.dom.isBooleanAttribute(attributeName)) {
-    return bot.userAgent.IE_DOC_PRE9 && !attr.specified && attr.value == 'false' ? null : 'true';
+  if (goog.array.contains(bot.dom.BOOLEAN_ATTRIBUTES_, attributeName)) {
+    return bot.userAgent.IE_DOC_PRE9 && attr.value == 'false' ? null : 'true';
   }
 
   // For non-boolean attributes, we compensate for IE's extra attributes by
@@ -2307,7 +6438,7 @@ bot.dom.TEXTUAL_INPUT_TYPES_ = [
 
 
 /**
- * TODO(user): Add support for designMode elements.
+ * TODO(gdennis): Add support for designMode elements.
  *
  * @param {!Element} element The element to check.
  * @return {boolean} Whether the element accepts user-typed text.
@@ -2361,7 +6492,7 @@ bot.dom.isContentEditable = function(element) {
 
 
 /**
- * TODO(user): Merge isTextual into this function and move to bot.dom.
+ * TODO(gdennis): Merge isTextual into this function and move to bot.dom.
  * For Puppet, requires adding support to getVisibleText for grabbing
  * text from all textual elements.
  *
@@ -2425,6 +6556,11 @@ bot.dom.getInlineStyle = function(elem, styleName) {
  */
 bot.dom.getEffectiveStyle = function(elem, propertyName) {
   var styleName = goog.string.toCamelCase(propertyName);
+  if (styleName == 'float' ||
+      styleName == 'cssFloat' ||
+      styleName == 'styleFloat') {
+    styleName = bot.userAgent.IE_DOC_PRE9 ? 'styleFloat' : 'cssFloat';
+  }
   var style = goog.style.getComputedStyle(elem, styleName) ||
       bot.dom.getCascadedStyle_(elem, styleName);
   if (style === null) {
@@ -2472,7 +6608,7 @@ bot.dom.getCascadedStyle_ = function(elem, styleName) {
 bot.dom.isBodyScrollBarShown_ = function(bodyElement) {
   if (!bot.dom.isElement(bodyElement, goog.dom.TagName.BODY)) {
     // bail
-  }
+    }
 
   var bodyOverflow = bot.dom.getEffectiveStyle(bodyElement, 'overflow');
   if (bodyOverflow != 'hidden') {
@@ -2557,7 +6693,7 @@ bot.dom.isShown = function(elem, opt_ignoreOpacity) {
     }
     var mapDoc = goog.dom.getOwnerDocument(elem);
     var mapImage;
-    // TODO(user): Avoid brute-force search once a cross-browser xpath
+    // TODO(gdennis): Avoid brute-force search once a cross-browser xpath
     // locator is available.
     if (mapDoc['evaluate']) {
       // The "//*" XPath syntax can confuse the closure compiler, so we use
@@ -2566,13 +6702,14 @@ bot.dom.isShown = function(elem, opt_ignoreOpacity) {
       // TODO(jleyba): Restrict to applet, img, input:image, and object nodes.
       var imageXpath = '/descendant::*[@usemap = "#' + elem.name + '"]';
 
-      // TODO(user): Break dependency of bot.locators on bot.dom,
+      // TODO(gdennis): Break dependency of bot.locators on bot.dom,
       // so bot.locators.findElement can be called here instead.
       mapImage = bot.locators.xpath.single(imageXpath, mapDoc);
     } else {
       mapImage = goog.dom.findNode(mapDoc, function(n) {
         return bot.dom.isElement(n) &&
-               bot.dom.getAttribute(n, 'usemap') == '#' + elem.name;
+               bot.dom.getAttribute(
+                   /** @type {!Element} */ (n), 'usemap') == '#' + elem.name;
       });
     }
     return !!mapImage && bot.dom.isShown((/** @type {!Element} */ mapImage),
@@ -2716,10 +6853,11 @@ bot.dom.appendVisibleTextLinesFromElement_ = function(elem, lines) {
     return (/** @type {string|undefined} */ goog.array.peek(lines)) || '';
   }
 
-  // TODO(user): Add case here for textual form elements.
+  // TODO(gdennis): Add case here for textual form elements.
   if (bot.dom.isElement(elem, goog.dom.TagName.BR)) {
     lines.push('');
   } else {
+    // TODO: properly handle display:run-in
     var isTD = bot.dom.isElement(elem, goog.dom.TagName.TD);
     var display = bot.dom.getEffectiveStyle(elem, 'display');
     // On some browsers, table cells incorrectly show up with block styles.
@@ -2863,7 +7001,7 @@ bot.dom.appendVisibleTextLinesFromTextNode_ = function(textNode, lines,
  * @return {number} Opacity between 0 and 1.
  */
 bot.dom.getOpacity = function(elem) {
-  // TODO(BobS): Does this need to deal with rgba colors?
+  // TODO(bsilverberg): Does this need to deal with rgba colors?
   if (!goog.userAgent.IE) {
     return bot.dom.getOpacityNonIE_(elem);
   } else {
@@ -3247,7 +7385,7 @@ bot.ErrorCode = {
   IME_NOT_AVAILABLE: 30,
   IME_ENGINE_ACTIVATION_FAILED: 31,
   INVALID_SELECTOR_ERROR: 32,
-  SESSION_NOT_CREATED: 33,          
+  SESSION_NOT_CREATED: 33,
   MOVE_TARGET_OUT_OF_BOUNDS: 34,
   SQL_DATABASE_ERROR: 35
 };
@@ -3375,8 +7513,9 @@ goog.require('goog.userAgent.product');
  * @const
  * @type {boolean}
  */
-bot.events.SUPPORTS_TOUCH_EVENTS = !goog.userAgent.IE && !goog.userAgent.OPERA;
-
+bot.events.SUPPORTS_TOUCH_EVENTS = !(goog.userAgent.IE &&
+                                   !bot.userAgent.isEngineVersion(10)) &&
+                                   !goog.userAgent.OPERA;
 
 /**
  * Whether the browser supports a native touch api.
@@ -3653,19 +7792,19 @@ bot.events.MouseEventFactory_.prototype.create = function(target, opt_args) {
       Object.defineProperty( event, "pageX", {
         get: function() {
           return args.clientX +
-            ( doc && doc.scrollLeft || body && body.scrollLeft || 0 ) -
-            ( doc && doc.clientLeft || body && body.clientLeft || 0 );
+              ( doc && doc.scrollLeft || body && body.scrollLeft || 0 ) -
+              ( doc && doc.clientLeft || body && body.clientLeft || 0 );
         }
       });
       Object.defineProperty( event, "pageY", {
         get: function() {
           return args.clientY +
-          ( doc && doc.scrollTop || body && body.scrollTop || 0 ) -
-          ( doc && doc.clientTop || body && body.clientTop || 0 );
-        }
+              ( doc && doc.scrollTop || body && body.scrollTop || 0 ) -
+              ( doc && doc.clientTop || body && body.clientTop || 0 );
+          }
       });
     }
-  }
+}
 
   return event;
 };
@@ -3849,6 +7988,8 @@ bot.events.EventType = {
   BLUR: new bot.events.EventFactory_('blur', false, false),
   CHANGE: new bot.events.EventFactory_('change', true, false),
   FOCUS: new bot.events.EventFactory_('focus', false, false),
+  FOCUSIN: new bot.events.EventFactory_('focusin', true, false),
+  FOCUSOUT: new bot.events.EventFactory_('focusout', true, false),
   INPUT: new bot.events.EventFactory_('input', false, false),
   PROPERTYCHANGE: new bot.events.EventFactory_('propertychange', false, false),
   SELECT: new bot.events.EventFactory_('select', true, false),
@@ -3896,7 +8037,7 @@ bot.events.fire = function(target, type, opt_args) {
   // Ensure the event's isTrusted property is set to false, so that
   // bot.events.isSynthetic() can identify synthetic events from native ones.
   if (!('isTrusted' in event)) {
-    event.isTrusted = false;
+    event['isTrusted'] = false;
   }
 
   if (bot.userAgent.IE_DOC_PRE9) {
@@ -3916,7 +8057,7 @@ bot.events.fire = function(target, type, opt_args) {
  */
 bot.events.isSynthetic = function(event) {
   var e = event.getBrowserEvent ? event.getBrowserEvent() : event;
-  return 'isTrusted' in e ? !e.isTrusted : false;
+  return 'isTrusted' in e ? !e['isTrusted'] : false;
 };
 // Copyright 2011 WebDriver committers
 // Copyright 2011 Google Inc.
@@ -3942,8 +8083,8 @@ bot.events.isSynthetic = function(event) {
 goog.provide('bot.frame');
 
 goog.require('bot.locators');
-goog.require('goog.array');
 goog.require('goog.dom');
+goog.require('goog.dom.TagName');
 
 
 /**
@@ -4106,9 +8247,12 @@ goog.require('bot');
 goog.require('bot.Error');
 goog.require('bot.ErrorCode');
 goog.require('bot.json');
+/**
+ * @suppress {extraRequire} Used as a forward declaration which causes
+ * compilation errors if missing.
+ */
 goog.require('bot.response.ResponseObject');
 goog.require('goog.array');
-goog.require('goog.dom');
 goog.require('goog.dom.NodeType');
 goog.require('goog.object');
 
@@ -4378,7 +8522,8 @@ bot.inject.executeAsyncScript = function(fn, args, timeout, onDone,
   var sendError = goog.partial(sendResponse, bot.ErrorCode.UNKNOWN_ERROR);
 
   if (win.closed) {
-    return sendError('Unable to execute script; the target window is closed.');
+    sendError('Unable to execute script; the target window is closed.');
+    return;
   }
 
   fn = bot.inject.recompileFunction_(fn, win);
@@ -4670,6 +8815,7 @@ goog.require('bot.ErrorCode');
 goog.require('bot.dom');
 goog.require('bot.events.EventType');
 goog.require('goog.array');
+goog.require('goog.dom.TagName');
 goog.require('goog.dom.selection');
 goog.require('goog.events.KeyCodes');
 goog.require('goog.structs.Map');
@@ -4682,7 +8828,7 @@ goog.require('goog.userAgent');
  * A keyboard that provides atomic typing actions.
  *
  * @constructor
- * @param {Array.<!bot.Keyboard.Key>=} opt_state Optional keyboard state.
+ * @param {Array.<!bot.Keyboard.Key>} opt_state Optional keyboard state.
  * @extends {bot.Device}
  */
 bot.Keyboard = function(opt_state) {
@@ -4718,6 +8864,7 @@ goog.inherits(bot.Keyboard, bot.Device);
  * @private
  */
 bot.Keyboard.CHAR_TO_KEY_ = {};
+
 
 /**
  * Constructs a new key and, if it is a character key, adds a mapping from the
@@ -4756,6 +8903,8 @@ bot.Keyboard.newKey_ = function(code, opt_char, opt_shiftChar) {
 
   return key;
 };
+
+
 
 /**
  * A key on the keyboard.
@@ -4903,7 +9052,6 @@ bot.Keyboard.Keys = {
   // Punctuation keys
   EQUALS: bot.Keyboard.newKey_(
       {gecko: 107, ieWebkit: 187, opera: 61}, '=', '+'),
-  SEPARATOR: bot.Keyboard.newKey_(108, ','),
   HYPHEN: bot.Keyboard.newKey_(
       {gecko: 109, ieWebkit: 189, opera: 109}, '-', '_'),
   COMMA: bot.Keyboard.newKey_(188, ',', '<'),
@@ -4955,7 +9103,7 @@ bot.Keyboard.Key.fromChar = function(ch) {
 /**
  * Array of modifier keys.
  *
- * @type {!Array.<bot.Keyboard.Key>}
+ * @type {!Array.<!bot.Keyboard.Key>}
  * @const
  */
 bot.Keyboard.MODIFIERS = [
@@ -4973,16 +9121,17 @@ bot.Keyboard.MODIFIERS = [
 bot.Keyboard.MODIFIER_TO_KEY_MAP_ = (function() {
   var modifiersMap = new goog.structs.Map();
   modifiersMap.set(bot.Device.Modifier.SHIFT,
-    bot.Keyboard.Keys.SHIFT);
+      bot.Keyboard.Keys.SHIFT);
   modifiersMap.set(bot.Device.Modifier.CONTROL,
-    bot.Keyboard.Keys.CONTROL);
+      bot.Keyboard.Keys.CONTROL);
   modifiersMap.set(bot.Device.Modifier.ALT,
-    bot.Keyboard.Keys.ALT);
+      bot.Keyboard.Keys.ALT);
   modifiersMap.set(bot.Device.Modifier.META,
-    bot.Keyboard.Keys.META);
+      bot.Keyboard.Keys.META);
 
   return modifiersMap;
 })();
+
 
 /**
  * The reverse map - key to modifier.
@@ -4992,11 +9141,34 @@ bot.Keyboard.MODIFIER_TO_KEY_MAP_ = (function() {
 bot.Keyboard.KEY_TO_MODIFIER_ = (function(modifiersMap) {
   var keyToModifierMap = new goog.structs.Map();
   goog.array.forEach(modifiersMap.getKeys(), function(m) {
-    keyToModifierMap.set(modifiersMap.get(m).code, m);
+      keyToModifierMap.set(modifiersMap.get(m).code, m);
   });
 
   return keyToModifierMap;
 })(bot.Keyboard.MODIFIER_TO_KEY_MAP_);
+
+
+/**
+ * Set the modifier state if the provided key is one, otherwise just add
+ * to the list of pressed keys.
+ * @param {bot.Keyboard.Key} key
+ * @param {boolean} isPressed
+ * @private
+ */
+bot.Keyboard.prototype.setKeyPressed_ = function(key, isPressed) {
+  if (goog.array.contains(bot.Keyboard.MODIFIERS, key)) {
+    var modifier = /** @type {bot.Device.Modifier}*/
+        bot.Keyboard.KEY_TO_MODIFIER_.get(key.code);
+    this.modifiersState.setPressed(modifier, isPressed);
+  }
+
+  if (isPressed) {
+    this.pressed_.add(key);
+  } else {
+    this.pressed_.remove(key);
+  }
+};
+
 
 /**
  * The value used for newlines in the current browser/OS combination. Although
@@ -5020,26 +9192,6 @@ bot.Keyboard.prototype.isPressed = function(key) {
   return this.pressed_.contains(key);
 };
 
-/**
- * Set the modifier state if the provided key is one, otherwise just add
- * to the list of pressed keys.
- * @param {bot.Keyboard.Key} key
- * @param {boolean} isPressed
- * @private
- */
-bot.Keyboard.prototype.setKeyPressed_ = function(key, isPressed) {
-  if (goog.array.contains(bot.Keyboard.MODIFIERS, key)) {
-    var modifier = /** @type {bot.Device.Modifier}*/
-      bot.Keyboard.KEY_TO_MODIFIER_.get(key.code);
-    this.modifiersState.setPressed(modifier, isPressed);
-  }
-
-  if (isPressed) {
-    this.pressed_.add(key);
-  } else {
-    this.pressed_.remove(key);
-  }
-};
 
 /**
  * Presses the given key on the keyboard. Keys that are pressed can be pressed
@@ -5216,7 +9368,7 @@ bot.Keyboard.prototype.getChar_ = function(key) {
  * @private
  */
 bot.Keyboard.KEYPRESS_EDITS_TEXT_ = goog.userAgent.GECKO &&
-    !bot.userAgent.isEngineVersion(12)
+    !bot.userAgent.isEngineVersion(12);
 
 
 /**
@@ -5377,7 +9529,6 @@ bot.Keyboard.prototype.getState = function() {
   return this.pressed_.getValues();
 };
 
-
 /**
  * Returns the state of the modifier keys, to be shared with other input
  * devices.
@@ -5386,7 +9537,8 @@ bot.Keyboard.prototype.getState = function() {
  */
 bot.Keyboard.prototype.getModifiersState = function() {
   return this.modifiersState
-};// Copyright 2011 WebDriver committers
+};
+// Copyright 2011 WebDriver committers
 // Copyright 2011 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -5417,7 +9569,6 @@ goog.require('bot.dom');
 goog.require('bot.events.EventType');
 goog.require('bot.userAgent');
 goog.require('goog.dom');
-goog.require('goog.dom.Range');
 goog.require('goog.dom.TagName');
 goog.require('goog.math.Coordinate');
 goog.require('goog.style');
@@ -5430,6 +9581,7 @@ goog.require('goog.userAgent');
  * supports having one button pressed at a time.
  * @param {bot.Mouse.State=} opt_state The mouse's initial state.
  * @param {bot.Device.ModifiersState=} opt_modifiersState State of the keyboard.
+ *
  * @constructor
  * @extends {bot.Device}
  */
@@ -5496,13 +9648,13 @@ goog.inherits(bot.Mouse, bot.Device);
 
 
 /**
- * @typedef {{buttonPressed: ?bot.Mouse.Button,
- *           elementPressed: Element,
- *           clientXY: !goog.math.Coordinate,
- *           nextClickIsDoubleClick: boolean,
- *           hasEverInteracted: boolean,
- *           element: Element}}
- */
+  * @typedef {{buttonPressed: ?bot.Mouse.Button,
+  *           elementPressed: Element,
+  *           clientXY: !goog.math.Coordinate,
+  *           nextClickIsDoubleClick: boolean,
+  *           hasEverInteracted: boolean,
+  *           element: Element}}
+  */
 bot.Mouse.State;
 
 
@@ -5716,10 +9868,20 @@ bot.Mouse.prototype.move = function(element, coords) {
       this.fireMouseEvent_(bot.events.EventType.MOUSEOUT, element);
     }
     this.setElement(element);
-    this.fireMouseEvent_(bot.events.EventType.MOUSEOVER, fromElement);
+
+    // All browsers except IE fire the mouseover before the mousemove.
+    if (!goog.userAgent.IE) {
+      this.fireMouseEvent_(bot.events.EventType.MOUSEOVER, fromElement);
+    }
   }
 
   this.fireMouseEvent_(bot.events.EventType.MOUSEMOVE);
+
+  // IE fires the mouseover event after the mousemove.
+  if (goog.userAgent.IE && element != fromElement) {
+    this.fireMouseEvent_(bot.events.EventType.MOUSEOVER, fromElement);
+  }
+
   this.nextClickIsDoubleClick_ = false;
 };
 
@@ -5795,9 +9957,9 @@ bot.Mouse.prototype.getButtonValue_ = function(eventType) {
 };
 
 /**
-* Serialize the current state of the mouse.
-* @return {!bot.Mouse.State} The current mouse state.
-*/
+ * Serialize the current state of the mouse.
+ * @return {!bot.Mouse.State} The current mouse state.
+ */
 bot.Mouse.prototype.getState = function () {
   var state = {};
   state.buttonPressed = this.buttonPressed_;
@@ -5807,7 +9969,8 @@ bot.Mouse.prototype.getState = function () {
   state.hasEverInteracted = this.hasEverInteracted_;
   state.element = this.getElement();
   return state;
-};// Copyright 2011 Software Freedom Conservancy. All Rights Reserved.
+};
+// Copyright 2011 Software Freedom Conservancy. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -5943,7 +10106,6 @@ goog.require('bot.ErrorCode');
 goog.require('bot.events.EventType');
 goog.require('goog.math.Coordinate');
 goog.require('goog.style');
-goog.require('goog.userAgent.product');
 
 
 
@@ -5955,11 +10117,10 @@ goog.require('goog.userAgent.product');
  * The touchscreen supports three actions: press, release, and move.
  *
  * @constructor
- * @param {bot.Device.ModifiersState=} opt_modifiersState
  * @extends {bot.Device}
  */
-bot.Touchscreen = function(opt_modifiersState) {
-  goog.base(this, opt_modifiersState);
+bot.Touchscreen = function() {
+  goog.base(this);
 
   /**
    * @type {!goog.math.Coordinate}
@@ -6351,8 +10512,6 @@ goog.require('bot');
 goog.require('bot.Error');
 goog.require('bot.ErrorCode');
 goog.require('bot.userAgent');
-goog.require('goog.array');
-goog.require('goog.dom');
 goog.require('goog.math.Coordinate');
 goog.require('goog.math.Size');
 goog.require('goog.userAgent');
@@ -7204,10 +11363,13 @@ goog.provide('bot.locators.xpath');
 goog.require('bot');
 goog.require('bot.Error');
 goog.require('bot.ErrorCode');
+goog.require('bot.userAgent');
 goog.require('goog.array');
 goog.require('goog.dom');
 goog.require('goog.dom.NodeType');
 goog.require('goog.userAgent');
+goog.require('wgxpath');
+goog.require('goog.userAgent.product');
 
 
 /**
@@ -7256,22 +11418,40 @@ bot.locators.xpath.DEFAULT_RESOLVER_ = (function() {
  */
 bot.locators.xpath.evaluate_ = function(node, path, resultType) {
   var doc = goog.dom.getOwnerDocument(node);
-  try {
-    if (!doc.implementation ||
-        !doc.implementation.hasFeature('XPath', '3.0')) {
+  if (goog.userAgent.IE) {
+    wgxpath.install(goog.dom.getWindow(doc));
+  } else {
+    try {
+      if (!doc.implementation ||
+          !doc.implementation.hasFeature('XPath', '3.0')) {
+        return null;
+      }
+    } catch (ex) {
+      // If the document isn't ready yet, Firefox may throw NS_ERROR_UNEXPECTED on
+      // accessing doc.implementation
       return null;
     }
-  } catch (ex) {
-    // If the document isn't ready yet, Firefox may throw NS_ERROR_UNEXPECTED on
-    // accessing doc.implementation
-    return null;
   }
   try {
-    // Android 2.2 and earlier do not support createNSResolver
+    // On Android 2.2 and earlier, the evaluate function is only defined on the
+    // top-level document.
+    var docForEval;
+    if (goog.userAgent.product.ANDROID &&
+        !bot.userAgent.isProductVersion(2.3)) {
+      try {
+        docForEval = goog.dom.getWindow(doc).top.document;
+      } catch (e) {
+        // Crossed domains trying to find the evaluate function.
+        // Return null to indicate the element could not be found.
+        return null;
+      }
+    } else {
+      docForEval = doc;
+    }
     var resolver = doc.createNSResolver ?
         doc.createNSResolver(doc.documentElement) :
         bot.locators.xpath.DEFAULT_RESOLVER_;
-    return doc.evaluate(path, node, resolver, resultType, null);
+    return docForEval.evaluate(path, node, resolver, resultType, null);
   } catch (ex) {
     // The Firefox XPath evaluator can throw an exception if the document is
     // queried while it's in the midst of reloading, so we ignore it. In all
@@ -7452,10 +11632,10 @@ goog.require('bot.html5');
  * @return {boolean} Whether the browser currently has an internet
  *     connection.
  */
-bot.connection.isOnline = function(aWindow) {
+bot.connection.isOnline = function() {
 
-  var win = aWindow || bot.getWindow();
-  if (bot.html5.isSupported(bot.html5.API.BROWSER_CONNECTION, win)) {
+  if (bot.html5.isSupported(bot.html5.API.BROWSER_CONNECTION)) {
+    var win = bot.getWindow();
     return win.navigator.onLine;
   } else {
     throw new bot.Error(bot.ErrorCode.UNKNOWN_ERROR,
@@ -7488,7 +11668,6 @@ goog.provide('bot.storage.database.ResultSet');
 goog.require('bot');
 goog.require('bot.Error');
 goog.require('bot.ErrorCode');
-goog.require('bot.html5');
 
 
 /**

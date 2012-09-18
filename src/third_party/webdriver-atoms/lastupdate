@@ -1,8 +1,7 @@
-2012-09-09 22:00:25
+2012-09-18 23:14:47
 
 ------------------------------------------------------------------------
-r17778 | jmleyba@gmail.com | 2012-09-09 06:20:57 +0100 (Sun, 09 Sep 2012) | 2 lines
+r17829 | simon.m.stewart | 2012-09-18 16:35:00 +0100 (Tue, 18 Sep 2012) | 1 line
 
-JasonLeyba: Fix a bunch of lint errors identified by the closure-linter.
-
+SimonStewart: Fix the build by adding in the missing param and return types. Quite why the js compiler is choking on this is left as an exercise to the interested reader: the @override annotation should have been enough of a hint.
 ------------------------------------------------------------------------
