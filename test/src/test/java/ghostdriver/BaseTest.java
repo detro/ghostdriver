@@ -15,7 +15,7 @@ import java.net.URL;
  */
 public abstract class BaseTest {
     private WebDriver mDriver = null;
-    private static final String GHOSTDRIVER_URL = "http://localhost:8080";
+    private static final String GHOSTDRIVER_URL = "http://localhost:8080/wd/hub";
 
     @Before
     public void prepareDriver() throws Exception
