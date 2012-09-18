@@ -1,18 +1,17 @@
 package ghostdriver;
 
 import org.junit.Test;
-import java.util.Date;
-import java.util.Set;
-
+import org.openqa.selenium.Cookie;
 import org.openqa.selenium.InvalidCookieDomainException;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.Cookie;
+
+import java.util.Date;
 
 import static org.junit.Assert.*;
 
 public class CookieTest extends BaseTest {
     @Test
-    public void shouldBeAbleToAddCookie() throws InterruptedException {
+    public void shouldBeAbleToAddCookie() {
         WebDriver d = getDriver();
         d.get("http://www.github.com");
 
@@ -31,7 +30,7 @@ public class CookieTest extends BaseTest {
         assertTrue(myCookieIsBack.getDomain().contains("github"));
     }
 
-	@Test
+    @Test
     public void shouldRetainCookieInfo() {
         WebDriver d = getDriver();
         d.get("https://github.com/");
@@ -42,13 +41,12 @@ public class CookieTest extends BaseTest {
         assertEquals(d.manage().getCookies().size(), 0);
 
         // Added cookie (in a sub-path - allowed)
-        Cookie addedCookie =
-            new Cookie.Builder("fish", "cod")
-                .expiresOn(new Date(System.currentTimeMillis() + 100 * 1000)) //< now + 100sec
-                .path("/404")
-                .isSecure(true)
-                .domain("github.com")
-                .build();
+        Cookie addedCookie = new Cookie.Builder("fish", "cod")
+                        .expiresOn(new Date(System.currentTimeMillis() + 100 * 1000)) //< now + 100sec
+                        .path("/404")
+                        .isSecure(true)
+                        .domain("github.com")
+                        .build();
         d.manage().addCookie(addedCookie);
 
         // Search cookie on the root-path and fail to find it
@@ -78,8 +76,7 @@ public class CookieTest extends BaseTest {
         d.get("https://www.google.com/");
 
         // Added cookie (in a sub-path)
-        Cookie addedCookie =
-                new Cookie.Builder("fish", "cod")
+        Cookie addedCookie = new Cookie.Builder("fish", "cod")
                         .expiresOn(new Date(System.currentTimeMillis() + 100 * 1000)) //< now + 100sec
                         .path("/404")
                         .isSecure(true)
@@ -88,8 +85,8 @@ public class CookieTest extends BaseTest {
         d.manage().addCookie(addedCookie);
     }
 
-	@Test
-	public void shouldBeAllowedToDeleteAllCookiesWhenNoCookiesSet() {
+    @Test
+    public void shouldAllowToDeleteCookiesEvenIfNotSet() {
         WebDriver d = getDriver();
         d.get("https://github.com/");
 
@@ -98,13 +95,14 @@ public class CookieTest extends BaseTest {
         d.manage().deleteAllCookies();
         assertEquals(d.manage().getCookies().size(), 0);
 
-		// All cookies deleted, call deleteAllCookies again. Should be a no-op.
+        // All cookies deleted, call deleteAllCookies again. Should be a no-op.
         d.manage().deleteAllCookies();
+        d.manage().deleteCookieNamed("non_existing_cookie");
         assertEquals(d.manage().getCookies().size(), 0);
-	}
+    }
 
-	@Test
-	public void shouldBeAbleToSetCookieThatExpiresInThePast() {
+    @Test
+    public void shouldAllowToSetCookieThatIsAlreadyExpired() {
         WebDriver d = getDriver();
         d.get("https://github.com/");
 
@@ -114,14 +112,12 @@ public class CookieTest extends BaseTest {
         assertEquals(d.manage().getCookies().size(), 0);
 
         // Added cookie that expires in the past
-        Cookie addedCookie =
-            new Cookie.Builder("expired", "yes")
-                .expiresOn(new Date(System.currentTimeMillis() - 1000)) //< now - 1 second
-                .build();
+        Cookie addedCookie = new Cookie.Builder("expired", "yes")
+                        .expiresOn(new Date(System.currentTimeMillis() - 1000)) //< now - 1 second
+                        .build();
         d.manage().addCookie(addedCookie);
 
         Cookie cookie = d.manage().getCookieNamed("expired");
-        assertNull(
-            "Cookie expired before it was set, so nothing should be returned: " + cookie, cookie);
-	}
+        assertNull(cookie);
+    }
 }

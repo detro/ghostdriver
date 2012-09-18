@@ -615,11 +615,15 @@ ghostdriver.SessionReqHand = function(session) {
         var postObj = JSON.parse(req.post || "{}");
 
         if (postObj.cookie) {
+            // JavaScript deals with Timestamps in "milliseconds since epoch": normalize!
             if (postObj.cookie.expiry) {
-                // JavaScript deals with Timestamps in "milliseconds since epoch"
                 postObj.cookie.expiry *= 1000;
             }
-            if (_session.getCurrentWindow().addCookie(postObj.cookie)) {
+
+            // If the cookie is expired OR if it was successfully added
+            if ((postObj.cookie.expiry && postObj.cookie.expiry <= new Date().getTime()) ||
+                _session.getCurrentWindow().addCookie(postObj.cookie)) {
+                // Notify success
                 res.success(_session.getId());
             } else {
                 // Something went wrong while trying to set the cookie
@@ -656,27 +660,15 @@ ghostdriver.SessionReqHand = function(session) {
     },
 
     _deleteCookieCommand = function(req, res) {
-        var deleted;
         if (req.urlParsed.chunks.length === 2) {
             // delete only 1 cookie among the one visible to this page
-            deleted = _session.getCurrentWindow().deleteCookie(req.urlParsed.chunks[1]);
+            _session.getCurrentWindow().deleteCookie(req.urlParsed.chunks[1]);
         } else {
             // delete all the cookies visible to this page
-            deleted = _session.getCurrentWindow().clearCookies();
+            _session.getCurrentWindow().clearCookies();
         }
 
-        if (deleted) {
-            res.success(_session.getId());
-        } else {
-            // Something went wrong when trying to delete the cookie
-            _errors.handleFailedCommandEH(
-                _errors.FAILED_CMD_STATUS.UNABLE_TO_SET_COOKIE,
-                "Unable to set Cookie",
-                req,
-                res,
-                _session,
-                "SessionReqHand");
-        }
+        res.success(_session.getId());
     },
 
     _deleteWindowCommand = function(req, res) {
