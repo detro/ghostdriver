@@ -471,63 +471,57 @@ ghostdriver.SessionReqHand = function(session) {
 
     _postFrameCommand = function(req, res) {
         var postObj = JSON.parse(req.post),
-            frameElement = null,
-            result;
+            frameName,
+            switched = false;
 
         if (typeof(postObj) === "object" && typeof(postObj.id) !== "undefined") {
             if(postObj.id === null) {
                 // Reset focus on the topmost (main) Frame
-                _session.getCurrentWindow().evaluate(
-                    require("./webdriver_atoms.js").get("execute_script"),
-                    "return top.focus();");
-                res.success(_session.getId());
-                return; //< we are done here: no need go further
-            }
-
-            if (typeof(postObj.id) === "number") {
-                // Search frame by "index" within the "window.frames" array
-                result = _session.getCurrentWindow().evaluate(
-                    require("./webdriver_atoms.js").get("execute_script"),
-                    "var el = null; " +
-                        "if (typeof(window.frames[arguments[0]]) !== 'undefined') { " +
-                            "el = window.frames[arguments[0]].frameElement; " +
-                        "} " +
-                        "return el; ",
-                    [postObj.id]);
-
-                // Check if the Frame was found
-                if (result.status === 0 && typeof(result.value) === "object") {
-                    frameElement = result.value;
-                }
+                _session.getCurrentWindow().switchToMainFrame();
+                switched = true;
+            } else if (typeof(postObj.id) === "number") {
+                // Switch frame by "index"
+                switched = _session.getCurrentWindow().switchToFrame(postObj.id);
             } else if (typeof(postObj.id) === "string") {
-                // Search frame by "name" and, if not found, by "id"
-                result = _session.getCurrentWindow().evaluate(
-                    require("./webdriver_atoms.js").get("execute_script"),
-                    "var el = null; " +
-                        "el = document.querySelector(\"[name='\"+arguments[0]+\"']\"); " +
-                        "if (el === null) { " +
-                            "el = document.querySelector('#'+arguments[0]); " +
-                        "} " +
-                        "return el; ",
-                    [postObj.id]);
+                // Switch frame by "name" and, if not found, by "id"
+                switched = _session.getCurrentWindow().switchToFrame(postObj.id);
 
-                // Check if the Frame was found
-                if (result.status === 0 && typeof(result.value) === "object") {
-                    frameElement = result.value;
+                // If we haven't switched, let's try to find the frame "name" using it's "id"
+                if (!switched) {
+                    // fetch the frame "name" via "id"
+                    frameName = _session.getCurrentWindow().evaluate(function(frameId) {
+                        var el = null;
+                        el = document.querySelector('#'+frameId);
+                        if (el !== null) {
+                            return el.name;
+                        }
+                        return null;
+                    }, postObj.id);
+
+                    // Switch frame by "name"
+                    switched = _session.getCurrentWindow().switchToFrame(frameName);
                 }
             } else if (typeof(postObj.id) === "object" && typeof(postObj.id["ELEMENT"]) === "string") {
-                // Will use the Element JSON as is
-                frameElement = postObj.id;
+                // Will use the Element JSON to find the frame name
+                frameName = _session.getCurrentWindow().evaluate(
+                    require("./webdriver_atoms.js").get("execute_script"),
+                    "return arguments[0].name;",
+                    [postObj.id]);
+
+                // If a name was found
+                if (frameName && frameName.value) {
+                    // Switch frame by "name"
+                    switched = _session.getCurrentWindow().switchToFrame(frameName.value);
+                } else {
+                    // No name was found
+                    switched = false;
+                }
             } else {
                 throw _errors.createInvalidReqInvalidCommandMethodEH(req);
             }
 
-            // Send a positive response if the element was found...
-            if (frameElement !== null) {
-                result = _session.getCurrentWindow().evaluate(
-                    require("./webdriver_atoms.js").get("execute_script"),
-                    "return arguments[0].focus();",
-                    [frameElement]);
+            // Send a positive response if the switch was successful
+            if (switched) {
                 res.success(_session.getId());
             } else {
                 // ... otherwise, throw the appropriate exception

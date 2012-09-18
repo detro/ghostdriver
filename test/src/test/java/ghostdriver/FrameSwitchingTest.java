@@ -1,16 +1,14 @@
 package ghostdriver;
 
-import java.lang.Thread;
-import java.lang.InterruptedException;
 import org.junit.Test;
+import org.openqa.selenium.*;
+
 import static org.junit.Assert.assertEquals;
-import org.openqa.selenium.By;
-import org.openqa.selenium.NoSuchFrameException;
-import org.openqa.selenium.WebDriver;
+import static org.junit.Assert.assertNull;
 
 public class FrameSwitchingTest extends BaseTest {
     @Test
-    public void switchToFrameByNumber() throws Exception {
+    public void switchToFrameByNumber() {
         WebDriver d = getDriver();
         d.get("http://docs.wpm.neustar.biz/testscript-api/index.html");
         d.switchTo().frame(0);
@@ -19,7 +17,7 @@ public class FrameSwitchingTest extends BaseTest {
     }
 
     @Test
-    public void switchToFrameByName() throws Exception {
+    public void switchToFrameByName() {
         WebDriver d = getDriver();
         d.get("http://docs.wpm.neustar.biz/testscript-api/index.html");
         d.switchTo().frame("packageFrame");
@@ -28,7 +26,7 @@ public class FrameSwitchingTest extends BaseTest {
     }
 
     @Test
-    public void switchToFrameByElement() throws Exception {
+    public void switchToFrameByElement() {
         WebDriver d = getDriver();
         d.get("http://docs.wpm.neustar.biz/testscript-api/index.html");
         d.switchTo().frame(d.findElement(By.name("packageFrame")));
@@ -43,33 +41,37 @@ public class FrameSwitchingTest extends BaseTest {
         d.switchTo().frame("unavailable frame");
     }
 
-	@Test
+    private String getCurrentFrameName(WebDriver driver) {
+        return (String)((JavascriptExecutor) driver).executeScript("return window.frameElement ? window.frameElement.name : '__MAIN_FRAME__';");
+    }
+
+    @Test(expected = NoSuchElementException.class)
     public void testShouldBeAbleToClickInAFrame() throws InterruptedException {
         WebDriver d = getDriver();
 
-		d.get("http://docs.wpm.neustar.biz/testscript-api/index.html");
+        d.get("http://docs.wpm.neustar.biz/testscript-api/index.html");
+        assertEquals("__MAIN_FRAME__", getCurrentFrameName(d));
+
         d.switchTo().frame("classFrame");
+        assertEquals("classFrame", getCurrentFrameName(d));
 
-        // This should replace frame "classFrame" ...
+        // This should cause a reload in the frame "classFrame"
         d.findElement(By.linkText("HttpClient")).click();
+        // Wait for new content to load in the frame.
+        // To avoid a dependency on WebDriverWait, we will hard-code a sleep for now.
+        Thread.sleep(2000);
 
-		// To avoid a dependency on WebDriverWait, we will hard-code a
-		// sleep for now.
-		Thread.sleep(2000);
+        // Frame should still be "classFrame"
+        assertEquals("classFrame", getCurrentFrameName(d));
 
-        // driver should still be focused on frame "classFrame" ...
-		String text = d.findElement(By.linkText("clearCookies")).getText();
-        assertEquals("clearCookies", text);
+        // Check if a link "clearCookies()" is there where expected
+        assertEquals("clearCookies", d.findElement(By.linkText("clearCookies")).getText());
 
-		// Make sure it was really frame "classFrame" which was replaced ...
-        d.switchTo().defaultContent().switchTo().frame("classFrame");
-
-		// To avoid a dependency on WebDriverWait, we will hard-code a
-		// sleep for now.
-		Thread.sleep(2000);
-
-		// Reverify the text
-		text = d.findElement(By.linkText("clearCookies")).getText();
-        assertEquals("clearCookies", text);
+        // Make sure it was really frame "classFrame" which was replaced:
+        // 1. move to the other frame "packageFrame"
+        d.switchTo().defaultContent().switchTo().frame("packageFrame");
+        assertEquals("packageFrame", getCurrentFrameName(d));
+        // 2. the link "clearCookies()" shouldn't be there anymore
+        d.findElement(By.linkText("clearCookies"));
     }
 }
