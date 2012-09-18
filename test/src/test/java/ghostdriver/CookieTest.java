@@ -87,4 +87,41 @@ public class CookieTest extends BaseTest {
                         .build();
         d.manage().addCookie(addedCookie);
     }
+
+	@Test
+	public void shouldBeAllowedToDeleteAllCookiesWhenNoCookiesSet() {
+        WebDriver d = getDriver();
+        d.get("https://github.com/");
+
+        // Clear all cookies
+        assertTrue(d.manage().getCookies().size() > 0);
+        d.manage().deleteAllCookies();
+        assertEquals(d.manage().getCookies().size(), 0);
+
+		// All cookies deleted, call deleteAllCookies again. Should be a no-op.
+        d.manage().deleteAllCookies();
+        assertEquals(d.manage().getCookies().size(), 0);
+	}
+
+	@Test
+	public void shouldBeAbleToSetCookieThatExpiresInThePast() {
+        WebDriver d = getDriver();
+        d.get("https://github.com/");
+
+        // Clear all cookies
+        assertTrue(d.manage().getCookies().size() > 0);
+        d.manage().deleteAllCookies();
+        assertEquals(d.manage().getCookies().size(), 0);
+
+        // Added cookie that expires in the past
+        Cookie addedCookie =
+            new Cookie.Builder("expired", "yes")
+                .expiresOn(new Date(System.currentTimeMillis() - 1000)) //< now - 1 second
+                .build();
+        d.manage().addCookie(addedCookie);
+
+        Cookie cookie = d.manage().getCookieNamed("expired");
+        assertNull(
+            "Cookie expired before it was set, so nothing should be returned: " + cookie, cookie);
+	}
 }
