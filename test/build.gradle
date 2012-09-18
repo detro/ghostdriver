@@ -38,4 +38,8 @@ test {
     onOutput { descriptor, event ->
         logger.lifecycle("Test: " + descriptor + " produced standard out/err: " + event.message )
     }
+
+	if (project.hasProperty('driver')) {
+		systemProperty 'ghostdriver.test.driver', project.driver
+	}
 }

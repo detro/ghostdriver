@@ -22,8 +22,11 @@ public abstract class BaseTest {
     {
         DesiredCapabilities capabilities = new DesiredCapabilities();
         capabilities.setJavascriptEnabled(true);
-        mDriver = new RemoteWebDriver(new URL(GHOSTDRIVER_URL), capabilities);
-//        mDriver = new FirefoxDriver(capabilities);
+        if (System.getProperty("ghostdriver.test.driver", "").equals("firefox")) {
+            mDriver = new FirefoxDriver(capabilities);
+        } else {
+            mDriver = new RemoteWebDriver(new URL(GHOSTDRIVER_URL), capabilities);
+        }
     }
 
     protected WebDriver getDriver() {
