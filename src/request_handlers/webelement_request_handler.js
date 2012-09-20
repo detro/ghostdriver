@@ -61,8 +61,6 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
 
         // console.log("Request => " + JSON.stringify(req, null, '  '));
 
-        // TODO lots to do...
-
         if (req.urlParsed.file === _const.ELEMENT && req.method === "POST") {
             _postFindElementCommand(req, res, _locator.locateElement);
             return;
@@ -120,8 +118,6 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
             res.success(_session.getId(), _getJSON());
             return;
         } // else ...
-
-        // TODO lots to do...
 
         throw _errors.createInvalidReqInvalidCommandMethodEH(req);
     },
@@ -351,7 +347,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
                 if (elementOrElements.status == 0) {
                     // If the value does not have a length property, it's a single element, so return it.
                     // If the value does have a length property, it's an array, so return the array only
-                    // if it has more than one element. 
+                    // if it has more than one element.
                     if (!elementOrElements.value["length"] ||
                         (elementOrElements.value["length"] && elementOrElements.value.length > 0)) {
                         res.success(_session.getId(), elementOrElements.value);

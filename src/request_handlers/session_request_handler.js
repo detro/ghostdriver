@@ -735,17 +735,17 @@ ghostdriver.SessionReqHand = function(session) {
         //  greater (or equal) than current time
         do {
             elementOrElements = locatorMethod(JSON.parse(req.post));
-            if (elementOrElements) {
-                if (elementOrElements.status == 0) {
-                    // If the value does not have a length property, it's a single element, so return it.
-                    // If the value does have a length property, it's an array, so return the array only
-                    // if it has more than one element.
-                    if (!elementOrElements.value["length"] ||
-                        (elementOrElements.value["length"] && elementOrElements.value.length > 0)) {
-                        res.success(_session.getId(), elementOrElements.value);
-                        return;
-                    }
-                }
+
+            // console.log("Element or Elements: "+JSON.stringify(elementOrElements));
+
+            if (elementOrElements &&
+                elementOrElements.hasOwnProperty("status") &&
+                elementOrElements.status === 0 &&
+                elementOrElements.hasOwnProperty("value")) {
+
+                res.success(_session.getId(), elementOrElements.value);
+                return;
+
             }
         } while(searchStartTime + _session.getTimeout(_session.timeoutNames().IMPLICIT) >= new Date().getTime());
 

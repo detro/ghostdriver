@@ -41,6 +41,7 @@ ghostdriver.WebElementLocator = function(session) {
         "xpath"                                 //< Returns an element matching an XPath expression.
     ],
     _session = session,
+    _errors = require("./errors.js"),
 
     _find = function(what, locator, rootElement) {
         var findRes,
@@ -81,15 +82,22 @@ ghostdriver.WebElementLocator = function(session) {
         var findElementRes = _find("element", locator, rootElement);
 
         // console.log("Locator: "+JSON.stringify(locator));
+        // console.log("Find Element Result: "+JSON.stringify(findElementRes));
 
         // If found
-        if (findElementRes !== null && typeof(findElementRes) === "object" &&
+        if (findElementRes !== null &&
+            typeof(findElementRes) === "object" &&
             typeof(findElementRes.status) !== "undefined") {
-            // If the atom succeeds, but returns a null value, the element
-            // is not found.
-            if (findElementRes.status == 0 && findElementRes.value == null) {
-                findElementRes.status = 7
-                findElementRes.value = { "message": "Unable to find element with " + locator.using + " '" + locator.value + "'"};
+            // If the atom succeeds, but returns a null value, the element was not found.
+            if (findElementRes.status === 0 && findElementRes.value === null) {
+                findElementRes.status = _errors.FAILED_CMD_STATUS_CODES[
+                    _errors.FAILED_CMD_STATUS.NO_SUCH_ELEMENT
+                ];
+                findElementRes.value = {
+                    "message": "Unable to find element with " +
+                        locator.using + " '" +
+                        locator.value + "'"
+                };
             }
             return findElementRes;
         }
@@ -106,10 +114,16 @@ ghostdriver.WebElementLocator = function(session) {
             i, ilen;
 
         // console.log("Locator: "+JSON.stringify(locator));
+        // console.log("Find Element(s) Result: "+JSON.stringify(findElementsRes));
 
-        // If found
-        if (findElementsRes !== null && typeof(findElementsRes) === "object" &&
-            typeof(findElementsRes.status) !== "undefined") {
+        // If something was found
+        if (findElementsRes !== null &&
+            typeof(findElementsRes) === "object" &&
+            findElementsRes.hasOwnProperty("status") &&
+            typeof(findElementsRes.status) === "number" &&
+            findElementsRes.hasOwnProperty("value") &&
+            findElementsRes.value !== null &&
+            typeof(findElementsRes.value) === "object") {
             return findElementsRes;
         }
 

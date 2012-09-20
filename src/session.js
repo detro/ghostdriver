@@ -72,20 +72,23 @@ ghostdriver.Session = function(desiredCapabilities) {
         var args = Array.prototype.splice.call(arguments, 0), //< convert 'arguments' to a real Array
             timer;
 
-        // Separating arguments for the 'evaluate' call from the callback handlers
-        // NOTE: I'm also passing 'evalFunc' as first parameter for the 'evaluate' call, and '0' as timeout
+        // Separating arguments for the 'evaluate' call
+        // from the callback handlers.
+        // NOTE: I'm also passing 'evalFunc' as first parameter
+        // for the 'evaluate' call, and '0' as timeout.
         args.splice(0, 3, evalFunc, 0);
 
         // Register event handlers
         this.setOneShotCallback("onLoadStarted", function() {
             // console.log("onLoadStarted");
-            clearTimeout(timer);                            //< Load Started: we'll wait for "onLoadFinished" now
+            // Load Started: we'll wait for "onLoadFinished" now
+            clearTimeout(timer);
         });
         this.setOneShotCallback("onLoadFinished", function() {
             // console.log("onLoadFinished");
             onLoadFunc();
         });
-        this.setOneShotCallback("onError", function() {     //< TODO Currently broken in PhantomJS, fixed by using "evaluateAsync"
+        this.setOneShotCallback("onError", function() {
             // console.log("onError");
             clearTimeout(timer);
             onErrorFunc();
