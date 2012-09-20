@@ -139,4 +139,17 @@ public class FrameSwitchingTest extends BaseTest {
         // 2. the link "clearCookies()" shouldn't be there anymore
         d.findElement(By.linkText("clearCookies"));
     }
+
+    @Test
+    public void titleShouldReturnWindowTitle() {
+        WebDriver d = getDriver();
+        d.get("http://docs.wpm.neustar.biz/testscript-api/index.html");
+        assertEquals("__MAIN_FRAME__", getCurrentFrameName(d));
+		String topLevelTitle = d.getTitle();
+        d.switchTo().frame("packageFrame");
+        assertEquals("packageFrame", getCurrentFrameName(d));
+        assertEquals(topLevelTitle, d.getTitle());
+        d.switchTo().defaultContent();
+        assertEquals(topLevelTitle, d.getTitle());
+    }
 }
