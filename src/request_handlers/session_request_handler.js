@@ -429,6 +429,8 @@ ghostdriver.SessionReqHand = function(session) {
             pageOpenTimeout = _session.getTimeout(_session.timeoutNames().PAGE_LOAD);
 
         if (typeof(postObj) === "object" && postObj.url) {
+            // Switch to the main frame first
+            _session.getCurrentWindow().switchToMainFrame();
             // Open the given URL and, when done, return "HTTP 200 OK"
             _session.getCurrentWindow().evaluateAndWaitForLoad(
                 function(url) {
