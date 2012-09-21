@@ -3,10 +3,7 @@ package ghostdriver;
 import org.junit.Test;
 import org.openqa.selenium.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.*;
 
 public class FrameSwitchingTest extends BaseTest {
 
@@ -145,7 +142,7 @@ public class FrameSwitchingTest extends BaseTest {
         WebDriver d = getDriver();
         d.get("http://docs.wpm.neustar.biz/testscript-api/index.html");
         assertEquals("__MAIN_FRAME__", getCurrentFrameName(d));
-		String topLevelTitle = d.getTitle();
+        String topLevelTitle = d.getTitle();
         d.switchTo().frame("packageFrame");
         assertEquals("packageFrame", getCurrentFrameName(d));
         assertEquals(topLevelTitle, d.getTitle());
@@ -167,5 +164,23 @@ public class FrameSwitchingTest extends BaseTest {
         String framePageSource = d.getPageSource();
         assertFalse(pageSource.equals(framePageSource));
         assertTrue("Page source was: " + framePageSource, framePageSource.contains("Interface Summary"));
+    }
+
+    @Test
+    public void shouldFocusOnTheReplacementWhenAFrameFollowsALinkToA_TopTargettedPage() throws Exception {
+        WebDriver d = getDriver();
+        d.get("http://ci.seleniumhq.org:2310/common/frameset.html");
+
+        d.switchTo().frame(0);
+        d.findElement(By.linkText("top")).click();
+
+        String expectedTitle = "XHTML Test Page";
+
+        // Wait for new content to load in the frame.
+        // To avoid a dependency on WebDriverWait, we will hard-code a sleep for now.
+        Thread.sleep(2000);
+        assertEquals(expectedTitle, d.getTitle());
+        WebElement element = d.findElement(By.id("only-exists-on-xhtml"));
+        assertNotNull(element);
     }
 }
