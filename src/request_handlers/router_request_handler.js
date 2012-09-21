@@ -60,16 +60,16 @@ ghostdriver.RouterReqHand = function() {
                 req.url = req.urlParsed.source.replace(/^\/wd\/hub/, '');
                 req.urlParsed = require("./third_party/parseuri.js").parse(req.url);
             }
-            if (req.urlParsed.file === _const.STATUS) {                             // GET '/status'
+            if (req.urlParsed.file === _const.STATUS) {                 // GET '/status'
                 _statusRH.handle(req, res);
-            } else if (req.urlParsed.file === _const.SHUTDOWN) {                    // GET '/shutdown'
+            } else if (req.urlParsed.file === _const.SHUTDOWN) {        // GET '/shutdown'
                 _shutdownRH.handle(req, res);
                 phantom.exit();
-            } else if (req.urlParsed.file === _const.SESSION ||                     // POST '/session'
-                req.urlParsed.file === _const.SESSIONS ||                           // GET '/sessions'
-                req.urlParsed.directory === _const.SESSION_DIR) {                   // GET or DELETE '/session/:id'
+            } else if (req.urlParsed.file === _const.SESSION ||         // POST '/session'
+                req.urlParsed.file === _const.SESSIONS ||               // GET '/sessions'
+                req.urlParsed.directory === _const.SESSION_DIR) {       // GET or DELETE '/session/:id'
                 _sessionManRH.handle(req, res);
-            } else if (req.urlParsed.chunks[0] === _const.SESSION) {      // GET, POST or DELETE '/session/:id/...'
+            } else if (req.urlParsed.chunks[0] === _const.SESSION) {    // GET, POST or DELETE '/session/:id/...'
                 // Retrieve session
                 session = _sessionManRH.getSession(req.urlParsed.chunks[1]);
 
