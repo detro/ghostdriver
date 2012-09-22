@@ -152,4 +152,20 @@ public class FrameSwitchingTest extends BaseTest {
         d.switchTo().defaultContent();
         assertEquals(topLevelTitle, d.getTitle());
     }
+
+    @Test
+    public void pageSourceShouldReturnSourceOfFocusedFrame() throws InterruptedException {
+        WebDriver d = getDriver();
+        d.get("http://docs.wpm.neustar.biz/testscript-api/index.html");
+
+        String pageSource = d.getPageSource();
+        // Wait for new content to load in the frame.
+        // To avoid a dependency on WebDriverWait, we will hard-code a sleep for now.
+        Thread.sleep(2000);
+
+        d.switchTo().frame("classFrame");
+        String framePageSource = d.getPageSource();
+        assertFalse(pageSource.equals(framePageSource));
+        assertTrue("Page source was: " + framePageSource, framePageSource.contains("Interface Summary"));
+    }
 }

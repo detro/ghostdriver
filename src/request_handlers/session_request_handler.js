@@ -541,7 +541,7 @@ ghostdriver.SessionReqHand = function(session) {
     },
 
     _getSourceCommand = function(req, res) {
-        var source = _session.getCurrentWindow().content;
+        var source = _session.getCurrentWindow().frameContent;
         res.success(_session.getId(), source);
     },
 
