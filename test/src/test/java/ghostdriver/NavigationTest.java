@@ -24,4 +24,18 @@ public class NavigationTest extends BaseTest {
         d.navigate().forward();
         assertTrue(d.getTitle().toLowerCase().contains("HTML5".toLowerCase()));
     }
+
+    @Test
+    public void navigateBackWithNoHistory() throws Exception {
+        // Quit the existing driver, and create a brand-new fresh
+        // one to insure we have no history.
+        quitDriver();
+        prepareDriver();
+        WebDriver d = getDriver();
+        d.navigate().back();
+        d.navigate().forward();
+
+        // Make sure explicit navigation still works.
+        d.get("http://google.com");
+    }
 }
