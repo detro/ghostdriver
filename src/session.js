@@ -104,8 +104,8 @@ ghostdriver.Session = function(desiredCapabilities) {
         var thePage = this;
 
         this[callbackName] = function() {
-            handlerFunc.apply(thePage, arguments);  //< call the actual handler
             thePage[callbackName] = null;           //< once done, get rid of the handling
+            handlerFunc.apply(thePage, arguments);  //< call the actual handler
         };
     },
 
