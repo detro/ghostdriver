@@ -716,8 +716,7 @@ ghostdriver.SessionReqHand = function(session) {
     },
 
     _getTitleCommand = function(req, res) {
-        var result = _session.getCurrentWindow().evaluate(function() { return window.top.document.title; });
-        res.success(_session.getId(), result);
+        res.success(_session.getId(), _session.getCurrentWindow().title);
     },
 
     _locateElementCommand = function(req, res, locatorMethod) {
