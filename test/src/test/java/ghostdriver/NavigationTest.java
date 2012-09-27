@@ -27,11 +27,10 @@ public class NavigationTest extends BaseTest {
 
     @Test
     public void navigateBackWithNoHistory() throws Exception {
-        // Quit the existing driver, and create a brand-new fresh
-        // one to insure we have no history.
-        quitDriver();
-        prepareDriver();
+        // Fresh Driver (every test gets one)
         WebDriver d = getDriver();
+
+        // Navigate back and forward: should be a no-op, given we haven't loaded anything yet
         d.navigate().back();
         d.navigate().forward();
 

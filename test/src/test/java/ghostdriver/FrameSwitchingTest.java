@@ -2,6 +2,8 @@ package ghostdriver;
 
 import org.junit.Test;
 import org.openqa.selenium.*;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 import static org.junit.Assert.*;
 
@@ -62,7 +64,7 @@ public class FrameSwitchingTest extends BaseTest {
     }
 
     @Test(expected = NoSuchElementException.class)
-    public void testShouldBeAbleToClickInAFrame() throws InterruptedException {
+    public void shouldBeAbleToClickInAFrame() throws InterruptedException {
         WebDriver d = getDriver();
 
         d.get("http://docs.wpm.neustar.biz/testscript-api/index.html");
@@ -73,9 +75,10 @@ public class FrameSwitchingTest extends BaseTest {
 
         // This should cause a reload in the frame "classFrame"
         d.findElement(By.linkText("HttpClient")).click();
+
         // Wait for new content to load in the frame.
-        // To avoid a dependency on WebDriverWait, we will hard-code a sleep for now.
-        Thread.sleep(2000);
+        WebDriverWait wait = new WebDriverWait(d, 10);
+        wait.until(ExpectedConditions.titleContains("HttpClient"));
 
         // Frame should still be "classFrame"
         assertEquals("classFrame", getCurrentFrameName(d));
@@ -119,9 +122,10 @@ public class FrameSwitchingTest extends BaseTest {
 
         // This should cause a reload in the frame "classFrame"
         d.findElement(By.linkText("HttpClient")).click();
+
         // Wait for new content to load in the frame.
-        // To avoid a dependency on WebDriverWait, we will hard-code a sleep for now.
-        Thread.sleep(2000);
+        WebDriverWait wait = new WebDriverWait(d, 10);
+        wait.until(ExpectedConditions.titleContains("HttpClient"));
 
         // Frame should still be "classFrame"
         assertEquals("classFrame", getCurrentFrameName(d));
@@ -155,32 +159,29 @@ public class FrameSwitchingTest extends BaseTest {
         WebDriver d = getDriver();
         d.get("http://docs.wpm.neustar.biz/testscript-api/index.html");
 
+        // Compare source before and after the frame switch
         String pageSource = d.getPageSource();
-        // Wait for new content to load in the frame.
-        // To avoid a dependency on WebDriverWait, we will hard-code a sleep for now.
-        Thread.sleep(2000);
-
         d.switchTo().frame("classFrame");
         String framePageSource = d.getPageSource();
         assertFalse(pageSource.equals(framePageSource));
+
         assertTrue("Page source was: " + framePageSource, framePageSource.contains("Interface Summary"));
     }
 
     @Test
-    public void shouldFocusOnTheReplacementWhenAFrameFollowsALinkToA_TopTargettedPage() throws Exception {
+    public void shouldSwitchBackToMainFrameIfLinkInFrameCausesTopFrameReload() throws Exception {
         WebDriver d = getDriver();
         d.get("http://ci.seleniumhq.org:2310/common/frameset.html");
 
         d.switchTo().frame(0);
         d.findElement(By.linkText("top")).click();
 
-        String expectedTitle = "XHTML Test Page";
-
         // Wait for new content to load in the frame.
-        // To avoid a dependency on WebDriverWait, we will hard-code a sleep for now.
-        Thread.sleep(2000);
-        assertEquals(expectedTitle, d.getTitle());
-        WebElement element = d.findElement(By.id("only-exists-on-xhtml"));
+        String expectedTitle = "XHTML Test Page";
+        WebDriverWait wait = new WebDriverWait(d, 10);
+        wait.until(ExpectedConditions.titleIs(expectedTitle));
+
+        WebElement element = d.findElement(By.id("amazing"));
         assertNotNull(element);
     }
 }
