@@ -38,15 +38,6 @@ js_deps(name = "deps",
           "//javascript/webdriver/atoms:deps"])
 
 # Atoms exposed for GhostDriver
-js_fragment(name = "back",
-  module = "bot.window",
-  function = "bot.window.back",
-  deps = [ "//javascript/atoms:deps" ])
-
-js_fragment(name = "forward",
-  module = "bot.window",
-  function = "bot.window.forward",
-  deps = [ "//javascript/atoms:deps" ])
 
 js_fragment(name = "get_element_from_cache",
   module = "bot.inject.cache",
@@ -112,8 +103,6 @@ js_fragment(name = "rotate",
 # List of Atoms that will be compiled for GhostDriver
 js_deps(name = "build_atoms",
   deps = [
-    ":back",
-    ":forward",
     ":get_element_from_cache",
 
     ":focus_on_element",

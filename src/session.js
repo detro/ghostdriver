@@ -66,11 +66,53 @@ ghostdriver.Session = function(desiredCapabilities) {
     },
     _windows = {},  //< NOTE: windows are "webpage" in Phantom-dialect
     _currentWindowHandle = null,
-    _id = (++ghostdriver.Session.instanceCounter) + '', //< must be a string, even if I use progressive integers as unique ID
+    _id = (++ghostdriver.Session.instanceCounter).toString(), //< must be a string, even if I use progressive integers as unique ID
+
+    _execFuncAndWaitForLoadDecorator = function(func, onLoadFunc, onErrorFunc) {
+        // convert 'arguments' to a real Array
+        var args = Array.prototype.splice.call(arguments, 0),
+            timer,
+            thisPage = this;
+
+        // Separating arguments for the "function call"
+        // from the callback handlers.
+        args.splice(0, 3);
+
+        // Register event handlers
+        this.setOneShotCallback("onLoadFinished", function() {
+            // console.log("onLoadFinished");
+            clearTimeout(timer);
+            onLoadFunc();
+        });
+        this.setOneShotCallback("onError", function(message, stack) {
+            // console.log("onError: "+message+"\n");
+            // stack.forEach(function(item) {
+            //     var message = item.file + ":" + item.line;
+            //     if (item["function"])
+            //         message += " in " + item["function"];
+            //     console.log("  " + message);
+            // });
+
+            thisPage.stop(); //< stop the page from loading
+            clearTimeout(timer);
+            onErrorFunc();
+        });
+
+        // Starting timer
+        timer = setTimeout(function() {
+            thisPage.stop(); //< stop the page from loading
+            onErrorFunc();
+        }, _getTimeout(_const.TIMEOUT_NAMES.PAGE_LOAD));
+
+        // We are ready to Eval
+        func.apply(this, args);
+    },
 
     _evaluateAndWaitForLoadDecorator = function(evalFunc, onLoadFunc, onErrorFunc) {
-        var args = Array.prototype.splice.call(arguments, 0), //< convert 'arguments' to a real Array
-            timer;
+        // convert 'arguments' to a real Array
+        var args = Array.prototype.splice.call(arguments, 0),
+            timer,
+            thisPage = this;
 
         // Separating arguments for the 'evaluate' call
         // from the callback handlers.
@@ -79,22 +121,30 @@ ghostdriver.Session = function(desiredCapabilities) {
         args.splice(0, 3, evalFunc, 0);
 
         // Register event handlers
-        this.setOneShotCallback("onLoadStarted", function() {
-            // console.log("onLoadStarted");
-            // Load Started: we'll wait for "onLoadFinished" now
-            clearTimeout(timer);
-        });
         this.setOneShotCallback("onLoadFinished", function() {
             // console.log("onLoadFinished");
+            clearTimeout(timer);
             onLoadFunc();
         });
-        this.setOneShotCallback("onError", function() {
-            // console.log("onError");
+        this.setOneShotCallback("onError", function(message, stack) {
+            // console.log("onError: "+message+"\n");
+            // stack.forEach(function(item) {
+            //     var message = item.file + ":" + item.line;
+            //     if (item["function"])
+            //         message += " in " + item["function"];
+            //     console.log("  " + message);
+            // });
+
+            thisPage.stop(); //< stop the page from loading
             clearTimeout(timer);
             onErrorFunc();
         });
+
         // Starting timer
-        timer = setTimeout(onErrorFunc, _getTimeout(_const.TIMEOUT_NAMES.PAGE_LOAD));
+        timer = setTimeout(function() {
+            thisPage.stop(); //< stop the page from loading
+            onErrorFunc();
+        }, _getTimeout(_const.TIMEOUT_NAMES.PAGE_LOAD));
 
         // We are ready to Eval
         this.evaluateAsync.apply(this, args);
@@ -131,6 +181,7 @@ ghostdriver.Session = function(desiredCapabilities) {
         page.windowHandle = "WH-" + new Date().getTime() + '-' + Math.random();
         // 2. Utility methods
         page.evaluateAndWaitForLoad = _evaluateAndWaitForLoadDecorator;
+        page.execFuncAndWaitForLoad = _execFuncAndWaitForLoadDecorator;
         page.setOneShotCallback = _setOneShotCallbackDecorator;
         // 3. Store every newly created page
         page.onPageCreated = _addNewPage;

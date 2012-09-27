@@ -145,6 +145,9 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
 
     _getLocation = function() {
         var result = _getLocationResult();
+
+        // console.log("Location: "+JSON.stringify(result));
+
         if (result.status === 0) {
             return result.value;
         } else {
@@ -154,6 +157,9 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
 
     _getLocationCommand = function(req, res) {
         var locationRes = _getLocationResult();
+
+        // console.log("Location (cmd): "+JSON.stringify(locationRes));
+
         res.respondBasedOnResult(_session, req, locationRes);
     },
 
@@ -161,6 +167,8 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         var scrollRes = _session.getCurrentWindow().evaluate(
                 require("./webdriver_atoms.js").get("scroll_into_view"),
                 _getJSON());
+
+        // console.log("Scrolling into View result: "+JSON.stringify(scrollRes));
 
         scrollRes = JSON.parse(scrollRes);
         if (scrollRes && scrollRes.status === 0) {

@@ -313,30 +313,43 @@ ghostdriver.SessionReqHand = function(session) {
     },
 
     _refreshCommand = function(req, res) {
-        var successHand = _createOnSuccessHandler(res);
+        var successHand = _createOnSuccessHandler(res),
+            currWindow = _session.getCurrentWindow();
 
-        _session.getCurrentWindow().evaluateAndWaitForLoad(
-            function() { window.location.reload(true); }, //< 'reload(true)' force reload from the server
+        currWindow.execFuncAndWaitForLoad(
+            function() { currWindow.reload(); },
             successHand,
             successHand); //< We don't care if 'refresh' fails
     },
 
     _backCommand = function(req, res) {
-        var successHand = _createOnSuccessHandler(res);
+        var successHand = _createOnSuccessHandler(res),
+            currWindow = _session.getCurrentWindow();
 
-        _session.getCurrentWindow().evaluateAndWaitForLoad(
-            require("./webdriver_atoms.js").get("back"),
-            successHand,
-            successHand); //< We don't care if 'back' fails
+        if (currWindow.canGoBack) {
+            currWindow.execFuncAndWaitForLoad(
+                function() { currWindow.back(); },
+                successHand,
+                successHand); //< We don't care if 'back' fails
+        } else {
+            // We can't go back, and that's ok
+            successHand();
+        }
     },
 
     _forwardCommand = function(req, res) {
-        var successHand = _createOnSuccessHandler(res);
+        var successHand = _createOnSuccessHandler(res),
+            currWindow = _session.getCurrentWindow();
 
-        _session.getCurrentWindow().evaluateAndWaitForLoad(
-            require("./webdriver_atoms.js").get("forward"),
-            successHand,
-            successHand); //< We don't care if 'forward' fails
+        if (currWindow.canGoForward) {
+            currWindow.execFuncAndWaitForLoad(
+                function() { currWindow.forward(); },
+                successHand,
+                successHand); //< We don't care if 'back' fails
+        } else {
+            // We can't go back, and that's ok
+            successHand();
+        }
     },
 
     _executeCommand = function(req, res) {

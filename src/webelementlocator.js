@@ -53,6 +53,8 @@ ghostdriver.WebElementLocator = function(session) {
             locator.using && locator.value &&         //< if well-formed input
             _supportedStrategies.indexOf(locator.using) >= 0) {  //< and if strategy is recognized
 
+            // console.log("Find element using Locator: " + JSON.stringify(locator));
+
             // Ensure "rootElement" is valid, otherwise undefine-it
             if (!rootElement || typeof(rootElement) !== "object" || !rootElement["ELEMENT"]) {
                 rootElement = undefined;
