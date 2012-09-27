@@ -439,28 +439,29 @@ ghostdriver.SessionReqHand = function(session) {
     _postUrlCommand = function(req, res) {
         // Load the given URL in the Page
         var postObj = JSON.parse(req.post),
-            pageOpenTimeout = _session.getTimeout(_session.timeoutNames().PAGE_LOAD);
+            currWindow = _session.getCurrentWindow();
 
         if (typeof(postObj) === "object" && postObj.url) {
             // Switch to the main frame first
-            _session.getCurrentWindow().switchToMainFrame();
-            // Open the given URL and, when done, return "HTTP 200 OK"
-            _session.getCurrentWindow().evaluateAndWaitForLoad(
-                function(url) {
-                    window.location.assign(url);
-                },
+            currWindow.switchToMainFrame();
+            // Load URL and wait for load to finish (or timeout)
+            currWindow.execFuncAndWaitForLoad(
                 function() {
-                    res.success(_session.getId());
+                    currWindow.open(postObj.url);
                 },
-                function() {
+                _createOnSuccessHandler(res),           //< success
+                function() {                            //< failure/timeout
+                    // Request timed out
                     _errors.handleFailedCommandEH(
-                        _errors.FAILED_CMD_STATUS.TIMEOUT,
-                        "URL '"+postObj.url+"' didn't load within "+pageOpenTimeout+"ms",
-                        req,
-                        res,
-                        _session,
-                        "SessionReqHand");
-                }, postObj.url);
+                            _errors.FAILED_CMD_STATUS.TIMEOUT,
+                            "URL '" + postObj.url + "' didn't load within " +
+                                _session.getTimeout(_session.timeoutNames().PAGE_LOAD) +
+                                "ms",
+                            req,
+                            res,
+                            _session,
+                            "SessionReqHand");
+                });
         } else {
             throw _errors.createInvalidReqMissingCommandParameterEH(req);
         }
