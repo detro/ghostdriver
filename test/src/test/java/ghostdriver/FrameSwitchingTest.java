@@ -171,15 +171,20 @@ public class FrameSwitchingTest extends BaseTest {
     @Test
     public void shouldSwitchBackToMainFrameIfLinkInFrameCausesTopFrameReload() throws Exception {
         WebDriver d = getDriver();
+        String expectedTitle = "Unique title";
+
         d.get("http://ci.seleniumhq.org:2310/common/frameset.html");
+        assertEquals(expectedTitle, d.findElement(By.tagName("title")).getText());
 
         d.switchTo().frame(0);
+        assertEquals("", d.findElement(By.tagName("title")).getText());
         d.findElement(By.linkText("top")).click();
 
         // Wait for new content to load in the frame.
-        String expectedTitle = "XHTML Test Page";
+        expectedTitle = "XHTML Test Page";
         WebDriverWait wait = new WebDriverWait(d, 10);
         wait.until(ExpectedConditions.titleIs(expectedTitle));
+        assertEquals(expectedTitle, d.findElement(By.tagName("title")).getText());
 
         WebElement element = d.findElement(By.id("amazing"));
         assertNotNull(element);

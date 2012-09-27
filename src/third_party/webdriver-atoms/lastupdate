@@ -1,7 +1,7 @@
-2012-09-25 14:23:46
+2012-09-27 18:19:58
 
 ------------------------------------------------------------------------
-r17368 | james.h.evans.jr@gmail.com | 2012-07-09 15:08:22 +0100 (Mon, 09 Jul 2012) | 1 line
+r17878 | james.h.evans.jr@gmail.com | 2012-09-27 17:07:19 +0100 (Thu, 27 Sep 2012) | 1 line
 
-JimEvans: Updating .NET version numbers to 2.25 and updating .NET CHANGELOG.
+JimEvans: For the injected getText atom, wrap webdriver.atoms.element.getText instead of just bot.dom.getVisibleText.
 ------------------------------------------------------------------------
