@@ -395,8 +395,11 @@ ghostdriver.SessionReqHand = function(session) {
     _executeAsyncCommand = function(req, res) {
         var postObj = JSON.parse(req.post);
 
+        // console.log("executeAsync - " + JSON.stringify(postObj));
+
         if (typeof(postObj) === "object" && postObj.script && postObj.args) {
             _session.getCurrentWindow().setOneShotCallback("onCallback", function() {
+                // console.log("onCallback - " + JSON.stringify(postObj));
                 res.respondBasedOnResult(_session, req, arguments[0]);
             });
 

@@ -151,11 +151,11 @@ ghostdriver.Session = function(desiredCapabilities) {
     },
 
     _setOneShotCallbackDecorator = function(callbackName, handlerFunc) {
-        var thePage = this;
+        var thisPage = this;
 
-        this[callbackName] = function() {
-            thePage[callbackName] = null;           //< once done, get rid of the handling
-            handlerFunc.apply(thePage, arguments);  //< call the actual handler
+        thisPage[callbackName] = function() {
+            thisPage[callbackName] = null;           //< once done, get rid of the handling
+            handlerFunc.apply(thisPage, arguments);  //< call the actual handler
         };
     },
 

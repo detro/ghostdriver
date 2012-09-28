@@ -36,8 +36,10 @@ public class ScriptExecutionTest extends BaseTest {
         WebDriver d = getDriver();
         d.manage().timeouts().setScriptTimeout(0, TimeUnit.MILLISECONDS);
         d.get("http://www.google.com/");
-        Number result = (Number) ((JavascriptExecutor) d)
-            .executeAsyncScript("arguments[arguments.length - 1](arguments[0] + arguments[1]);", 1, 2);
+        Number result = (Number) ((JavascriptExecutor) d).executeAsyncScript(
+                "arguments[arguments.length - 1](arguments[0] + arguments[1]);",
+                1,
+                2);
         assertEquals(3, result.intValue());
 
         // Verify that a future navigation does not cause the driver to have problems.
@@ -49,9 +51,11 @@ public class ScriptExecutionTest extends BaseTest {
         WebDriver d = getDriver();
         d.manage().timeouts().setScriptTimeout(0, TimeUnit.MILLISECONDS);
         d.get("http://www.google.com/");
-		Number numericResult = (Number) ((JavascriptExecutor) d).executeAsyncScript("arguments[arguments.length - 1](123);");
+        Number numericResult = (Number) ((JavascriptExecutor) d).executeAsyncScript(
+                "arguments[arguments.length - 1](123);");
         assertEquals(123, numericResult.intValue());
-		String stringResult = (String) ((JavascriptExecutor) d).executeAsyncScript("arguments[arguments.length - 1]('abc');");
+        String stringResult = (String) ((JavascriptExecutor) d).executeAsyncScript(
+                "arguments[arguments.length - 1]('abc');");
         assertEquals("abc", stringResult);
     }
 }
