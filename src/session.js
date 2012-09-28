@@ -197,13 +197,13 @@ ghostdriver.Session = function(desiredCapabilities) {
         var page = null,
             k;
 
-        if (_windows.hasOwnProperty(handleOrName)) {
+        if (_isValidWindowHandle(handleOrName)) {
             // Search by "handle"
             page = _windows[handleOrName];
         } else {
             // Search by "name"
             for (k in _windows) {
-                if (_windows[k].name === handleOrName) {
+                if (_windows[k].windowName === handleOrName) {
                     page = _windows[k];
                     break;
                 }
@@ -267,7 +267,14 @@ ghostdriver.Session = function(desiredCapabilities) {
     },
 
     _getCurrentWindowHandle = function() {
+        if (!_isValidWindowHandle(_currentWindowHandle)) {
+            return null;
+        }
         return _currentWindowHandle;
+    },
+
+    _isValidWindowHandle = function(handle) {
+        return _windows.hasOwnProperty(handle);
     },
 
     _getWindowHandles = function() {
@@ -309,7 +316,8 @@ ghostdriver.Session = function(desiredCapabilities) {
         closeWindow : _closeWindow,
         getWindowsCount : _getWindowsCount,
         getCurrentWindowHandle : _getCurrentWindowHandle,
-        getWindowHandles : _getWindowHandles,
+        getWindowHandles: _getWindowHandles,
+        isValidWindowHandle: _isValidWindowHandle,
         aboutToDelete : _aboutToDelete,
         setTimeout : _setTimeout,
         getTimeout : _getTimeout,
