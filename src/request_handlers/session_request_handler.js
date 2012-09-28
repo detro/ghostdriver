@@ -680,7 +680,6 @@ ghostdriver.SessionReqHand = function(session) {
             // delete all the cookies visible to this page
             _session.getCurrentWindow().clearCookies();
         }
-
         res.success(_session.getId());
     },
 
