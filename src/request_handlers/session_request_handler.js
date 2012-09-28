@@ -739,18 +739,25 @@ ghostdriver.SessionReqHand = function(session) {
     _locateElementCommand = function(req, res, locatorMethod) {
         // Search for a WebElement on the Page
         var elementOrElements,
-            searchStartTime = new Date().getTime();
+            searchStartTime = new Date().getTime(),
+            request = {};
 
         // If a "locatorMethod" was not provided, default to "locateElement"
         if(typeof(locatorMethod) !== "function") {
             locatorMethod = _locator.locateElement;
         }
 
+        // Some language bindings can send a null instead of an empty
+        // JSON object for the getActiveElement command.
+        if (req.post) {
+            request = JSON.parse(req.post);
+        }
+
         // Try to find the element
         //  and retry if "startTime + implicitTimeout" is
         //  greater (or equal) than current time
         do {
-            elementOrElements = locatorMethod(JSON.parse(req.post));
+            elementOrElements = locatorMethod(request);
 
             // console.log("Element or Elements: "+JSON.stringify(elementOrElements));
 
