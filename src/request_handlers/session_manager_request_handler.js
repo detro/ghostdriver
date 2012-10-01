@@ -33,7 +33,7 @@ ghostdriver.SessionManagerReqHand = function() {
     _protoParent = ghostdriver.SessionManagerReqHand.prototype,
     _sessions = {}, //< will store key/value pairs like 'SESSION_ID : SESSION_OBJECT'
     _sessionRHs = {},
-    _errors = require("./errors.js"),
+    _errors = _protoParent.errors,
     _CLEANUP_WINDOWLESS_SESSIONS_TIMEOUT = 60000,
 
     _handle = function(req, res) {
@@ -58,26 +58,22 @@ ghostdriver.SessionManagerReqHand = function() {
     },
 
     _postNewSessionCommand = function(req, res) {
-        var desiredCapabilities,
-            newSession;
+        var newSession,
+            postObj = JSON.parse(req.post);
 
-        try {
-            desiredCapabilities = req.post;             //< this must exist
-            if (typeof(desiredCapabilities) !== "object") {
-                desiredCapabilities = JSON.parse(desiredCapabilities);
-            }
-
+        if (typeof(postObj) === "object") {
             // Create and store a new Session
-            newSession = new ghostdriver.Session(desiredCapabilities);
+            newSession = new ghostdriver.Session(postObj.desiredCapabilities);
             _sessions[newSession.getId()] = newSession;
 
             // Redirect to the newly created Session
             res.statusCode = 303; //< "303 See Other"
             res.setHeader("Location", "http://" + req.headers.Host + "/wd/hub/session/"+newSession.getId());
             res.closeGracefully();
-        } catch (e) {
-            throw _errors.createInvalidReqMissingCommandParameterEH(req);
+            return;
         }
+
+        throw _errors.createInvalidReqMissingCommandParameterEH(req);
     },
 
     _getActiveSessionsCommand = function(req, res) {
