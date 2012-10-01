@@ -52,7 +52,7 @@ ghostdriver.StatusReqHand = function() {
             return;
         }
 
-        throw require("./errors.js").createInvalidReqInvalidCommandMethodEH(req);
+        throw _protoParent.errors.createInvalidReqInvalidCommandMethodEH(req);
     };
 
     // public:

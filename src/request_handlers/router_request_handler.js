@@ -44,7 +44,7 @@ ghostdriver.RouterReqHand = function() {
         SESSION_DIR     : "/session/",
         SHUTDOWN        : "shutdown"
     },
-    _errors = require("./errors.js"),
+    _errors = _protoParent.errors,
 
     _handle = function(req, res) {
         var session,

@@ -32,6 +32,7 @@ ghostdriver.RequestHandler = function() {
     // private:
     var
     _errors = require("./errors.js"),
+    _session = null,
     _handle = function(request, response) {
         _decorateRequest(request);
         _decorateResponse(response);
@@ -152,6 +153,45 @@ ghostdriver.RequestHandler = function() {
 
     _buildSuccessResponseBody = function(sessionId, value) {
         return _buildResponseBody(sessionId, value, 0); //< '0' is Success
+    },
+
+    _setSession = function(session) {
+        if (session !== null) {
+            _session = session;
+        }
+    },
+
+    _getSession = function() {
+        return _session;
+    },
+
+    _getSessionCurrWindow = function(req) {
+        return _getSessionWindow(null, req);
+    },
+
+    _getSessionWindow = function(handleOrName, req) {
+        var win,
+            errorMsg;
+        if (_session !== null) {
+            win = handleOrName === null ?
+                _session.getCurrentWindow() :       //< current window
+                _session.getWindow(handleOrName);   //< window by handle
+            if (win !== null) {
+                return win;
+            }
+        }
+
+        errorMsg = handleOrName === null ?
+            "Currently Window handle/name is invalid (closed?)" :
+            "Window handle/name '"+handleOrName+"' is invalid (closed?)";
+
+        // Report the error throwing the appropriate exception
+        throw _errors.createFailedCommandEH(
+                    _errors.FAILED_CMD_STATUS.NO_SUCH_WINDOW, //< error name
+                    errorMsg,                                 //< error message
+                    req,                                      //< request
+                    _session,                                 //< session
+                    "SessionReqHand");                        //< class name
     };
 
     // public:
@@ -161,31 +201,11 @@ ghostdriver.RequestHandler = function() {
         buildResponseBody : _buildResponseBody,
         buildSuccessResponseBody : _buildSuccessResponseBody,
         decorateRequest : _decorateRequest,
-        decorateResponse : _decorateResponse
+        decorateResponse : _decorateResponse,
+        errors : _errors,
+        setSession : _setSession,
+        getSession : _getSession,
+        getSessionWindow : _getSessionWindow,
+        getSessionCurrWindow : _getSessionCurrWindow
     };
 };
-
-// List of all the possible Response Status Codes
-ghostdriver.ResponseStatusCodes = {};
-ghostdriver.ResponseStatusCodes.SUCCESS                        = 0;
-ghostdriver.ResponseStatusCodes.NO_SUCH_ELEMENT                = 7;
-ghostdriver.ResponseStatusCodes.NO_SUCH_FRAME                  = 8;
-ghostdriver.ResponseStatusCodes.UNKNOWN_COMMAND                = 9;
-ghostdriver.ResponseStatusCodes.STALE_ELEMENT_REFERENCE        = 10;
-ghostdriver.ResponseStatusCodes.ELEMENT_NOT_VISIBLE            = 11;
-ghostdriver.ResponseStatusCodes.INVALID_ELEMENT_STATE          = 12;
-ghostdriver.ResponseStatusCodes.UNKNOWN_ERROR                  = 13;
-ghostdriver.ResponseStatusCodes.ELEMENT_IS_NOT_SELECTABLE      = 15;
-ghostdriver.ResponseStatusCodes.JAVA_SCRIPT_ERROR              = 17;
-ghostdriver.ResponseStatusCodes.XPATH_LOOKUP_ERROR             = 19;
-ghostdriver.ResponseStatusCodes.TIMEOUT                        = 21;
-ghostdriver.ResponseStatusCodes.NO_SUCH_WINDOW                 = 23;
-ghostdriver.ResponseStatusCodes.INVALID_COOKIE_DOMAIN          = 24;
-ghostdriver.ResponseStatusCodes.UNABLE_TO_SET_COOKIE           = 25;
-ghostdriver.ResponseStatusCodes.UNEXPECTED_ALERT_OPEN          = 26;
-ghostdriver.ResponseStatusCodes.NO_ALERT_OPEN_ERROR            = 27;
-ghostdriver.ResponseStatusCodes.SCRIPT_TIMEOUT                 = 28;
-ghostdriver.ResponseStatusCodes.INVALID_ELEMENT_COORDINATES    = 29;
-ghostdriver.ResponseStatusCodes.IME_NOT_AVAILABLE              = 30;
-ghostdriver.ResponseStatusCodes.IME_ENGINE_ACTIVATION_FAILED   = 31;
-ghostdriver.ResponseStatusCodes.INVALID_SELECTOR               = 32;
