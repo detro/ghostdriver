@@ -86,10 +86,6 @@ ghostdriver.SessionReqHand = function(session) {
                 _postUrlCommand(req, res);
             }
             return;
-        } else if (req.urlParsed.file === _const.TITLE && req.method === "GET") {       //< ".../title"
-            // Get the current Page title
-            _getTitleCommand(req, res);
-            return;
         } else if (req.urlParsed.file === _const.SCREENSHOT && req.method === "GET") {
             _getScreenshotCommand(req, res);
             return;
@@ -120,6 +116,10 @@ ghostdriver.SessionReqHand = function(session) {
             } else {
                 throw _errors.createInvalidReqVariableResourceNotFoundEH(req);
             }
+            return;
+        } else if (req.urlParsed.file === _const.TITLE && req.method === "GET") {       //< ".../title"
+            // Get the current Page title
+            _getTitleCommand(req, res);
             return;
         } else if (req.urlParsed.file === _const.KEYS && req.method === "POST") {
             _postKeysCommand(req, res);
