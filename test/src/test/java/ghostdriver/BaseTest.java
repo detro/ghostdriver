@@ -22,6 +22,7 @@ public abstract class BaseTest {
     {
         DesiredCapabilities capabilities = new DesiredCapabilities();
         capabilities.setJavascriptEnabled(true);
+        capabilities.setCapability("takesScreenshot", false);
         if (System.getProperty("ghostdriver.test.driver", "").equals("firefox")) {
             mDriver = new FirefoxDriver(capabilities);
         } else {

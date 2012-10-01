@@ -35,20 +35,44 @@ ghostdriver.Session = function(desiredCapabilities) {
         "version" : phantom.version.major + '.' + phantom.version.minor + '.' + phantom.version.patch,
         "platform" : ghostdriver.system.os.name + '-' + ghostdriver.system.os.version + '-' + ghostdriver.system.os.architecture,
         "javascriptEnabled" : true,
-        "takesScreenshot" : true,
-        "handlesAlerts" : true,
-        "databaseEnabled" : true,
-        "locationContextEnabled" : false,
-        "applicationCacheEnabled" : true,
-        "browserConnectionEnabled" : false,
+        "takesScreenshot" : "VERO",
+        "handlesAlerts" : false,            //< TODO
+        "databaseEnabled" : false,          //< TODO
+        "locationContextEnabled" : false,   //< TODO Target is 1.1
+        "applicationCacheEnabled" : false,  //< TODO Support for AppCache (?)
+        "browserConnectionEnabled" : false, //< TODO
         "cssSelectorsEnabled" : true,
-        "webStorageEnabled" : true,
-        "rotatable" : true,
-        "acceptSslCerts" : false,
-        "nativeEvents" : true,
-        "proxy" : {
+        "webStorageEnabled" : false,        //< TODO support for LocalStorage/SessionStorage
+        "rotatable" : false,                //< TODO Target is 1.1
+        "acceptSslCerts" : false,           //< TODO
+        "nativeEvents" : true,              //< TODO Only some commands are Native Events currently
+        "proxy" : {                         //< TODO Support more proxy options - PhantomJS does allow setting from command line
             "proxyType" : "direct"
         }
+    },
+    _negotiatedCapabilities = {
+        "browserName"               : _defaultCapabilities.browserName,
+        "version"                   : _defaultCapabilities.version,
+        "platform"                  : _defaultCapabilities.platform,
+        "javascriptEnabled"         : typeof(desiredCapabilities.javascriptEnabled) === "undefined" ?
+            _defaultCapabilities.javascriptEnabled :
+            desiredCapabilities.javascriptEnabled,
+        "takesScreenshot"           : typeof(desiredCapabilities.takesScreenshot) === "undefined" ?
+            _defaultCapabilities.takesScreenshot :
+            desiredCapabilities.takesScreenshot,
+        "handlesAlerts"             : _defaultCapabilities.handlesAlerts,
+        "databaseEnabled"           : _defaultCapabilities.databaseEnabled,
+        "locationContextEnabled"    : _defaultCapabilities.locationContextEnabled,
+        "applicationCacheEnabled"   : _defaultCapabilities.applicationCacheEnabled,
+        "browserConnectionEnabled"  : _defaultCapabilities.browserConnectionEnabled,
+        "cssSelectorsEnabled"       : _defaultCapabilities.cssSelectorsEnabled,
+        "webStorageEnabled"         : _defaultCapabilities.webStorageEnabled,
+        "rotatable"                 : _defaultCapabilities.rotatable,
+        "acceptSslCerts"            : _defaultCapabilities.acceptSslCerts,
+        "nativeEvents"              : _defaultCapabilities.nativeEvents,
+        "proxy"                     : typeof(desiredCapabilities.proxy) === "undefined" ?
+            _defaultCapabilities.proxy :
+            desiredCapabilities.proxy
     },
     _timeouts = {
         "script"            : 500,          //< 0.5s
@@ -305,9 +329,12 @@ ghostdriver.Session = function(desiredCapabilities) {
         }
     };
 
+    // console.log("Session '" + _id + "' - Capabilities: " + JSON.stringify(_negotiatedCapabilities, null, "  "));
+    // console.log("Desired: "+JSON.stringify(desiredCapabilities, null, "  "));
+
     // public:
     return {
-        getCapabilities : function() { return _defaultCapabilities; },
+        getCapabilities : function() { return _negotiatedCapabilities; },
         getId : function() { return _id; },
         switchToWindow : _switchToWindow,
         getCurrentWindow : _getCurrentWindow,

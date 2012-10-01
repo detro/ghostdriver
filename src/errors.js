@@ -220,7 +220,8 @@ exports.createFailedCommandEH = function(errorName, errorMsg, req, session, clas
     e.errorStatusCode = exports.FAILED_CMD_STATUS_CODES[errorName] || 13; //< '13' Unkown Error
     e.errorSessionId = session.getId() || null;
     e.errorClassName = className || "unknown";
-    e.errorScreenshot = session.getCurrentWindow() !== null ? session.getCurrentWindow().renderBase64("png") : "";
+    e.errorScreenshot = (session.getCapabilities().takesScreenshot && session.getCurrentWindow() !== null) ?
+        session.getCurrentWindow().renderBase64("png") : "";
     e.handle = _failedCommandHandle;
 
     return e;
