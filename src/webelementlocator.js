@@ -44,12 +44,15 @@ ghostdriver.WebElementLocator = function(session) {
     _errors = require("./errors.js"),
 
     _find = function(what, locator, rootElement) {
-        var findRes,
+        var currWindow = _session.getCurrentWindow(),
+            findRes,
             findAtom = require("./webdriver_atoms.js").get(
                 "find_" +
-                (what.indexOf("element") >= 0 ? what : "element")); //< normalize
+                (what.indexOf("element") >= 0 ? what : "element")), //< normalize
+            errorMsg;
 
-        if (locator && typeof(locator) === "object" &&
+        if (currWindow !== null &&
+            locator && typeof(locator) === "object" &&
             locator.using && locator.value &&         //< if well-formed input
             _supportedStrategies.indexOf(locator.using) >= 0) {  //< and if strategy is recognized
 
@@ -61,7 +64,7 @@ ghostdriver.WebElementLocator = function(session) {
             }
 
             // Use Atom "find_result" to search for element in the page
-            findRes = _session.getCurrentWindow().evaluate(
+            findRes = currWindow.evaluate(
                 findAtom,
                 locator.using,
                 locator.value,
@@ -71,16 +74,23 @@ ghostdriver.WebElementLocator = function(session) {
             try {
                 return JSON.parse(findRes);
             } catch (e) {
-                console.error("Invalid locator received: "+JSON.stringify(locator));
-                return null;
+                errorMsg = "Invalid locator received: "+JSON.stringify(locator);
+                console.error(errorMsg);
+                return {
+                    "status"    : _errors.FAILED_CMD_STATUS_CODES[_errors.FAILED_CMD_STATUS.UNKNOWN_COMMAND],
+                    "value"     : errorMsg
+                };
             }
         }
-        return null;
+
+        // Window was not found
+        return {
+            "status"    : _errors.FAILED_CMD_STATUS_CODES[_errors.FAILED_CMD_STATUS.NO_SUCH_WINDOW],
+            "value"     : "No such window"
+        };
     },
 
     _locateElement = function(locator, rootElement) {
-        // TODO Handle NoSuchWindow
-        // TODO Handle Unsupported Locators (rare)
         var findElementRes = _find("element", locator, rootElement);
 
         // console.log("Locator: "+JSON.stringify(locator));
@@ -105,12 +115,13 @@ ghostdriver.WebElementLocator = function(session) {
         }
 
         // Not found
-        return null;
+        return {
+            "status"    : _errors.FAILED_CMD_STATUS_CODES[_errors.FAILED_CMD_STATUS.NO_SUCH_ELEMENT],
+            "value"     : "No Such Element found"
+        };
     },
 
     _locateElements = function(locator, rootElement) {
-        // TODO Handle NoSuchWindow
-        // TODO Handle Unsupported Locators (rare)
         var findElementsRes = _find("elements", locator, rootElement),
             elements = [],
             i, ilen;
@@ -130,29 +141,40 @@ ghostdriver.WebElementLocator = function(session) {
         }
 
         // Not found
-        return null;
+        return {
+            "status"    : _errors.FAILED_CMD_STATUS_CODES[_errors.FAILED_CMD_STATUS.NO_SUCH_ELEMENT],
+            "value"     : "No Such Elements found"
+        };
     },
 
     _locateActiveElement = function() {
-        // TODO Handle NoSuchWindow
-        // TODO Handle NoSuchElement
+        var currWindow = _session.getCurrentWindow(),
+            activeElementRes;
 
-        var activeElementRes = _session.getCurrentWindow().evaluate(
-                require("./webdriver_atoms.js").get("active_element"));
+        if (currWindow !== null) {
+            activeElementRes = currWindow.evaluate(
+                    require("./webdriver_atoms.js").get("active_element"));
 
-        // De-serialise the result of the Atom execution
-        try {
-            activeElementRes = JSON.parse(activeElementRes);
-        } catch (e) {
-            return null;
+            // De-serialise the result of the Atom execution
+            try {
+                activeElementRes = JSON.parse(activeElementRes);
+            } catch (e) {
+                return {
+                    "status"    : _errors.FAILED_CMD_STATUS_CODES[_errors.FAILED_CMD_STATUS.NO_SUCH_ELEMENT],
+                    "value"     : "No Active Element found"
+                };
+            }
+
+            // If found
+            if (typeof(activeElementRes.status) !== "undefined") {
+                return activeElementRes;
+            }
         }
 
-        // If found
-        if (typeof(activeElementRes.status) !== "undefined") {
-            return activeElementRes;
-        }
-
-        return null;
+        return {
+            "status"    : _errors.FAILED_CMD_STATUS_CODES[_errors.FAILED_CMD_STATUS.NO_SUCH_WINDOW],
+            "value"     : "No such window"
+        };
     };
 
     // public:
