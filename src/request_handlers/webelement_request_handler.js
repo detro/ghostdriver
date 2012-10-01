@@ -54,7 +54,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         LOCATION_IN_VIEW    : "location_in_view",
         SIZE                : "size"
     },
-    _errors = require("./errors.js"),
+    _errors = _protoParent.errors,
 
     _handle = function(req, res) {
         _protoParent.handle.call(this, req, res);
@@ -123,21 +123,21 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
     },
 
     _getDisplayedCommand = function(req, res) {
-        var displayed = _getCurrentWindow(req).evaluate(
+        var displayed = _protoParent.getSessionCurrWindow.call(this, req).evaluate(
             require("./webdriver_atoms.js").get("is_displayed"),
             _getJSON());
         res.respondBasedOnResult(_session, req, displayed);
     },
 
     _getEnabledCommand = function(req, res) {
-        var enabled = _getCurrentWindow(req).evaluate(
+        var enabled = _protoParent.getSessionCurrWindow.call(this, req).evaluate(
             require("./webdriver_atoms.js").get("is_enabled"),
             _getJSON());
         res.respondBasedOnResult(_session, req, enabled);
     },
 
     _getLocationResult = function(req) {
-        return _getCurrentWindow(req).evaluate(
+        return _protoParent.getSessionCurrWindow.call(this, req).evaluate(
             require("./webdriver_atoms.js").get("execute_script"),
             "return (" + require("./webdriver_atoms.js").get("get_location") + ")(arguments[0]);",
             [_getJSON()]);
@@ -164,7 +164,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
     },
 
     _getLocationInViewCommand = function(req, res) {
-        var scrollRes = _getCurrentWindow(req).evaluate(
+        var scrollRes = _protoParent.getSessionCurrWindow.call(this, req).evaluate(
                 require("./webdriver_atoms.js").get("scroll_into_view"),
                 _getJSON());
 
@@ -181,7 +181,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
     },
 
     _getSizeCommand = function(req, res) {
-        var size = _getCurrentWindow(req).evaluate(
+        var size = _protoParent.getSessionCurrWindow.call(this, req).evaluate(
             require("./webdriver_atoms.js").get("get_size"),
             _getJSON());
         res.respondBasedOnResult(_session, req, size);
@@ -195,7 +195,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         // Ensure all required parameters are available
         if (typeof(postObj) === "object" && typeof(postObj.value) === "object") {
             // Execute the "type" atom
-            typeRes = _getCurrentWindow(req).evaluate(
+            typeRes = _protoParent.getSessionCurrWindow.call(this, req).evaluate(
                 typeAtom,
                 _getJSON(),
                 postObj.value);
@@ -208,7 +208,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
     },
 
     _getNameCommand = function(req, res) {
-        var result = _getCurrentWindow(req).evaluate(
+        var result = _protoParent.getSessionCurrWindow.call(this, req).evaluate(
                 require("./webdriver_atoms.js").get("execute_script"),
                 "return arguments[0].tagName;",
                 [_getJSON()]);
@@ -228,7 +228,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
 
         if (typeof(req.urlParsed.file) === "string" && req.urlParsed.file.length > 0) {
             // Read the attribute
-            result = _getCurrentWindow(req).evaluate(
+            result = _protoParent.getSessionCurrWindow.call(this, req).evaluate(
                 attributeValueAtom,     // < Atom to read an attribute
                 _getJSON(),             // < Element to read from
                 req.urlParsed.file);    // < Attribute to read
@@ -241,7 +241,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
     },
 
     _getTextCommand = function(req, res) {
-        var result = _getCurrentWindow(req).evaluate(
+        var result = _protoParent.getSessionCurrWindow.call(this, req).evaluate(
             require("./webdriver_atoms.js").get("get_text"),
             _getJSON());
         res.respondBasedOnResult(_session, req, result);
@@ -251,7 +251,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         var result;
 
         if (typeof(req.urlParsed.file) === "string" && req.urlParsed.file.length > 0) {
-            result = _getCurrentWindow(req).evaluate(
+            result = _protoParent.getSessionCurrWindow.call(this, req).evaluate(
                 require("./webdriver_atoms.js").get("execute_script"),
                 "return arguments[0].isSameNode(arguments[1]);",
                 [_getJSON(), _getJSON(req.urlParsed.file)]);
@@ -266,7 +266,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
             abortCallback = false;
 
         // Listen for the page to Finish Loading after the submit
-        _getCurrentWindow(req).setOneShotCallback("onLoadFinished", function(status) {
+        _protoParent.getSessionCurrWindow.call(this, req).setOneShotCallback("onLoadFinished", function(status) {
             if (!abortCallback) {
                 if (status === "success") {
                     res.success(_session.getId());
@@ -283,7 +283,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         });
 
         // Submit
-        submitRes = _getCurrentWindow(req).evaluate(
+        submitRes = _protoParent.getSessionCurrWindow.call(this, req).evaluate(
             require("./webdriver_atoms.js").get("submit"),
             _getJSON());
 
@@ -296,7 +296,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
     },
 
     _postClickCommand = function(req, res) {
-        var result = _getCurrentWindow(req).evaluate(
+        var result = _protoParent.getSessionCurrWindow.call(this, req).evaluate(
                 require("./webdriver_atoms.js").get("click"),
                 _getJSON());
 
@@ -304,7 +304,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
     },
 
     _getSelectedCommand = function(req, res) {
-        var result = JSON.parse(_getCurrentWindow(req).evaluate(
+        var result = JSON.parse(_protoParent.getSessionCurrWindow.call(this, req).evaluate(
                 require("./webdriver_atoms.js").get("is_selected"),
                 _getJSON()));
 
@@ -312,7 +312,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
     },
 
     _postClearCommand = function(req, res) {
-        var result = _getCurrentWindow(req).evaluate(
+        var result = _protoParent.getSessionCurrWindow.call(this, req).evaluate(
                 require("./webdriver_atoms.js").get("clear"),
                 _getJSON());
         res.respondBasedOnResult(_session, req, result);
@@ -324,7 +324,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
 
         // Check that a property name was indeed provided
         if (typeof(cssPropertyName) === "string" || cssPropertyName.length > 0) {
-            result = _getCurrentWindow(req).evaluate(
+            result = _protoParent.getSessionCurrWindow.call(this, req).evaluate(
                 require("./webdriver_atoms.js").get("execute_script"),
                 "return window.getComputedStyle(arguments[0]).getPropertyValue(arguments[1]);",
                 [_getJSON(), cssPropertyName]);
@@ -340,7 +340,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         // Search for a WebElement on the Page
         var elementOrElements,
             searchStartTime = new Date().getTime(),
-            currWindow = _getCurrentWindow(req);
+            currWindow = _protoParent.getSessionCurrWindow.call(this, req);
 
         // If a "locatorMethod" was not provided, default to "locateElement"
         if(typeof(locatorMethod) !== "function") {
@@ -353,7 +353,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         do {
             elementOrElements = locatorMethod(JSON.parse(req.post), _getJSON());
             if (elementOrElements) {
-                if (elementOrElements.status == 0) {
+                if (elementOrElements.status === 0) {
                     // If the value does not have a length property, it's a single element, so return it.
                     // If the value does have a length property, it's an array, so return the array only
                     // if it has more than one element.
@@ -398,20 +398,10 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
     },
     _getSession = function() {
         return _session;
-    },
-
-    _getCurrentWindow = function(req) {
-        var currWindow = _session.getCurrentWindow();
-        if (currWindow !== null) {
-            return currWindow;
-        }
-        throw _errors.createFailedCommandEH(
-                    _errors.FAILED_CMD_STATUS.NO_SUCH_WINDOW,     //< error name
-                    "Currently focused window handle is invalid", //< error message
-                    req,                                          //< request
-                    _session,                                     //< session
-                    "SessionReqHand");                            //< class name
     };
+
+    // Init object:
+    _protoParent.setSession.call(this, _session);
 
     // public:
     return {

@@ -2,13 +2,11 @@ package ghostdriver;
 
 import org.junit.Test;
 import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.NoSuchFrameException;
+import org.openqa.selenium.NoSuchWindowException;
 import org.openqa.selenium.WebDriver;
 
-import java.util.ArrayList;
-import java.util.Set;
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class WindowSwitchingTest extends BaseTest {
     @Test
@@ -46,7 +44,7 @@ public class WindowSwitchingTest extends BaseTest {
         assertTrue(d.getWindowHandles().contains(bingWH));
     }
 
-    @Test(expected = Exception.class)
+    @Test(expected = NoSuchWindowException.class)
     public void switchBetween3WindowsThenDeleteFirstOne() {
         WebDriver d = getDriver();
 

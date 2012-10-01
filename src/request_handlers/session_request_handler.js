@@ -32,9 +32,9 @@ ghostdriver.SessionReqHand = function(session) {
     // private:
     var
     _mousePos = {x: 0, y: 0},
-    _protoParent = ghostdriver.SessionReqHand.prototype,
     _session = session,
-    _locator = new ghostdriver.WebElementLocator(_session),
+    _protoParent = ghostdriver.SessionReqHand.prototype,
+    _locator = new ghostdriver.WebElementLocator(session),
     _const = {
         URL             : "url",
         ELEMENT         : "element",
@@ -69,7 +69,7 @@ ghostdriver.SessionReqHand = function(session) {
         BUTTON_UP       : "buttonup",
         DOUBLE_CLICK    : "doubleclick"
     },
-    _errors = require("./errors.js"),
+    _errors = _protoParent.errors,
 
     _handle = function(req, res) {
         var element;
@@ -103,10 +103,10 @@ ghostdriver.SessionReqHand = function(session) {
         } else if (req.urlParsed.chunks[0] === _const.WINDOW) {
             _doWindowHandleCommands(req, res);
             return;
-        } else if (req.urlParsed.file === _const.ELEMENT && req.method === "POST" && req.urlParsed.chunks.length == 1) {    //< ".../element"
+        } else if (req.urlParsed.file === _const.ELEMENT && req.method === "POST" && req.urlParsed.chunks.length === 1) {    //< ".../element"
             _locateElementCommand(req, res, _locator.locateElement);
             return;
-        } else if (req.urlParsed.file === _const.ELEMENTS && req.method === "POST" && req.urlParsed.chunks.length == 1) {    //< ".../elements"
+        } else if (req.urlParsed.file === _const.ELEMENTS && req.method === "POST" && req.urlParsed.chunks.length === 1) {    //< ".../elements"
             _locateElementCommand(req, res, _locator.locateElements);
             return;
         } else if (req.urlParsed.chunks[0] === _const.ELEMENT && req.urlParsed.chunks[1] === _const.ACTIVE && req.method === "POST") {  //< ".../element/active"
@@ -204,41 +204,31 @@ ghostdriver.SessionReqHand = function(session) {
 
             // Fetch the right window
             if (windowHandle === _const.CURRENT) {
-                targetWindow = _session.getCurrentWindow();
+                targetWindow = _protoParent.getSessionCurrWindow.call(this, req);
             } else {
-                targetWindow = _session.getWindow(windowHandle);
+                targetWindow = _protoParent.getSessionWindow.call(this, windowHandle, req);
             }
 
             // Act on the window (page)
-            if (targetWindow !== null) {
-                if(command === _const.SIZE && req.method === "POST") {
-                    _postWindowSizeCommand(req, res, targetWindow);
-                    return;
-                } else if(command === _const.SIZE && req.method === "GET") {
-                    _getWindowSizeCommand(req, res, targetWindow);
-                    return;
-                } else if(command === _const.POSITION && req.method === "POST") {
-                    _postWindowPositionCommand(req, res, targetWindow);
-                    return;
-                } else if(command === _const.POSITION && req.method === "GET") {
-                    _getWindowPositionCommand(req, res, targetWindow);
-                    return;
-                } else if(command === _const.MAXIMIZE && req.method === "POST") {
-                    _postWindowMaximizeCommand(req, res, targetWindow);
-                    return;
-                }
-
-                // No command matched: error
-                throw _errors.createInvalidReqInvalidCommandMethodEH(req);
-            } else {
-                throw _errors.createFailedCommandEH(
-                    _errors.FAILED_CMD_STATUS.NO_SUCH_WINDOW,   //< error name
-                    "Unable to act on window (closed?)",        //< error message
-                    req,                                        //< request
-                    res,
-                    _session,                                   //< session
-                    "SessionReqHand");                          //< class name
+            if(command === _const.SIZE && req.method === "POST") {
+                _postWindowSizeCommand(req, res, targetWindow);
+                return;
+            } else if(command === _const.SIZE && req.method === "GET") {
+                _getWindowSizeCommand(req, res, targetWindow);
+                return;
+            } else if(command === _const.POSITION && req.method === "POST") {
+                _postWindowPositionCommand(req, res, targetWindow);
+                return;
+            } else if(command === _const.POSITION && req.method === "GET") {
+                _getWindowPositionCommand(req, res, targetWindow);
+                return;
+            } else if(command === _const.MAXIMIZE && req.method === "POST") {
+                _postWindowMaximizeCommand(req, res, targetWindow);
+                return;
             }
+
+            // No command matched: error
+            throw _errors.createInvalidReqInvalidCommandMethodEH(req);
         } else {
             throw _errors.createInvalidReqMissingCommandParameterEH(req);
         }
@@ -314,7 +304,7 @@ ghostdriver.SessionReqHand = function(session) {
 
     _refreshCommand = function(req, res) {
         var successHand = _createOnSuccessHandler(res),
-            currWindow = _getCurrentWindow(req);
+            currWindow = _protoParent.getSessionCurrWindow.call(this, req);
 
         currWindow.execFuncAndWaitForLoad(
             function() { currWindow.reload(); },
@@ -324,7 +314,7 @@ ghostdriver.SessionReqHand = function(session) {
 
     _backCommand = function(req, res) {
         var successHand = _createOnSuccessHandler(res),
-            currWindow = _getCurrentWindow(req);
+            currWindow = _protoParent.getSessionCurrWindow.call(this, req);
 
         if (currWindow.canGoBack) {
             currWindow.execFuncAndWaitForLoad(
@@ -339,7 +329,7 @@ ghostdriver.SessionReqHand = function(session) {
 
     _forwardCommand = function(req, res) {
         var successHand = _createOnSuccessHandler(res),
-            currWindow = _getCurrentWindow(req);
+            currWindow = _protoParent.getSessionCurrWindow.call(this, req);
 
         if (currWindow.canGoForward) {
             currWindow.execFuncAndWaitForLoad(
@@ -374,7 +364,7 @@ ghostdriver.SessionReqHand = function(session) {
             }, scriptTimeout);
 
             // Launch the actual script
-            result = _getCurrentWindow(req).evaluate(
+            result = _protoParent.getSessionCurrWindow.call(this, req).evaluate(
                 require("./webdriver_atoms.js").get("execute_script"),
                 postObj.script,
                 postObj.args,
@@ -398,12 +388,12 @@ ghostdriver.SessionReqHand = function(session) {
         // console.log("executeAsync - " + JSON.stringify(postObj));
 
         if (typeof(postObj) === "object" && postObj.script && postObj.args) {
-            _getCurrentWindow(req).setOneShotCallback("onCallback", function() {
+            _protoParent.getSessionCurrWindow.call(this, req).setOneShotCallback("onCallback", function() {
                 // console.log("onCallback - " + JSON.stringify(postObj));
                 res.respondBasedOnResult(_session, req, arguments[0]);
             });
 
-            _getCurrentWindow(req).evaluate(
+            _protoParent.getSessionCurrWindow.call(this, req).evaluate(
                 "function(script, args, timeout) { " +
                     "return (" + require("./webdriver_atoms.js").get("execute_async_script") + ")( " +
                         "script, args, timeout, callPhantom, true); " +
@@ -418,7 +408,7 @@ ghostdriver.SessionReqHand = function(session) {
 
     _getWindowHandle = function (req, res) {
         var handle = _session.getCurrentWindowHandle();
-        if (_session.isValidWindowHandle(handle)) {
+        if (handle !== null) {
             res.success(_session.getId(), handle);
         } else {
             throw _errors.createFailedCommandEH(
@@ -435,13 +425,13 @@ ghostdriver.SessionReqHand = function(session) {
     },
 
     _getScreenshotCommand = function(req, res) {
-        var rendering = _getCurrentWindow(req).renderBase64("png");
+        var rendering = _protoParent.getSessionCurrWindow.call(this, req).renderBase64("png");
         res.success(_session.getId(), rendering);
     },
 
     _getUrlCommand = function(req, res) {
         // Get the URL at which the Page currently is
-        var result = _getCurrentWindow(req).evaluate(
+        var result = _protoParent.getSessionCurrWindow.call(this, req).evaluate(
             require("./webdriver_atoms.js").get("execute_script"),
             "return location.toString()",
             []);
@@ -452,7 +442,7 @@ ghostdriver.SessionReqHand = function(session) {
     _postUrlCommand = function(req, res) {
         // Load the given URL in the Page
         var postObj = JSON.parse(req.post),
-            currWindow = _getCurrentWindow(req);
+            currWindow = _protoParent.getSessionCurrWindow.call(this, req);
 
         if (typeof(postObj) === "object" && postObj.url) {
             // Switch to the main frame first
@@ -506,19 +496,19 @@ ghostdriver.SessionReqHand = function(session) {
         if (typeof(postObj) === "object" && typeof(postObj.id) !== "undefined") {
             if(postObj.id === null) {
                 // Reset focus on the topmost (main) Frame
-                _getCurrentWindow(req).switchToMainFrame();
+                _protoParent.getSessionCurrWindow.call(this, req).switchToMainFrame();
                 switched = true;
             } else if (typeof(postObj.id) === "number") {
                 // Switch frame by "index"
-                switched = _getCurrentWindow(req).switchToFrame(postObj.id);
+                switched = _protoParent.getSessionCurrWindow.call(this, req).switchToFrame(postObj.id);
             } else if (typeof(postObj.id) === "string") {
                 // Switch frame by "name" and, if not found, by "id"
-                switched = _getCurrentWindow(req).switchToFrame(postObj.id);
+                switched = _protoParent.getSessionCurrWindow.call(this, req).switchToFrame(postObj.id);
 
                 // If we haven't switched, let's try to find the frame "name" using it's "id"
                 if (!switched) {
                     // fetch the frame "name" via "id"
-                    frameName = _getCurrentWindow(req).evaluate(function(frameId) {
+                    frameName = _protoParent.getSessionCurrWindow.call(this, req).evaluate(function(frameId) {
                         var el = null;
                         el = document.querySelector('#'+frameId);
                         if (el !== null) {
@@ -528,11 +518,11 @@ ghostdriver.SessionReqHand = function(session) {
                     }, postObj.id);
 
                     // Switch frame by "name"
-                    switched = _getCurrentWindow(req).switchToFrame(frameName);
+                    switched = _protoParent.getSessionCurrWindow.call(this, req).switchToFrame(frameName);
                 }
             } else if (typeof(postObj.id) === "object" && typeof(postObj.id["ELEMENT"]) === "string") {
                 // Will use the Element JSON to find the frame name
-                frameName = _getCurrentWindow(req).evaluate(
+                frameName = _protoParent.getSessionCurrWindow.call(this, req).evaluate(
                     require("./webdriver_atoms.js").get("execute_script"),
                     "return arguments[0].name;",
                     [postObj.id]);
@@ -540,7 +530,7 @@ ghostdriver.SessionReqHand = function(session) {
                 // If a name was found
                 if (frameName && frameName.value) {
                     // Switch frame by "name"
-                    switched = _getCurrentWindow(req).switchToFrame(frameName.value);
+                    switched = _protoParent.getSessionCurrWindow.call(this, req).switchToFrame(frameName.value);
                 } else {
                     // No name was found
                     switched = false;
@@ -554,11 +544,10 @@ ghostdriver.SessionReqHand = function(session) {
                 res.success(_session.getId());
             } else {
                 // ... otherwise, throw the appropriate exception
-                _errors.handleFailedCommandEH(
+                throw _errors.createFailedCommandEH(
                     _errors.FAILED_CMD_STATUS.NO_SUCH_FRAME,    //< error name
                     "Unable to switch to frame",                //< error message
                     req,                                        //< request
-                    res,
                     _session,                                   //< session
                     "SessionReqHand");                          //< class name
             }
@@ -568,7 +557,7 @@ ghostdriver.SessionReqHand = function(session) {
     },
 
     _getSourceCommand = function(req, res) {
-        var source = _getCurrentWindow(req).frameContent;
+        var source = _protoParent.getSessionCurrWindow.call(this, req).frameContent;
         res.success(_session.getId(), source);
     },
 
@@ -596,7 +585,7 @@ ghostdriver.SessionReqHand = function(session) {
             coords.y += postObj.yoffset || 0;
 
             // Send the Mouse Move as native event
-            _getCurrentWindow(req).sendEvent("mousemove", coords.x, coords.y);
+            _protoParent.getSessionCurrWindow.call(this, req).sendEvent("mousemove", coords.x, coords.y);
             _mousePos = { x: coords.x, y: coords.y };
             res.success(_session.getId());
         } else {
@@ -624,7 +613,7 @@ ghostdriver.SessionReqHand = function(session) {
                 mouseButton = (postObj.button === 2) ? "right" : (postObj.button === 1) ? "middle" : "left";
             }
             // Send the Mouse Click as native event
-            _getCurrentWindow(req).sendEvent(clickType,
+            _protoParent.getSessionCurrWindow.call(this, req).sendEvent(clickType,
                 _mousePos.x, _mousePos.y, //< x, y
                 mouseButton);
             res.success(_session.getId());
@@ -645,12 +634,12 @@ ghostdriver.SessionReqHand = function(session) {
 
             // If the cookie is expired OR if it was successfully added
             if ((postObj.cookie.expiry && postObj.cookie.expiry <= new Date().getTime()) ||
-                _getCurrentWindow(req).addCookie(postObj.cookie)) {
+                _protoParent.getSessionCurrWindow.call(this, req).addCookie(postObj.cookie)) {
                 // Notify success
                 res.success(_session.getId());
             } else {
                 // Something went wrong while trying to set the cookie
-                if (_getCurrentWindow(req).url.indexOf(postObj.cookie.domain) < 0) {
+                if (_protoParent.getSessionCurrWindow.call(this, req).url.indexOf(postObj.cookie.domain) < 0) {
                     // Domain mismatch
                     _errors.handleFailedCommandEH(
                         _errors.FAILED_CMD_STATUS.INVALID_COOKIE_DOMAIN,
@@ -679,16 +668,16 @@ ghostdriver.SessionReqHand = function(session) {
         // Get all the cookies the session at current URL can see/access
         res.success(
             _session.getId(),
-            _getCurrentWindow(req).cookies);
+            _protoParent.getSessionCurrWindow.call(this, req).cookies);
     },
 
     _deleteCookieCommand = function(req, res) {
         if (req.urlParsed.chunks.length === 2) {
             // delete only 1 cookie among the one visible to this page
-            _getCurrentWindow(req).deleteCookie(req.urlParsed.chunks[1]);
+            _protoParent.getSessionCurrWindow.call(this, req).deleteCookie(req.urlParsed.chunks[1]);
         } else {
             // delete all the cookies visible to this page
-            _getCurrentWindow(req).clearCookies();
+            _protoParent.getSessionCurrWindow.call(this, req).clearCookies();
         }
         res.success(_session.getId());
     },
@@ -740,7 +729,7 @@ ghostdriver.SessionReqHand = function(session) {
     },
 
     _getTitleCommand = function(req, res) {
-        res.success(_session.getId(), _getCurrentWindow(req).title);
+        res.success(_session.getId(), _protoParent.getSessionCurrWindow.call(this, req).title);
     },
 
     _locateElementCommand = function(req, res, locatorMethod) {
@@ -792,25 +781,14 @@ ghostdriver.SessionReqHand = function(session) {
         }
 
         throw _errors.createInvalidReqVariableResourceNotFoundEH(req);
-    },
-
-    _getCurrentWindow = function(req) {
-        var currWindow = _session.getCurrentWindow();
-        if (currWindow !== null) {
-            return currWindow;
-        }
-        throw _errors.createFailedCommandEH(
-                    _errors.FAILED_CMD_STATUS.NO_SUCH_WINDOW,     //< error name
-                    "Currently focused window handle is invalid", //< error message
-                    req,                                          //< request
-                    _session,                                     //< session
-                    "SessionReqHand");                            //< class name
     };
+
+    // Init object:
+    _protoParent.setSession.call(this, _session);
 
     // public:
     return {
         handle : _handle,
-        setSession : function(s) { _session = s; },
         getSessionId : function() { return _session.getId(); }
     };
 };
