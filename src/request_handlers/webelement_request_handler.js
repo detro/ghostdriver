@@ -325,9 +325,9 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         // Check that a property name was indeed provided
         if (typeof(cssPropertyName) === "string" || cssPropertyName.length > 0) {
             result = _protoParent.getSessionCurrWindow.call(this, req).evaluate(
-                require("./webdriver_atoms.js").get("execute_script"),
-                "return window.getComputedStyle(arguments[0]).getPropertyValue(arguments[1]);",
-                [_getJSON(), cssPropertyName]);
+                require("./webdriver_atoms.js").get("get_value_of_css_property"),
+                _getJSON(),
+                cssPropertyName);
 
             res.respondBasedOnResult(_session, req, result);
             return;
