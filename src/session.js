@@ -35,7 +35,7 @@ ghostdriver.Session = function(desiredCapabilities) {
         "version" : phantom.version.major + '.' + phantom.version.minor + '.' + phantom.version.patch,
         "platform" : ghostdriver.system.os.name + '-' + ghostdriver.system.os.version + '-' + ghostdriver.system.os.architecture,
         "javascriptEnabled" : true,
-        "takesScreenshot" : "VERO",
+        "takesScreenshot" : true,
         "handlesAlerts" : false,            //< TODO
         "databaseEnabled" : false,          //< TODO
         "locationContextEnabled" : false,   //< TODO Target is 1.1
