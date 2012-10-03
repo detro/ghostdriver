@@ -30,14 +30,16 @@ public class ElementQueryingTest extends BaseTest {
 
         d.get("http://www.bing.com");
         WebElement searchBox = d.findElement(By.cssSelector("input[name*='q']"));
-        
-        assertEquals(searchBox.getCssValue("color"), "rgb(0, 0, 0)");
-        assertEquals(searchBox.getAttribute("value"), "");
-        assertEquals(searchBox.getTagName(), "input");
-        assertEquals(searchBox.isEnabled(), true);
-        assertEquals(searchBox.isDisplayed(), true);
-        assertEquals(searchBox.getLocation(), new Point(218, 104));
-        assertEquals(searchBox.getSize(), new Dimension(389, 28));
+
+        assertTrue(searchBox.getCssValue("color").contains("rgb(0, 0, 0)") || searchBox.getCssValue("color").contains("rgba(0, 0, 0, 1)"));
+        assertEquals("", searchBox.getAttribute("value"));
+        assertEquals("input", searchBox.getTagName());
+        assertEquals(true, searchBox.isEnabled());
+        assertEquals(true, searchBox.isDisplayed());
+        assertTrue(searchBox.getLocation().getX() >= 200);
+        assertTrue(searchBox.getLocation().getY() >= 100);
+        assertTrue(searchBox.getSize().getWidth() >= 350);
+        assertTrue(searchBox.getSize().getHeight() >= 20);
     }
 
     @Test

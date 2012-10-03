@@ -12,13 +12,16 @@ repositories {
 }
 
 ext.seleniumVersion = "2.25.0"
+ext.junitVersion = "4.8+"
+ext.jettyVersion = "6.1.21"
 
 dependencies {
     ["selenium-java", "selenium-remote-driver", "selenium-server"].each {
+        compile "org.seleniumhq.selenium:$it:$seleniumVersion"
         testCompile "org.seleniumhq.selenium:$it:$seleniumVersion"
     }
-    testCompile "junit:junit-dep:4.8+"
-	testCompile "org.mortbay.jetty:jetty:6.1.21"
+    testCompile "junit:junit-dep:$junitVersion"
+	testCompile "org.mortbay.jetty:jetty:$jettyVersion"
 }
 
 tasks.withType(JavaExec) {
@@ -38,9 +41,5 @@ test {
     }
     onOutput { descriptor, event ->
         logger.lifecycle("Test: " + descriptor + " produced standard out/err: " + event.message )
-    }
-
-    if (project.hasProperty('driver')) {
-        systemProperty 'ghostdriver.test.driver', project.driver
     }
 }
