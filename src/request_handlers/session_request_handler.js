@@ -745,7 +745,7 @@ ghostdriver.SessionReqHand = function(session) {
 
         // Some language bindings can send a null instead of an empty
         // JSON object for the getActiveElement command.
-        if (req.post) {
+        if (req.post && typeof req.post === "string") {
             request = JSON.parse(req.post);
         }
 
