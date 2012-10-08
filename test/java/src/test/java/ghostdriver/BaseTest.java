@@ -35,7 +35,6 @@ import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import phantomjs.PhantomJSDriver;
 
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Properties;
@@ -47,7 +46,7 @@ import java.util.Properties;
 public abstract class BaseTest {
     private WebDriver mDriver = null;
 
-    private static final String CONFIG_FILE         = "config.ini";
+    private static final String CONFIG_FILE         = "../config.ini";
     private static final String BROWSER_FIREFOX     = "firefox";
     private static final String BROWSER_PHANTOMJS   = "phantomjs";
 
