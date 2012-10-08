@@ -100,7 +100,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         } else if (req.urlParsed.file === _const.TEXT && req.method === "GET") {
             _getTextCommand(req, res);
             return;
-        } else if (req.urlParsed.chunks[0] === _const.EQUALS && req.method === "GET") {
+        } else if (req.urlParsed.chunks[0] === _const.EQUALS_DIR && req.method === "GET") {
             _getEqualsCommand(req, res);
             return;
         } else if (req.urlParsed.file === _const.LOCATION && req.method === "GET") {
@@ -256,6 +256,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
                 "return arguments[0].isSameNode(arguments[1]);",
                 [_getJSON(), _getJSON(req.urlParsed.file)]);
             res.success(_session.getId(), result);
+            return;
         }
 
         throw _errors.createInvalidReqMissingCommandParameterEH(req);
