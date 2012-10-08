@@ -34,6 +34,14 @@ ghostdriver.RequestHandler = function() {
     _errors = require("./errors.js"),
     _session = null,
     _handle = function(request, response) {
+        // NOTE: Some language bindings result in a malformed "post" object.
+        // This might have to do with PhantomJS poor WebServer implementation.
+        // Here we override "request.post" with the "request.postRaw" that
+        // is usually left intact.
+        if (request.hasOwnProperty("postRaw")) {
+            request["post"] = request["postRaw"];
+        }
+
         _decorateRequest(request);
         _decorateResponse(response);
     },
