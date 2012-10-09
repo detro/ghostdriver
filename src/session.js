@@ -96,6 +96,7 @@ ghostdriver.Session = function(desiredCapabilities) {
         // convert 'arguments' to a real Array
         var args = Array.prototype.splice.call(arguments, 0),
             timer,
+            inLoad = false,
             thisPage = this;
 
         // Separating arguments for the "function call"
@@ -103,9 +104,30 @@ ghostdriver.Session = function(desiredCapabilities) {
         args.splice(0, 3);
 
         // Register event handlers
-        this.setOneShotCallback("onLoadFinished", function() {
+        // This logic bears some explaining. If we are loading a new page,
+        // the loadStarted event will fire, then urlChanged, then loadFinished,
+        // assuming no errors. However, when navigating to a fragment on the
+        // same page, neither the loadStarted nor the loadFinished events will
+        // fire. So if we receive a urlChanged event without a corresponding
+        // loadStarted event, we know we are only navigating to a fragment on
+        // the same page, and should fire the onLoadFunc callback. Otherwise,
+        // we need to wait until the loadFinished event before firing the
+        // callback.
+        this.setOneShotCallback("onLoadStarted", function () {
+            // console.log("onLoadStarted");
+            inLoad = true;
+        });
+        this.setOneShotCallback("onUrlChanged", function () {
+            // console.log("onUrlChanged");
+            if (!inLoad) {
+                clearTimeout(timer);
+                onLoadFunc();
+            }
+        });
+        this.setOneShotCallback("onLoadFinished", function () {
             // console.log("onLoadFinished");
             clearTimeout(timer);
+            inLoad = false;
             onLoadFunc();
         });
         this.setOneShotCallback("onError", function(message, stack) {
@@ -119,12 +141,14 @@ ghostdriver.Session = function(desiredCapabilities) {
 
             thisPage.stop(); //< stop the page from loading
             clearTimeout(timer);
+            inLoad = false;
             onErrorFunc();
         });
 
         // Starting timer
         timer = setTimeout(function() {
             thisPage.stop(); //< stop the page from loading
+            inLoad = false;
             onErrorFunc();
         }, _getTimeout(_const.TIMEOUT_NAMES.PAGE_LOAD));
 
@@ -136,6 +160,7 @@ ghostdriver.Session = function(desiredCapabilities) {
         // convert 'arguments' to a real Array
         var args = Array.prototype.splice.call(arguments, 0),
             timer,
+            inLoad = false,
             thisPage = this;
 
         // Separating arguments for the 'evaluate' call
@@ -145,6 +170,26 @@ ghostdriver.Session = function(desiredCapabilities) {
         args.splice(0, 3, evalFunc, 0);
 
         // Register event handlers
+        // This logic bears some explaining. If we are loading a new page,
+        // the loadStarted event will fire, then urlChanged, then loadFinished,
+        // assuming no errors. However, when navigating to a fragment on the
+        // same page, neither the loadStarted nor the loadFinished events will
+        // fire. So if we receive a urlChanged event without a corresponding
+        // loadStarted event, we know we are only navigating to a fragment on
+        // the same page, and should fire the onLoadFunc callback. Otherwise,
+        // we need to wait until the loadFinished event before firing the
+        // callback.
+        this.setOneShotCallback("onLoadStarted", function () {
+            // console.log("onLoadStarted");
+            inLoad = true;
+        });
+        this.setOneShotCallback("onUrlChanged", function () {
+            // console.log("onUrlChanged");
+            if (!inLoad) {
+                clearTimeout(timer);
+                onLoadFunc();
+            }
+        });
         this.setOneShotCallback("onLoadFinished", function() {
             // console.log("onLoadFinished");
             clearTimeout(timer);
