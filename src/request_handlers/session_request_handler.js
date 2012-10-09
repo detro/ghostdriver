@@ -732,10 +732,10 @@ ghostdriver.SessionReqHand = function(session) {
         res.success(_session.getId(), _protoParent.getSessionCurrWindow.call(this, req).title);
     },
 
-    _locateElementCommand = function(req, res, locatorMethod) {
+    _locateElementCommand = function(req, res, locatorMethod, startTime) {
         // Search for a WebElement on the Page
         var elementOrElements,
-            searchStartTime = new Date().getTime(),
+            searchStartTime = startTime || new Date().getTime(),
             request = {};
 
         // If a "locatorMethod" was not provided, default to "locateElement"
@@ -750,23 +750,32 @@ ghostdriver.SessionReqHand = function(session) {
         }
 
         // Try to find the element
-        //  and retry if "startTime + implicitTimeout" is
+        elementOrElements = locatorMethod(request);
+
+        // console.log("Element or Elements: "+JSON.stringify(elementOrElements));
+
+        if (elementOrElements &&
+            elementOrElements.hasOwnProperty("status") &&
+            elementOrElements.status === 0 &&
+            elementOrElements.hasOwnProperty("value")) {
+
+        	// find elements that returns no elements
+        	// needs to keep finding if implicit wait set
+        	if (elementOrElements.value.length != 0 ||
+        			searchStartTime + _session.getTimeout(_session.timeoutNames().IMPLICIT) < 
+        				new Date().getTime()) {
+	            res.success(_session.getId(), elementOrElements.value);
+	            return;
+        	}
+
+        }
+        
+        //  retry if "startTime + implicitTimeout" is
         //  greater (or equal) than current time
-        do {
-            elementOrElements = locatorMethod(request);
-
-            // console.log("Element or Elements: "+JSON.stringify(elementOrElements));
-
-            if (elementOrElements &&
-                elementOrElements.hasOwnProperty("status") &&
-                elementOrElements.status === 0 &&
-                elementOrElements.hasOwnProperty("value")) {
-
-                res.success(_session.getId(), elementOrElements.value);
-                return;
-
-            }
-        } while(searchStartTime + _session.getTimeout(_session.timeoutNames().IMPLICIT) >= new Date().getTime());
+        if (searchStartTime + _session.getTimeout(_session.timeoutNames().IMPLICIT) >= new Date().getTime()) {
+        	setTimeout(function(){_locateElementCommand(req, res, locatorMethod, searchStartTime);}, 50);
+        	return;
+        }
 
         // Error handler. We got a valid response, but it was an error response.
         if (elementOrElements) {
