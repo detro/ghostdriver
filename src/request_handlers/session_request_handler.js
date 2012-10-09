@@ -563,26 +563,47 @@ ghostdriver.SessionReqHand = function(session) {
 
     _postMouseMoveToCommand = function(req, res) {
         var postObj = JSON.parse(req.post),
-            coords = { x : 0, y : 0 },
-            elementLocation;
+            coords = { x: 0, y: 0 },
+            elementLocation,
+            elementSize,
+            elementSpecified = false,
+            offsetSpecified = false;
 
+        if (typeof postObj === "object") {
+            elementSpecified = postObj.element && postObj.element != null;
+            offsetSpecified = typeof postObj.xoffset !== "undefined" && typeof postObj.yoffset !== "undefined";
+        }
         // Check that either an Element ID or an X-Y Offset was provided
-        if (typeof(postObj) === "object" &&
-            (postObj.element || (postObj.xoffset && postObj.yoffset))) {
+        if (elementSpecified || offsetSpecified) {
+            // console.log("element: " + elementSpecified + ", offset: " + offsetSpecified);
             // If an Element was provided...
-            if (postObj.element) {
+            if (elementSpecified) {
                 // Get Element's Location and add it to the coordinates
-                elementLocation = new ghostdriver.WebElementReqHand(postObj.element, _session).getLocation();
+                var requestHandler = new ghostdriver.WebElementReqHand(postObj.element, _session);
+                elementLocation = requestHandler.getLocation();
+                elementSize = requestHandler.getSize();
                 // If the Element has a valid location
                 if (elementLocation !== null) {
                     coords.x += elementLocation.x;
                     coords.y += elementLocation.y;
                 }
+                // console.log("element specified. initial coordinates (" + coords.x + "," + coords.y + ")");
+            } else {
+                coords.x = _mousePos.x;
+                coords.y = _mousePos.y;
+                // console.log("no element specified. initial coordinates (" + coords.x + "," + coords.y + ")");
             }
 
-            // Add up the offset (if any)
-            coords.x += postObj.xoffset || 0;
-            coords.y += postObj.yoffset || 0;
+            if (elementSpecified && !offsetSpecified && elementSize !== null) {
+                coords.x += Math.floor(elementSize.width / 2);
+                coords.y += Math.floor(elementSize.height / 2);
+                // console.log("element specified and no offset. coordinates adjusted to (" + coords.x + "," + coords.y + ")");
+            } else {
+                // Add up the offset (if any)
+                coords.x += postObj.xoffset || 0;
+                coords.y += postObj.yoffset || 0;
+                // console.log("offset specified. coordinates adjusted to (" + coords.x + "," + coords.y + ")");
+            }
 
             // Send the Mouse Move as native event
             _protoParent.getSessionCurrWindow.call(this, _session, req).sendEvent("mousemove", coords.x, coords.y);
