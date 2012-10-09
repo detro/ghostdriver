@@ -30,8 +30,6 @@ tasks.withType(JavaExec) {
 }
 
 test {
-    dependsOn "clean"
-
     //makes the standard streams (err and out) visible at console when running tests
     testLogging.showStandardStreams = true
 
