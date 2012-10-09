@@ -212,13 +212,29 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
             typeRes;
 
         // Ensure all required parameters are available
-        if (typeof(postObj) === "object" && typeof(postObj.value) === "object") {
-            // Execute the "type" atom
+        if (typeof (postObj) === "object" && typeof (postObj.value) === "object") {
             typeRes = _protoParent.getSessionCurrWindow.call(this, _session, req).evaluate(
-                typeAtom,
-                _getJSON(),
-                postObj.value);
-
+                require("./webdriver_atoms.js").get("execute_script"),
+                "return { 'tagName': arguments[0].tagName, 'type': arguments[0].getAttribute('type') };",
+                [_getJSON()]);
+            console.log(JSON.stringify(typeRes));
+            if (typeRes.status === 0 &&
+                    typeRes.value.tagName.toLowerCase() === "input" &&
+                    typeRes.value.type.toLowerCase() === "file") {
+                var fileName = postObj.value.join("");
+                // This is a total hack. PhantomJS's uploadFile method needs to be
+                // reworked so that we can effectively do this with the "real" element.
+                // The uploadFile method currently sets the file name then clicks on
+                // the file upload element, but attempting this from the GhostDriver
+                // context doesn't seem to work.
+                _protoParent.getSessionCurrWindow.call(this, _session, req).uploadFile("input[type='file']", fileName);
+            } else {
+                // Execute the "type" atom
+                typeRes = _protoParent.getSessionCurrWindow.call(this, _session, req).evaluate(
+                    typeAtom,
+                    _getJSON(),
+                    postObj.value);
+            }
             res.respondBasedOnResult(_session, req, typeRes);
             return;
         }
