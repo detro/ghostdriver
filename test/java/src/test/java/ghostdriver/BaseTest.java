@@ -33,10 +33,13 @@ import org.junit.BeforeClass;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.remote.DesiredCapabilities;
+import org.openqa.selenium.remote.RemoteWebDriver;
 import phantomjs.PhantomJSDriver;
 
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Properties;
 
 /**
@@ -46,12 +49,21 @@ import java.util.Properties;
 public abstract class BaseTest {
     private WebDriver mDriver = null;
 
-    private static final String CONFIG_FILE         = "../config.ini";
-    private static final String BROWSER_FIREFOX     = "firefox";
-    private static final String BROWSER_PHANTOMJS   = "phantomjs";
+    private static final String CONFIG_FILE        = "../config.ini";
+    private static final String DRIVER_FIREFOX     = "firefox";
+    private static final String DRIVER_PHANTOMJS   = "phantomjs";
 
     private static Properties sConfig;
     private static DesiredCapabilities sCaps;
+
+    private static boolean isUrl(String urlString) {
+        try {
+            new URL(urlString);
+            return true;
+        } catch (MalformedURLException mue) {
+            return false;
+        }
+    }
 
     @BeforeClass
     public static void configure() throws IOException {
@@ -70,13 +82,15 @@ public abstract class BaseTest {
     @Before
     public void prepareDriver() throws Exception
     {
-        // Which browser to use? (default "phantomjs")
-        String browser = sConfig.getProperty("browser", BROWSER_PHANTOMJS);
+        // Which driver to use? (default "phantomjs")
+        String driver = sConfig.getProperty("driver", DRIVER_PHANTOMJS);
 
-        // Start the appropriate driver
-        if (browser.equals(BROWSER_FIREFOX)) {
+        // Start appropriate Driver
+        if (isUrl(driver)) {
+            mDriver = new RemoteWebDriver(new URL(driver), sCaps);
+        } else if (driver.equals(DRIVER_FIREFOX)) {
             mDriver = new FirefoxDriver(sCaps);
-        } else if (browser.equals(BROWSER_PHANTOMJS)) {
+        } else if (driver.equals(DRIVER_PHANTOMJS)) {
             mDriver = new PhantomJSDriver(sCaps);
         }
     }

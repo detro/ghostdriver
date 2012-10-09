@@ -46,10 +46,13 @@ class BaseTest(unittest.TestCase):
         }
 
     def setUp(self):
-        browser = self.config.getProperty("browser")
+        driver = self.config.getProperty("driver")
+
+        # TODO Use/Make a PhantomJSDriver for Python
+        # TODO Handle the case where "driver" is a URL to a RemoteWebDriver instance
 
         # Decide the Driver to use
-        if browser == "firefox":
+        if driver == "firefox":
             self.driver = webdriver.Firefox()
         else:
             self.driver = webdriver.Remote(
