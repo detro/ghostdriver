@@ -180,11 +180,30 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         res.respondBasedOnResult(_session, req, scrollRes);
     },
 
-    _getSizeCommand = function(req, res) {
-        var size = _protoParent.getSessionCurrWindow.call(this, _session, req).evaluate(
+    _getSizeResult = function (req) {
+        return _protoParent.getSessionCurrWindow.call(this, _session, req).evaluate(
             require("./webdriver_atoms.js").get("get_size"),
             _getJSON());
-        res.respondBasedOnResult(_session, req, size);
+    },
+
+    _getSize = function (req) {
+        var result = JSON.parse(_getSizeResult(req));
+
+        // console.log("Size: " + JSON.stringify(result));
+
+        if (result.status === 0) {
+            return result.value;
+        } else {
+            return null;
+        }
+    },
+
+    _getSizeCommand = function (req, res) {
+        var sizeRes = _getSizeResult(req);
+
+        // console.log("Size (cmd): "+JSON.stringify(sizeRes));
+
+        res.respondBasedOnResult(_session, req, sizeRes);
     },
 
     _postValueCommand = function(req, res) {
@@ -408,7 +427,8 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         getJSON : _getJSON,
         getSession : _getSession,
         postValueCommand : _postValueCommand,
-        getLocation : _getLocation
+        getLocation : _getLocation,
+        getSize : _getSize
     };
 };
 // prototype inheritance:
