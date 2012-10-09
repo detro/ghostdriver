@@ -49,7 +49,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         CLEAR               : "clear",
         CSS                 : "css",
         TEXT                : "text",
-        EQUALS_DIR          : "equals",
+        EQUALS              : "equals",
         LOCATION            : "location",
         LOCATION_IN_VIEW    : "location_in_view",
         SIZE                : "size"
@@ -256,6 +256,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
                 "return arguments[0].isSameNode(arguments[1]);",
                 [_getJSON(), _getJSON(req.urlParsed.file)]);
             res.success(_session.getId(), result);
+            return;
         }
 
         throw _errors.createInvalidReqMissingCommandParameterEH(req);
