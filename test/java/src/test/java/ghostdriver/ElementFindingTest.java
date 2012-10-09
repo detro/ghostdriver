@@ -31,6 +31,7 @@ import org.junit.Test;
 import org.openqa.selenium.*;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -127,5 +128,52 @@ public class ElementFindingTest extends BaseTest {
 
         d.get("http://www.google.com");
         List<WebElement> inputField = d.findElements(By.xpath("this][isnot][valid"));
+    }
+
+    @Test
+    public void findElementWithImplicitWait() {
+        WebDriver d = getDriver();
+
+        d.get("about:blank");
+        String injectLink = "document.body.innerHTML = \"<a onclick=\\\"setTimeout(function(){var e=document.createElement('span');e.innerText='test';e.id='testing'+document.body.childNodes.length;document.body.appendChild(e);}, 750)\\\" id='add'>add</a>\"";
+        ((JavascriptExecutor)d).executeScript(injectLink);
+        d.manage().timeouts().implicitlyWait(0, TimeUnit.SECONDS);
+        WebElement add = d.findElement(By.id("add"));
+        add.click();
+        try {
+            d.findElement(By.id("testing1"));
+            throw new RuntimeException("expected NoSuchElementException");
+        } catch (NoSuchElementException nse) {
+        }
+        d.manage().timeouts().implicitlyWait(1, TimeUnit.SECONDS);
+        add.click();
+        d.findElement(By.id("testing2"));
+        d.manage().timeouts().implicitlyWait(500, TimeUnit.MILLISECONDS);
+        add.click();
+        try {
+            d.findElement(By.id("testing3"));
+            throw new RuntimeException("expected NoSuchElementException");
+        } catch (NoSuchElementException nse) {
+        }
+    }
+
+    @Test
+    public void findElementsWithImplicitWait() {
+        WebDriver d = getDriver();
+
+        d.get("about:blank");
+        String injectLink = "document.body.innerHTML = \"<a onclick=\\\"setTimeout(function(){var e=document.createElement('span');e.innerText='test';e.id='testing'+document.body.childNodes.length;document.body.appendChild(e);}, 750)\\\" id='add'>add</a>\"";
+        ((JavascriptExecutor)d).executeScript(injectLink);
+        d.manage().timeouts().implicitlyWait(0, TimeUnit.SECONDS);
+        WebElement add = d.findElement(By.id("add"));
+        add.click();
+        List<WebElement> spans = d.findElements(By.id("testing1"));
+        assertEquals(0, spans.size());
+        ((JavascriptExecutor)d).executeScript(injectLink);
+        add = d.findElement(By.id("add"));
+        d.manage().timeouts().implicitlyWait(1, TimeUnit.SECONDS);
+        add.click();
+        spans = d.findElements(By.tagName("span"));
+        assertEquals(1, spans.size());
     }
 }
