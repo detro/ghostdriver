@@ -31,7 +31,6 @@ ghostdriver.RequestHandler = function() {
     // private:
     var
     _errors = require("./errors.js"),
-    _session = null,
     _handle = function(request, response) {
         // NOTE: Some language bindings result in a malformed "post" object.
         // This might have to do with PhantomJS poor WebServer implementation.
@@ -162,30 +161,20 @@ ghostdriver.RequestHandler = function() {
         return _buildResponseBody(sessionId, value, 0); //< '0' is Success
     },
 
-    _setSession = function(session) {
-        if (session !== null) {
-            _session = session;
-        }
+    _getSessionCurrWindow = function(session, req) {
+        return _getSessionWindow(null, session, req);
     },
 
-    _getSession = function() {
-        return _session;
-    },
-
-    _getSessionCurrWindow = function(req) {
-        return _getSessionWindow(null, req);
-    },
-
-    _getSessionWindow = function(handleOrName, req) {
+    _getSessionWindow = function(handleOrName, session, req) {
         var win,
             errorMsg;
-        if (_session !== null) {
-            win = handleOrName === null ?
-                _session.getCurrentWindow() :       //< current window
-                _session.getWindow(handleOrName);   //< window by handle
-            if (win !== null) {
-                return win;
-            }
+
+        // Fetch the right window
+        win = handleOrName === null ?
+            session.getCurrentWindow() :       //< current window
+            session.getWindow(handleOrName);   //< window by handle
+        if (win !== null) {
+            return win;
         }
 
         errorMsg = handleOrName === null ?
@@ -197,7 +186,7 @@ ghostdriver.RequestHandler = function() {
                     _errors.FAILED_CMD_STATUS.NO_SUCH_WINDOW, //< error name
                     errorMsg,                                 //< error message
                     req,                                      //< request
-                    _session,                                 //< session
+                    session,                                  //< session
                     "SessionReqHand");                        //< class name
     };
 
@@ -210,8 +199,6 @@ ghostdriver.RequestHandler = function() {
         decorateRequest : _decorateRequest,
         decorateResponse : _decorateResponse,
         errors : _errors,
-        setSession : _setSession,
-        getSession : _getSession,
         getSessionWindow : _getSessionWindow,
         getSessionCurrWindow : _getSessionCurrWindow
     };
