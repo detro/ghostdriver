@@ -193,6 +193,7 @@ ghostdriver.Session = function(desiredCapabilities) {
         this.setOneShotCallback("onLoadFinished", function() {
             // console.log("onLoadFinished");
             clearTimeout(timer);
+            inLoad = false;
             onLoadFunc();
         });
         this.setOneShotCallback("onError", function(message, stack) {
@@ -206,12 +207,14 @@ ghostdriver.Session = function(desiredCapabilities) {
 
             thisPage.stop(); //< stop the page from loading
             clearTimeout(timer);
+            inLoad = false;
             onErrorFunc();
         });
 
         // Starting timer
         timer = setTimeout(function() {
             thisPage.stop(); //< stop the page from loading
+            inLoad = false;
             onErrorFunc();
         }, _getTimeout(_const.TIMEOUT_NAMES.PAGE_LOAD));
 
