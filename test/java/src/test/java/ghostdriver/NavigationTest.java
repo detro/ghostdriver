@@ -38,7 +38,7 @@ public class NavigationTest extends BaseTest {
     @Test
     public void navigateAroundMDN() {
         WebDriver d = getDriver();
-        d.manage().timeouts().pageLoadTimeout(30, TimeUnit.SECONDS);
+        d.manage().timeouts().pageLoadTimeout(60, TimeUnit.SECONDS);
 
         d.get("https://developer.mozilla.org/en-US/");
         assertTrue(d.getTitle().toLowerCase().contains("Mozilla".toLowerCase()));
