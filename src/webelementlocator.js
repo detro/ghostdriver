@@ -175,12 +175,75 @@ ghostdriver.WebElementLocator = function(session) {
             "status"    : _errors.FAILED_CMD_STATUS_CODES[_errors.FAILED_CMD_STATUS.NO_SUCH_WINDOW],
             "value"     : "No such window"
         };
+    },
+
+    _handleLocateCommand = function(req, res, locatorMethod, rootElement, startTime) {
+        // Search for a WebElement on the Page
+        var elementOrElements,
+            searchStartTime = startTime || new Date().getTime(),
+            stopSearchByTime,
+            request = {};
+
+        // If a "locatorMethod" was not provided, default to "locateElement"
+        if(typeof(locatorMethod) !== "function") {
+            locatorMethod = this.locateElement;
+        }
+
+        // Some language bindings can send a null instead of an empty
+        // JSON object for the getActiveElement command.
+        if (req.post && typeof req.post === "string") {
+            request = JSON.parse(req.post);
+        }
+
+        // Try to find the element
+        elementOrElements = locatorMethod(request, rootElement);
+
+        // console.log("Element or Elements: "+JSON.stringify(elementOrElements));
+        // console.log("Root Element: " + (typeof(rootElement) !== "undefined" ? JSON.stringify(rootElement) : "BODY"));
+
+        if (elementOrElements &&
+            elementOrElements.hasOwnProperty("status") &&
+            elementOrElements.status === 0 &&
+            elementOrElements.hasOwnProperty("value")) {
+
+            // return if elements found OR we passed the "stopSearchByTime"
+            stopSearchByTime = searchStartTime + _session.getTimeout(_session.timeoutNames().IMPLICIT);
+            if (elementOrElements.value.length !== 0 || new Date().getTime() > stopSearchByTime) {
+                res.success(_session.getId(), elementOrElements.value);
+                return;
+            }
+        }
+
+        // retry if we haven't passed "stopSearchByTime"
+        stopSearchByTime = searchStartTime + _session.getTimeout(_session.timeoutNames().IMPLICIT);
+        if (stopSearchByTime >= new Date().getTime()) {
+            // Recursive call in 50ms
+            setTimeout(function(){
+                _handleLocateCommand(req, res, locatorMethod, rootElement, searchStartTime);
+            }, 50);
+            return;
+        }
+
+        // Error handler. We got a valid response, but it was an error response.
+        if (elementOrElements) {
+            _errors.handleFailedCommandEH(
+                _errors.FAILED_CMD_STATUS_CODES_NAMES[elementOrElements.status],
+                elementOrElements.value.message,
+                req,
+                res,
+                _session,
+                "SessionReqHand");
+            return;
+        }
+
+        throw _errors.createInvalidReqVariableResourceNotFoundEH(req);
     };
 
     // public:
     return {
         locateElement : _locateElement,
         locateElements : _locateElements,
-        locateActiveElement : _locateActiveElement
+        locateActiveElement : _locateActiveElement,
+        handleLocateCommand : _handleLocateCommand
     };
 };

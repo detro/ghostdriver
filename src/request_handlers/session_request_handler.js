@@ -100,13 +100,13 @@ ghostdriver.SessionReqHand = function(session) {
             _doWindowHandleCommands(req, res);
             return;
         } else if (req.urlParsed.file === _const.ELEMENT && req.method === "POST" && req.urlParsed.chunks.length === 1) {    //< ".../element"
-            _locateElementCommand(req, res, _locator.locateElement);
+            _locator.handleLocateCommand(req, res, _locator.locateElement);
             return;
         } else if (req.urlParsed.file === _const.ELEMENTS && req.method === "POST" && req.urlParsed.chunks.length === 1) {    //< ".../elements"
-            _locateElementCommand(req, res, _locator.locateElements);
+            _locator.handleLocateCommand(req, res, _locator.locateElements);
             return;
         } else if (req.urlParsed.chunks[0] === _const.ELEMENT && req.urlParsed.chunks[1] === _const.ACTIVE && req.method === "POST") {  //< ".../element/active"
-            _locateElementCommand(req, res, _locator.locateActiveElement);
+            _locator.handleLocateCommand(req, res, _locator.locateActiveElement);
             return;
         } else if (req.urlParsed.chunks[0] === _const.ELEMENT) {            //< ".../element/:elementId/COMMAND"
             // Get the WebElementRH and, if found, re-route request to it
@@ -751,67 +751,6 @@ ghostdriver.SessionReqHand = function(session) {
 
     _getTitleCommand = function(req, res) {
         res.success(_session.getId(), _protoParent.getSessionCurrWindow.call(this, _session, req).title);
-    },
-
-    _locateElementCommand = function(req, res, locatorMethod, startTime) {
-        // Search for a WebElement on the Page
-        var elementOrElements,
-            searchStartTime = startTime || new Date().getTime(),
-            stopSearchByTime,
-            request = {};
-
-        // If a "locatorMethod" was not provided, default to "locateElement"
-        if(typeof(locatorMethod) !== "function") {
-            locatorMethod = _locator.locateElement;
-        }
-
-        // Some language bindings can send a null instead of an empty
-        // JSON object for the getActiveElement command.
-        if (req.post && typeof req.post === "string") {
-            request = JSON.parse(req.post);
-        }
-
-        // Try to find the element
-        elementOrElements = locatorMethod(request);
-
-        // console.log("Element or Elements: "+JSON.stringify(elementOrElements));
-
-        if (elementOrElements &&
-            elementOrElements.hasOwnProperty("status") &&
-            elementOrElements.status === 0 &&
-            elementOrElements.hasOwnProperty("value")) {
-
-            // return if elements found OR we passed the "stopSearchByTime"
-            stopSearchByTime = searchStartTime + _session.getTimeout(_session.timeoutNames().IMPLICIT);
-            if (elementOrElements.value.length !== 0 || new Date().getTime() > stopSearchByTime) {
-                res.success(_session.getId(), elementOrElements.value);
-                return;
-            }
-        }
-
-        // retry if we haven't passed "stopSearchByTime"
-        stopSearchByTime = searchStartTime + _session.getTimeout(_session.timeoutNames().IMPLICIT);
-        if (stopSearchByTime >= new Date().getTime()) {
-            // Recursive call in 50ms
-            setTimeout(function(){
-                _locateElementCommand(req, res, locatorMethod, searchStartTime);
-            }, 50);
-            return;
-        }
-
-        // Error handler. We got a valid response, but it was an error response.
-        if (elementOrElements) {
-            _errors.handleFailedCommandEH(
-                _errors.FAILED_CMD_STATUS_CODES_NAMES[elementOrElements.status],
-                elementOrElements.value.message,
-                req,
-                res,
-                _session,
-                "SessionReqHand");
-            return;
-        }
-
-        throw _errors.createInvalidReqVariableResourceNotFoundEH(req);
     };
 
     // public:
