@@ -62,10 +62,10 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         // console.log("Request => " + JSON.stringify(req, null, '  '));
 
         if (req.urlParsed.file === _const.ELEMENT && req.method === "POST") {
-            _postFindElementCommand(req, res, _locator.locateElement);
+            _locateElementInElementCommand(req, res, _locator.locateElement);
             return;
         } else if (req.urlParsed.file === _const.ELEMENTS && req.method === "POST") {
-            _postFindElementCommand(req, res, _locator.locateElements);
+            _locateElementInElementCommand(req, res, _locator.locateElements);
             return;
         } else if (req.urlParsed.file === _const.VALUE && req.method === "POST") {
             _postValueCommand(req, res);
@@ -356,35 +356,51 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         throw _errors.createInvalidReqMissingCommandParameterEH(req);
     },
 
-    _postFindElementCommand = function(req, res, locatorMethod) {
+    _locateElementInElementCommand = function(req, res, locatorMethod, startTime) {
         // Search for a WebElement on the Page
         var elementOrElements,
-            searchStartTime = new Date().getTime(),
-            currWindow = _protoParent.getSessionCurrWindow.call(this, _session, req);
+            searchStartTime = startTime || new Date().getTime(),
+            stopSearchByTime,
+            request = {};
 
         // If a "locatorMethod" was not provided, default to "locateElement"
         if(typeof(locatorMethod) !== "function") {
             locatorMethod = _locator.locateElement;
         }
 
-        // Try to find the element
-        //  and retry if "startTime + implicitTimeout" is
-        //  greater (or equal) than current time
-        do {
-            elementOrElements = locatorMethod(JSON.parse(req.post), _getJSON());
-            if (elementOrElements) {
-                if (elementOrElements.status === 0) {
-                    // If the value does not have a length property, it's a single element, so return it.
-                    // If the value does have a length property, it's an array, so return the array only
-                    // if it has more than one element.
-                    if (!elementOrElements.value["length"] ||
-                        (elementOrElements.value["length"] && elementOrElements.value.length > 0)) {
-                        res.success(_session.getId(), elementOrElements.value);
-                        return;
-                    }
-                }
+        // Some language bindings can send a null instead of an empty
+        // JSON object for the getActiveElement command.
+        if (req.post && typeof req.post === "string") {
+            request = JSON.parse(req.post);
+        }
+
+        // Try to find the element within THIS element
+        elementOrElements = locatorMethod(JSON.parse(req.post), _getJSON());
+
+        // console.log("Element or Elements (within "+JSON.stringify(_getJSON())+": "+JSON.stringify(elementOrElements));
+
+        if (elementOrElements &&
+            elementOrElements.hasOwnProperty("status") &&
+            elementOrElements.status === 0 &&
+            elementOrElements.hasOwnProperty("value")) {
+
+            // return if elements found OR we passed the "stopSearchByTime"
+            stopSearchByTime = searchStartTime + _session.getTimeout(_session.timeoutNames().IMPLICIT);
+            if (elementOrElements.value.length !== 0 || new Date().getTime() > stopSearchByTime) {
+                res.success(_session.getId(), elementOrElements.value);
+                return;
             }
-        } while(searchStartTime + _session.getTimeout(_session.timeoutNames().IMPLICIT) >= new Date().getTime());
+        }
+
+        // retry if we haven't passed "stopSearchByTime"
+        stopSearchByTime = searchStartTime + _session.getTimeout(_session.timeoutNames().IMPLICIT);
+        if (stopSearchByTime >= new Date().getTime()) {
+            // Recursive call in 50ms
+            setTimeout(function(){
+                _locateElementInElementCommand(req, res, locatorMethod, searchStartTime);
+            }, 50);
+            return;
+        }
 
         // Error handler. We got a valid response, but it was an error response.
         if (elementOrElements) {
