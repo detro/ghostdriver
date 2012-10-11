@@ -8,11 +8,12 @@ It's going to be a Remote WebDriver that uses PhantomJS as back-end.
 ## Status
 
 * Under development / almost ready for 1.0
+* **Code Hardening in progress**: before raising bugs, check if's a "not yet implemented" feature first
 * **~90%** of the WireProtocol currently implemented
-* You can monitor development progress [at this Google Spreadsheet](https://docs.google.com/spreadsheet/ccc?key=0Am63grtxc7bDdGNqX1ZPX2VoZlE2ZHZhd09lNDkzbkE)
-* Core released to get people interested and get contributions
-* Don't raise BUGS: send PULL REQUESTS pleaase!
-* Version 1.0 will implement all the commands EXCEPT the ones related with Mobile WebDrivers (see spreadsheet above)
+* Version 1.0 will implement all the commands EXCEPT the ones related with Mobile WebDrivers (see spreadsheet below)
+* **DEPENDS ON MY BRANCH OF PHANTOMJS**, as mentioned below in the **Requirements** section
+
+You can monitor development progress [at this Google Spreadsheet](https://docs.google.com/spreadsheet/ccc?key=0Am63grtxc7bDdGNqX1ZPX2VoZlE2ZHZhd09lNDkzbkE).
 
 ## Presentation and Slides
 
