@@ -75,8 +75,8 @@ public abstract class BaseTest {
         sCaps = new DesiredCapabilities();
         sCaps.setJavascriptEnabled(true);
         sCaps.setCapability("takesScreenshot", false);
-        sCaps.setCapability(PhantomJSDriver.CAPABILITY_PHANTOMSJS_EXEC_PATH, sConfig.getProperty("phantomjs_exec_path"));
-        sCaps.setCapability(PhantomJSDriver.CAPABILITY_PHANTOMJS_DRIVER_PATH, sConfig.getProperty("phantomjs_driver_path"));
+        sCaps.setCapability(PhantomJSDriver.CAPABILITY_PHANTOMJS_BINARY, sConfig.getProperty("phantomjs_exec_path"));
+        sCaps.setCapability(PhantomJSDriver.CAPABILITY_PHANTOMJS_GHOSTDRIVER, sConfig.getProperty("phantomjs_driver_path"));
     }
 
     @Before

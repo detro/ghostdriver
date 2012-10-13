@@ -1,4 +1,5 @@
 /*
+Copyright 2012 Ivan De Marino <ivan.de.marino@gmail.com>
 Copyright 2012 Selenium committers
 Copyright 2012 Software Freedom Conservancy
 
@@ -35,35 +36,31 @@ import java.net.URL;
  * @class PhantomJSDriver
  */
 public class PhantomJSDriver extends RemoteWebDriver implements TakesScreenshot {
-    private boolean useExternalPhantomJS = false;   //< "true" only when a running instance of PhantomJS Driver is provided
     private Process phantomJSProcess;
 
-    public static final String CAPABILITY_PHANTOMSJS_EXEC_PATH      = "phantomjs.execPath";
-    public static final String CAPABILITY_PHANTOMJS_DRIVER_PATH     = "phantomjs.driverPath";
-
-    /**
-     * Constructor.
-     *
-     * This instance will NOT be responsible for the life-cycle of the PhantomJS process.
-     * In case you want to delegate this, consider
-     * using {@link PhantomJSDriver#PhantomJSDriver(org.openqa.selenium.Capabilities)}.
-     *
-     * @param externalDriverUrl URL to the running PhantomJS WebDriver instance.
-     * @param desiredCapabilities Capabilities required during this WebDriver session.
-     */
-    public PhantomJSDriver(URL externalDriverUrl, Capabilities desiredCapabilities) {
-        super(externalDriverUrl, desiredCapabilities);
-        useExternalPhantomJS = true;
-        phantomJSProcess = null;
-    }
+    public static final String CAPABILITY_PHANTOMJS_BINARY      = "phantomjs.binary";
+    public static final String CAPABILITY_PHANTOMJS_GHOSTDRIVER = "phantomjs.ghostdriver";
 
     /**
      * Constructor.
      *
      * This instance will be responsible to control the life-cycle of the PhantomJS process.
+     * It's mandatory to set two key capabilities to make this work:
+     * <ul>
+     *     <li><code>phantomjs.binary</code>: path to the PhantomJS executable</li>
+     *     <li><code>phantomjs.ghostdriver</code>: path to GhostDriver, the JS-based WebDriver implementation for PhantomJS</li>
+     * </ul>
+     * See also {@link PhantomJSDriver#CAPABILITY_PHANTOMJS_BINARY} and
+     * {@link PhantomJSDriver#CAPABILITY_PHANTOMJS_GHOSTDRIVER}.
+     *
+     * NOTE: <a href="https://github.com/detro/ghostdriver">GhostDriver</a> it's the PhantomJS Driver. It's currently
+     * a separate project but will later on become one with PhantomJS, making the requirement of the dedicated
+     * capability entry obsolete. Also, GhostDriver, being it a work in progress, might rely on a specific version
+     * of PhantomJS: please read carefully the instructions available at the project homepage.
+     *
      * In case you have a PhantomJS WebDriver process already running, you can instead use
-     * {@link PhantomJSDriver#PhantomJSDriver(java.net.URL, org.openqa.selenium.Capabilities)} to
-     * delegate the execution to that.
+     * {@link RemoteWebDriver#RemoteWebDriver(java.net.URL, org.openqa.selenium.Capabilities)}  to
+     * delegate the execution to it.
      *
      * @param desiredCapabilities Capabilities required during this WebDriver session.
      */
@@ -86,92 +83,89 @@ public class PhantomJSDriver extends RemoteWebDriver implements TakesScreenshot 
      */
     @Override
     protected void startSession(Capabilities desiredCapabilities, Capabilities requiredCapabilities) throws WebDriverException {
-        // Will launch a PhantomJS WebDriver process ONLY if this driver is not already using an external one
-        if (!useExternalPhantomJS) {
-            // Read PhantomJS executable and JS Driver path from the capabilities
-            String executablePath = (String)desiredCapabilities.getCapability(CAPABILITY_PHANTOMSJS_EXEC_PATH);
-            String driverPath = (String)desiredCapabilities.getCapability(CAPABILITY_PHANTOMJS_DRIVER_PATH);
+        // Read PhantomJS executable and JS Driver path from the capabilities
+        String executablePath = (String)desiredCapabilities.getCapability(CAPABILITY_PHANTOMJS_BINARY);
+        String driverPath = (String)desiredCapabilities.getCapability(CAPABILITY_PHANTOMJS_GHOSTDRIVER);
 
-            // Throw WebDriverException in case any of the previous two was not provided
-            if (executablePath == null ||
-                    driverPath == null ||
-                    !new File(executablePath).exists() ||
-                    !new File(driverPath).exists()) {
-                throw new WebDriverException("PhantomJSDriver: Path to PhantomJS Executable or Driver not provided/invalid");
-            }
-
-            // Read the Proxy configuration
-            Proxy proxy = (Proxy) desiredCapabilities.getCapability(CapabilityType.PROXY);
-            // Prepare the parameters to pass to the PhantomJS executable on the command line
-            String proxyParams = "";
-            if (proxy != null) {
-                switch(proxy.getProxyType()) {
-                    case MANUAL:
-                        if (!proxy.getHttpProxy().isEmpty()) {          //< HTTP proxy
-                            log(getSessionId(), "Reading Proxy Configuration", "Manual, HTTP", When.BEFORE);
-                            proxyParams = String.format("--proxy-type=http --proxy=%s",
-                                    proxy.getHttpProxy());
-                        } else if (!proxy.getSocksProxy().isEmpty()) {  //< SOCKS5 proxy
-                            log(getSessionId(), "Reading Proxy Configuration", "Manual, SOCKS5", When.BEFORE);
-                            proxyParams = String.format("--proxy-type=socks5 --proxy=%s --proxy-auth=%s:%s",
-                                    proxy.getSocksProxy(),
-                                    proxy.getSocksUsername(),
-                                    proxy.getSocksPassword());
-                        } else {
-                            // TODO Other type of proxy not supported yet by PhantomJS
-                            log(getSessionId(), "Reading Proxy Configuration", "Manual, NOT SUPPORTED", When.BEFORE);
-                        }
-                        break;
-                    case PAC:
-                        // TODO Not supported yet by PhantomJS
-                        log(getSessionId(), "Reading Proxy Configuration", "PAC, NOT SUPPORTED", When.BEFORE);
-                        break;
-                    case SYSTEM:
-                        log(getSessionId(), "Reading Proxy Configuration", "SYSTEM", When.BEFORE);
-                        proxyParams = "--proxy-type=system";
-                        break;
-                    case AUTODETECT:
-                        // TODO Not supported yet by PhantomJS
-                        log(getSessionId(), "Reading Proxy Configuration", "AUTODETECT, NOT SUPPORTED", When.BEFORE);
-                        break;
-                    case DIRECT:
-                        log(getSessionId(), "Reading Proxy Configuration", "DIRECT", When.BEFORE);
-                        proxyParams = "--proxy-type=none";
-                    default:
-                        log(getSessionId(), "Reading Proxy Configuration", "NONE", When.BEFORE);
-                        proxyParams = "";
-                        break;
-                }
-            }
-
-            // Find a free port to launch PhantomJS WebDriver on
-            String phantomJSPortStr = Integer.toString(PortProber.findFreePort());
-            log(getSessionId(), "Looking for a free port for PhantomJS WebDriver", phantomJSPortStr, When.AFTER);
-
-            log(getSessionId(), "About to launch PhantomJS WebDriver", null, When.BEFORE);
-            try {
-                // Launch PhantomJS and wait for first output on console before proceeding
-                phantomJSProcess = Runtime.getRuntime().exec(new String[] {
-                        executablePath,     //< path to PhantomJS executable
-                        proxyParams,        //< command line parameters for Proxy configuration
-                        driverPath,         //< path to the PhantomJS Driver
-                        phantomJSPortStr    //< port on which the Driver should listen on
-                });
-                final BufferedReader reader = new BufferedReader(new InputStreamReader(phantomJSProcess.getInputStream()));
-                while (reader.readLine() == null) { /* wait here for some output: once it prints, it's ready to work */ }
-                useExternalPhantomJS = false;
-
-                // PhantomJS is ready to serve.
-                // Setting the HTTP Command Executor that this RemoteWebDriver will use
-                setCommandExecutor(new HttpCommandExecutor(new URL("http://localhost:"+phantomJSPortStr)));
-            } catch (IOException ioe) {
-                // Log exception & Cleanup
-                log(getSessionId(), null, ioe, When.EXCEPTION);
-                stopClient();
-                throw new WebDriverException("PhantomJSDriver: " + ioe.getMessage(), ioe);
-            }
-            log(getSessionId(), "PhantomJS WebDriver ready", null, When.AFTER);
+        // Throw WebDriverException in case any of the previous two was not provided
+        if (executablePath == null ||
+                driverPath == null ||
+                !new File(executablePath).exists() ||
+                !new File(driverPath).exists()) {
+            throw new WebDriverException("PhantomJSDriver: Path to PhantomJS Executable or GhostDriver not provided/invalid");
         }
+
+        // Read the Proxy configuration
+        Proxy proxy = (Proxy) desiredCapabilities.getCapability(CapabilityType.PROXY);
+        // Prepare the parameters to pass to the PhantomJS executable on the command line
+        String proxyParams = "";
+        if (proxy != null) {
+            switch(proxy.getProxyType()) {
+                case MANUAL:
+                    if (!proxy.getHttpProxy().isEmpty()) {          //< HTTP proxy
+                        log(getSessionId(), "Reading Proxy Configuration", "Manual, HTTP", When.BEFORE);
+                        proxyParams = String.format("--proxy-type=http --proxy=%s",
+                                proxy.getHttpProxy());
+// TODO Restore this when Selenium 2.26 is released
+//                    } else if (!proxy.getSocksProxy().isEmpty()) {  //< SOCKS5 proxy
+//                        log(getSessionId(), "Reading Proxy Configuration", "Manual, SOCKS5", When.BEFORE);
+//                        proxyParams = String.format("--proxy-type=socks5 --proxy=%s --proxy-auth=%s:%s",
+//                                proxy.getSocksProxy(),
+//                                proxy.getSocksUsername(),
+//                                proxy.getSocksPassword());
+                    } else {
+                        // TODO Other type of proxy not supported yet by PhantomJS
+                        log(getSessionId(), "Reading Proxy Configuration", "Manual, NOT SUPPORTED", When.BEFORE);
+                    }
+                    break;
+                case PAC:
+                    // TODO Not supported yet by PhantomJS
+                    log(getSessionId(), "Reading Proxy Configuration", "PAC, NOT SUPPORTED", When.BEFORE);
+                    break;
+                case SYSTEM:
+                    log(getSessionId(), "Reading Proxy Configuration", "SYSTEM", When.BEFORE);
+                    proxyParams = "--proxy-type=system";
+                    break;
+                case AUTODETECT:
+                    // TODO Not supported yet by PhantomJS
+                    log(getSessionId(), "Reading Proxy Configuration", "AUTODETECT, NOT SUPPORTED", When.BEFORE);
+                    break;
+                case DIRECT:
+                    log(getSessionId(), "Reading Proxy Configuration", "DIRECT", When.BEFORE);
+                    proxyParams = "--proxy-type=none";
+                default:
+                    log(getSessionId(), "Reading Proxy Configuration", "NONE", When.BEFORE);
+                    proxyParams = "";
+                    break;
+            }
+        }
+
+        // Find a free port to launch PhantomJS WebDriver on
+        String phantomJSPortStr = Integer.toString(PortProber.findFreePort());
+        log(getSessionId(), "Looking for a free port for PhantomJS WebDriver", phantomJSPortStr, When.AFTER);
+
+        log(getSessionId(), "About to launch PhantomJS WebDriver", null, When.BEFORE);
+        try {
+            // Launch PhantomJS and wait for first output on console before proceeding
+            phantomJSProcess = Runtime.getRuntime().exec(new String[] {
+                    executablePath,     //< path to PhantomJS executable
+                    proxyParams,        //< command line parameters for Proxy configuration
+                    driverPath,         //< path to the PhantomJS Driver
+                    phantomJSPortStr    //< port on which the Driver should listen on
+            });
+            final BufferedReader reader = new BufferedReader(new InputStreamReader(phantomJSProcess.getInputStream()));
+            while (reader.readLine() == null) { /* wait here for some output: once it prints, it's ready to work */ }
+
+            // PhantomJS is ready to serve.
+            // Setting the HTTP Command Executor that this RemoteWebDriver will use
+            setCommandExecutor(new HttpCommandExecutor(new URL("http://localhost:"+phantomJSPortStr)));
+        } catch (IOException ioe) {
+            // Log exception & Cleanup
+            log(getSessionId(), null, ioe, When.EXCEPTION);
+            stopClient();
+            throw new WebDriverException("PhantomJSDriver: " + ioe.getMessage(), ioe);
+        }
+        log(getSessionId(), "PhantomJS WebDriver ready", null, When.AFTER);
 
         // We are ready to let the RemoteDriver do its job from here
         super.startSession(desiredCapabilities, requiredCapabilities);
@@ -183,7 +177,7 @@ public class PhantomJSDriver extends RemoteWebDriver implements TakesScreenshot 
     @Override
     protected void stopClient() {
         // Shutdown the PhantomJS process
-        if (!useExternalPhantomJS && phantomJSProcess != null) {
+        if (phantomJSProcess != null) {
             log(getSessionId(), "Shutting down PhantomJS WebDriver", null, When.BEFORE);
             phantomJSProcess.destroy();
         }
