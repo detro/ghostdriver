@@ -85,4 +85,23 @@ public class ScriptExecutionTest extends BaseTest {
                 "arguments[arguments.length - 1]('abc');");
         assertEquals("abc", stringResult);
     }
+
+    @Test
+    public void shouldBeAbleToExecuteMultipleAsyncScriptsSequentiallyWithNavigation() {
+        WebDriver d = getDriver();
+        d.manage().timeouts().setScriptTimeout(0, TimeUnit.MILLISECONDS);
+
+        d.get("http://www.google.com/");
+        Number numericResult = (Number) ((JavascriptExecutor) d).executeAsyncScript(
+                "arguments[arguments.length - 1](123);");
+        assertEquals(123, numericResult.intValue());
+
+        d.get("http://www.google.com/");
+        String stringResult = (String) ((JavascriptExecutor) d).executeAsyncScript(
+                "arguments[arguments.length - 1]('abc');");
+        assertEquals("abc", stringResult);
+
+        // Verify that a future navigation does not cause the driver to have problems.
+        d.get("http://www.google.com/");
+    }
 }
