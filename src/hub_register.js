@@ -33,7 +33,7 @@ var nodeconf = function(port, hub){
   return {
     capabilities: [{
       browserName: "phantomjs",
-      maxInstances: 5,
+      maxInstances: 1,
       seleniumProtocol: "WebDriver"
     }],
     configuration: {
@@ -42,7 +42,9 @@ var nodeconf = function(port, hub){
       hubPort: hubPort,
       port: port,
       proxy: "org.openqa.grid.selenium.proxy.DefaultRemoteProxy",
-      maxSession: 5,
+      // Note that multiple webdriver sessions or instances within a single
+      // Ghostdriver process will interact in unexpected and undesirable ways.
+      maxSession: 1,
       register: true,
       registerCycle: 5000,
       role: "wd",
