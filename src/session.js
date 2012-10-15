@@ -90,7 +90,7 @@ ghostdriver.Session = function(desiredCapabilities) {
     },
     _windows = {},  //< NOTE: windows are "webpage" in Phantom-dialect
     _currentWindowHandle = null,
-    _id = (++ghostdriver.Session.instanceCounter).toString(), //< must be a string, even if I use progressive integers as unique ID
+    _id = require("./third_party/uuid.js").v1(),
 
     _execFuncAndWaitForLoadDecorator = function(func, onLoadFunc, onErrorFunc) {
         // convert 'arguments' to a real Array
@@ -400,5 +400,3 @@ ghostdriver.Session = function(desiredCapabilities) {
     };
 };
 
-// public static:
-ghostdriver.Session.instanceCounter = 0;
