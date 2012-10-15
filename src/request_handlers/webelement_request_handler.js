@@ -213,11 +213,15 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
 
         // Ensure all required parameters are available
         if (typeof(postObj) === "object" && typeof(postObj.value) === "object") {
+            var text = postObj.value.join("");
+            text = text.replace(/[\b]/g, '\uE003').           // Backspace
+                        replace(/\t/g, '\uE004').             // Tab
+                        replace(/(\r\n|\n|\r)/g, '\uE006');   // Return
             // Execute the "type" atom
             typeRes = _protoParent.getSessionCurrWindow.call(this, _session, req).evaluate(
                 typeAtom,
                 _getJSON(),
-                postObj.value);
+                text.split(""));
 
             res.respondBasedOnResult(_session, req, typeRes);
             return;
