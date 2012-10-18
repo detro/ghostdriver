@@ -90,9 +90,9 @@ ghostdriver.Session = function(desiredCapabilities) {
     },
     _windows = {},  //< NOTE: windows are "webpage" in Phantom-dialect
     _currentWindowHandle = null,
-    _id = require("./third_party/uuid.js").v1(),
 
     _execFuncAndWaitForLoadDecorator = function(func, onLoadFunc, onErrorFunc) {
+    _id = "SID-" + require("./third_party/uuid.js").v1(),
         // convert 'arguments' to a real Array
         var args = Array.prototype.splice.call(arguments, 0),
             timer,
@@ -250,7 +250,7 @@ ghostdriver.Session = function(desiredCapabilities) {
         // 0. Pages lifetime will be managed by Driver, not the pages
         page.ownsPages = false;
         // 1. Random Window Handle
-        page.windowHandle = "WH-" + new Date().getTime() + '-' + Math.random();
+        page.windowHandle = "WH-" + require("./third_party/uuid.js").v1();
         // 2. Utility methods
         page.evaluateAndWaitForLoad = _evaluateAndWaitForLoadDecorator;
         page.execFuncAndWaitForLoad = _execFuncAndWaitForLoadDecorator;
