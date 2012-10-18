@@ -66,6 +66,8 @@ ghostdriver.SessionManagerReqHand = function() {
             newSession = new ghostdriver.Session(postObj.desiredCapabilities);
             _sessions[newSession.getId()] = newSession;
 
+            // console.log("New Session Created: " + newSession.getId());
+
             // Redirect to the newly created Session
             res.statusCode = 303; //< "303 See Other"
             res.setHeader("Location", "http://" + req.headers.Host + "/wd/hub/session/"+newSession.getId());

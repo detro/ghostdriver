@@ -90,18 +90,48 @@ ghostdriver.Session = function(desiredCapabilities) {
     },
     _windows = {},  //< NOTE: windows are "webpage" in Phantom-dialect
     _currentWindowHandle = null,
-
-    _execFuncAndWaitForLoadDecorator = function(func, onLoadFunc, onErrorFunc) {
     _id = "SID-" + require("./third_party/uuid.js").v1(),
+
+    /**
+     * Executes a function and waits for Load to happen.
+     *
+     * @param func Function to execute
+     * @param onLoadFunc Function to execute when page finishes Loading
+     * @param onErrorFunc Function to execute in case of error
+     * @param execTypeOpt Decides if to "apply" the function directly or page."eval" it.
+     *                    Optional. Default value is "apply".
+     */
+    _execFuncAndWaitForLoadDecorator = function(func, onLoadFunc, onErrorFunc, execTypeOpt) {
         // convert 'arguments' to a real Array
         var args = Array.prototype.splice.call(arguments, 0),
             timer,
-            inLoad = false,
+            loadingNewPage = false,
             thisPage = this;
 
-        // Separating arguments for the "function call"
-        // from the callback handlers.
-        args.splice(0, 3);
+        // Normalize "execTypeOpt" value
+        if (typeof(execexecTypeOpt) === "undefined" ||
+            (execexecTypeOpt !== "apply" && execTypeOpt !== "eval")) {
+            execTypeOpt = "apply";
+        }
+
+        // Separating arguments for the "function call" from the callback handlers.
+        if (execTypeOpt === "eval") {
+            // NOTE: I'm also passing 'evalFunc' as first parameter
+            // for the 'evaluate' call, and '0' as timeout.
+            args.splice(0, 3, evalFunc, 0);
+        } else {
+            args.splice(0, 3);
+        }
+
+        // This function used to ensure no callback is left behind
+        // after we are done here
+        function clearAllCallbacks() {
+            // console.log("Clearing callbacks for window: " + thisPage.windowHandle);
+            thisPage.onLoadStarted = null;
+            thisPage.onUrlChanged = null;
+            thisPage.onLoadFinished = null;
+            thisPage.onError = null;
+        }
 
         // Register event handlers
         // This logic bears some explaining. If we are loading a new page,
@@ -115,19 +145,25 @@ ghostdriver.Session = function(desiredCapabilities) {
         // callback.
         this.setOneShotCallback("onLoadStarted", function () {
             // console.log("onLoadStarted");
-            inLoad = true;
+            loadingNewPage = true;
         });
         this.setOneShotCallback("onUrlChanged", function () {
             // console.log("onUrlChanged");
-            if (!inLoad) {
+
+            // If "not loading a new page" it's just a fragment change
+            // and we should call "onLoadFunc()"
+            if (!loadingNewPage) {
                 clearTimeout(timer);
+                clearAllCallbacks();
+
                 onLoadFunc();
             }
         });
         this.setOneShotCallback("onLoadFinished", function () {
             // console.log("onLoadFinished");
             clearTimeout(timer);
-            inLoad = false;
+            clearAllCallbacks();
+
             onLoadFunc();
         });
         this.setOneShotCallback("onError", function(message, stack) {
@@ -141,91 +177,34 @@ ghostdriver.Session = function(desiredCapabilities) {
 
             thisPage.stop(); //< stop the page from loading
             clearTimeout(timer);
-            inLoad = false;
+            clearAllCallbacks();
+
             onErrorFunc();
         });
 
         // Starting timer
         timer = setTimeout(function() {
             thisPage.stop(); //< stop the page from loading
-            inLoad = false;
+            clearAllCallbacks();
+
             onErrorFunc();
         }, _getTimeout(_const.TIMEOUT_NAMES.PAGE_LOAD));
 
-        // We are ready to Eval
-        func.apply(this, args);
-    },
-
-    _evaluateAndWaitForLoadDecorator = function(evalFunc, onLoadFunc, onErrorFunc) {
-        // convert 'arguments' to a real Array
-        var args = Array.prototype.splice.call(arguments, 0),
-            timer,
-            inLoad = false,
-            thisPage = this;
-
-        // Separating arguments for the 'evaluate' call
-        // from the callback handlers.
-        // NOTE: I'm also passing 'evalFunc' as first parameter
-        // for the 'evaluate' call, and '0' as timeout.
-        args.splice(0, 3, evalFunc, 0);
-
-        // Register event handlers
-        // This logic bears some explaining. If we are loading a new page,
-        // the loadStarted event will fire, then urlChanged, then loadFinished,
-        // assuming no errors. However, when navigating to a fragment on the
-        // same page, neither the loadStarted nor the loadFinished events will
-        // fire. So if we receive a urlChanged event without a corresponding
-        // loadStarted event, we know we are only navigating to a fragment on
-        // the same page, and should fire the onLoadFunc callback. Otherwise,
-        // we need to wait until the loadFinished event before firing the
-        // callback.
-        this.setOneShotCallback("onLoadStarted", function () {
-            // console.log("onLoadStarted");
-            inLoad = true;
-        });
-        this.setOneShotCallback("onUrlChanged", function () {
-            // console.log("onUrlChanged");
-            if (!inLoad) {
-                clearTimeout(timer);
-                onLoadFunc();
-            }
-        });
-        this.setOneShotCallback("onLoadFinished", function() {
-            // console.log("onLoadFinished");
-            clearTimeout(timer);
-            inLoad = false;
-            onLoadFunc();
-        });
-        this.setOneShotCallback("onError", function(message, stack) {
-            // console.log("onError: "+message+"\n");
-            // stack.forEach(function(item) {
-            //     var message = item.file + ":" + item.line;
-            //     if (item["function"])
-            //         message += " in " + item["function"];
-            //     console.log("  " + message);
-            // });
-
-            thisPage.stop(); //< stop the page from loading
-            clearTimeout(timer);
-            inLoad = false;
-            onErrorFunc();
-        });
-
-        // Starting timer
-        timer = setTimeout(function() {
-            thisPage.stop(); //< stop the page from loading
-            inLoad = false;
-            onErrorFunc();
-        }, _getTimeout(_const.TIMEOUT_NAMES.PAGE_LOAD));
-
-        // We are ready to Eval
-        this.evaluateAsync.apply(this, args);
+        // We are ready to execute
+        if (execTypeOpt === "eval") {
+            // Invoke the Page Eval with the provided function
+            this.evaluateAsync.apply(this, args);
+        } else {
+            // "Apply" the provided function
+            func.apply(this, args);
+        }
     },
 
     _setOneShotCallbackDecorator = function(callbackName, handlerFunc) {
         var thisPage = this;
 
         thisPage[callbackName] = function() {
+            // console.log("Invoking one-shot-callback for: " + callbackName);
             thisPage[callbackName] = null;           //< once done, get rid of the handling
             handlerFunc.apply(thisPage, arguments);  //< call the actual handler
         };
@@ -252,7 +231,6 @@ ghostdriver.Session = function(desiredCapabilities) {
         // 1. Random Window Handle
         page.windowHandle = "WH-" + require("./third_party/uuid.js").v1();
         // 2. Utility methods
-        page.evaluateAndWaitForLoad = _evaluateAndWaitForLoadDecorator;
         page.execFuncAndWaitForLoad = _execFuncAndWaitForLoadDecorator;
         page.setOneShotCallback = _setOneShotCallbackDecorator;
         // 3. Store every newly created page

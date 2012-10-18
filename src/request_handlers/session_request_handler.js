@@ -395,8 +395,8 @@ ghostdriver.SessionReqHand = function(session) {
 
             _protoParent.getSessionCurrWindow.call(this, _session, req).evaluate(
                 "function(script, args, timeout) { " +
-                    "return (" + require("./webdriver_atoms.js").get("execute_async_script") + ")( " +
-                        "script, args, timeout, callPhantom, true); " +
+                    "return (" + require("./webdriver_atoms.js").get("execute_async_script") + ")" +
+                        "(script, args, timeout, callPhantom, true); " +
                 "}",
                 postObj.script,
                 postObj.args,
@@ -444,9 +444,13 @@ ghostdriver.SessionReqHand = function(session) {
         var postObj = JSON.parse(req.post),
             currWindow = _protoParent.getSessionCurrWindow.call(this, _session, req);
 
+        // console.log("Session '"+ _session.getId() +"' is about to load URL: " + postObj.url);
+
         if (typeof(postObj) === "object" && postObj.url) {
             // Switch to the main frame first
             currWindow.switchToMainFrame();
+            // console.log("Session '"+ _session.getId() +"' has switched to the MainFrame");
+
             // Load URL and wait for load to finish (or timeout)
             currWindow.execFuncAndWaitForLoad(
                 function() {
