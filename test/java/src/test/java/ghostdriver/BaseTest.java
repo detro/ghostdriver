@@ -32,9 +32,10 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.phantomjs.PhantomJSDriver;
+import org.openqa.selenium.phantomjs.PhantomJSDriverService;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
-import phantomjs.PhantomJSDriver;
 
 import java.io.FileReader;
 import java.io.IOException;
@@ -75,8 +76,10 @@ public abstract class BaseTest {
         sCaps = new DesiredCapabilities();
         sCaps.setJavascriptEnabled(true);
         sCaps.setCapability("takesScreenshot", false);
-        sCaps.setCapability(PhantomJSDriver.CAPABILITY_PHANTOMJS_BINARY, sConfig.getProperty("phantomjs_exec_path"));
-        sCaps.setCapability(PhantomJSDriver.CAPABILITY_PHANTOMJS_GHOSTDRIVER, sConfig.getProperty("phantomjs_driver_path"));
+        sCaps.setCapability(PhantomJSDriverService.PHANTOMJS_EXECUTABLE_PATH_PROPERTY,
+                sConfig.getProperty("phantomjs_exec_path"));
+        sCaps.setCapability(PhantomJSDriverService.PHANTOMJS_GHOSTDRIVER_PATH_PROPERTY,
+                sConfig.getProperty("phantomjs_driver_path"));
     }
 
     @Before

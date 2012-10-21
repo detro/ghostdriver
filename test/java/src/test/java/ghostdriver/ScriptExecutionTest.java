@@ -88,6 +88,9 @@ public class ScriptExecutionTest extends BaseTest {
 
     @Test
     public void shouldBeAbleToExecuteMultipleAsyncScriptsSequentiallyWithNavigation() {
+        // NOTE: This test is supposed to fail!
+        // It's a reminder that there is some internal issue in PhantomJS still to address.
+
         WebDriver d = getDriver();
         d.manage().timeouts().setScriptTimeout(0, TimeUnit.MILLISECONDS);
 
