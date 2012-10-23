@@ -40,6 +40,7 @@ parseURI = require("./third_party/parseuri.js");
 parseURI.options.strictMode = true;
 
 phantom.injectJs("session.js");
+phantom.injectJs("inputs.js");
 phantom.injectJs("request_handlers/request_handler.js");
 phantom.injectJs("request_handlers/status_request_handler.js");
 phantom.injectJs("request_handlers/shutdown_request_handler.js");

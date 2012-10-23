@@ -91,6 +91,7 @@ ghostdriver.Session = function(desiredCapabilities) {
     _windows = {},  //< NOTE: windows are "webpage" in Phantom-dialect
     _currentWindowHandle = null,
     _id = "SID-" + require("./third_party/uuid.js").v1(),
+    _inputs = ghostdriver.Inputs(),
 
     /**
      * Executes a function and waits for Load to happen.
@@ -374,7 +375,8 @@ ghostdriver.Session = function(desiredCapabilities) {
         aboutToDelete : _aboutToDelete,
         setTimeout : _setTimeout,
         getTimeout : _getTimeout,
-        timeoutNames : _timeoutNames
+        timeoutNames : _timeoutNames,
+        inputs: _inputs
     };
 };
 
