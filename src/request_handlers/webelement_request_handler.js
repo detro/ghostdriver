@@ -163,21 +163,32 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         res.respondBasedOnResult(_session, req, locationRes);
     },
 
-    _getLocationInViewCommand = function(req, res) {
-        var scrollRes = _protoParent.getSessionCurrWindow.call(this, _session, req).evaluate(
-                require("./webdriver_atoms.js").get("scroll_into_view"),
-                _getJSON());
+    _getLocationInViewResult = function (req) {
+        return _protoParent.getSessionCurrWindow.call(this, _session, req).evaluate(
+            require("./webdriver_atoms.js").get("execute_script"),
+            "return (" + require("./webdriver_atoms.js").get("get_location_in_view") + ")(arguments[0]);",
+            [_getJSON()]);
+    },
 
-        // console.log("Scrolling into View result: "+JSON.stringify(scrollRes));
+    _getLocationInView = function (req) {
+        var result = _getLocationInViewResult(req);
 
-        scrollRes = JSON.parse(scrollRes);
-        if (scrollRes && scrollRes.status === 0) {
-            res.respondBasedOnResult(_session, req, _getLocationResult(req));
-            return;
+        // console.log("Location: "+JSON.stringify(result));
+
+        if (result.status === 0) {
+            return result.value;
+        } else {
+            return null;
         }
+    },
+
+    _getLocationInViewCommand = function (req, res) {
+        var locationInViewRes = _getLocationInViewResult(req);
+
+        // console.log("Scrolling into View result: "+JSON.stringify(locationInViewRes));
 
         // Something went wrong: report the error
-        res.respondBasedOnResult(_session, req, scrollRes);
+        res.respondBasedOnResult(_session, req, locationInViewRes);
     },
 
     _getSizeResult = function (req) {
@@ -217,11 +228,19 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
             text = text.replace(/[\b]/g, '\uE003').           // Backspace
                         replace(/\t/g, '\uE004').             // Tab
                         replace(/(\r\n|\n|\r)/g, '\uE006');   // Return
-            // Execute the "type" atom
+            // Execute the "type" atom on an empty string only to force focus to the element.
+            // This is a hack that needs to be corrected with a proper method to set focus.
             typeRes = _protoParent.getSessionCurrWindow.call(this, _session, req).evaluate(
-                typeAtom,
-                _getJSON(),
-                text.split(""));
+                    typeAtom,
+                    _getJSON(),
+                   "");
+            _session.inputs.sendKeys(_session, text);
+            if (req.urlParsed.file === _const.VALUE) {
+                // Only clear the modifier keys if this was called using element.sendKeys().
+                // Calling this from the Advanced Interactions API doesn't clear the modifier
+                // keys.
+                _session.inputs.clearModifierKeys(_session);
+            }
 
             res.respondBasedOnResult(_session, req, typeRes);
             return;
@@ -387,7 +406,8 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         getSession : _getSession,
         postValueCommand : _postValueCommand,
         getLocation : _getLocation,
-        getSize : _getSize
+        getLocationInView: _getLocationInView,
+        getSize: _getSize
     };
 };
 // prototype inheritance:

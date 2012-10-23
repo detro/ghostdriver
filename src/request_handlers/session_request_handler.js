@@ -31,7 +31,6 @@ var ghostdriver = ghostdriver || {};
 ghostdriver.SessionReqHand = function(session) {
     // private:
     var
-    _mousePos = {x: 0, y: 0},
     _session = session,
     _protoParent = ghostdriver.SessionReqHand.prototype,
     _locator = new ghostdriver.WebElementLocator(session),
@@ -584,17 +583,16 @@ ghostdriver.SessionReqHand = function(session) {
             if (elementSpecified) {
                 // Get Element's Location and add it to the coordinates
                 var requestHandler = new ghostdriver.WebElementReqHand(postObj.element, _session);
-                elementLocation = requestHandler.getLocation();
+                elementLocation = requestHandler.getLocationInView();
                 elementSize = requestHandler.getSize();
                 // If the Element has a valid location
                 if (elementLocation !== null) {
-                    coords.x += elementLocation.x;
-                    coords.y += elementLocation.y;
+                    coords.x = elementLocation.x;
+                    coords.y = elementLocation.y;
                 }
                 // console.log("element specified. initial coordinates (" + coords.x + "," + coords.y + ")");
             } else {
-                coords.x = _mousePos.x;
-                coords.y = _mousePos.y;
+                coords = _session.inputs.getCurrentCoordinates();
                 // console.log("no element specified. initial coordinates (" + coords.x + "," + coords.y + ")");
             }
 
@@ -610,8 +608,7 @@ ghostdriver.SessionReqHand = function(session) {
             }
 
             // Send the Mouse Move as native event
-            _protoParent.getSessionCurrWindow.call(this, _session, req).sendEvent("mousemove", coords.x, coords.y);
-            _mousePos = { x: coords.x, y: coords.y };
+            _session.inputs.mouseMove(_session, coords);
             res.success(_session.getId());
         } else {
             // Neither "element" nor "xoffset/yoffset" were provided
@@ -638,9 +635,7 @@ ghostdriver.SessionReqHand = function(session) {
                 mouseButton = (postObj.button === 2) ? "right" : (postObj.button === 1) ? "middle" : "left";
             }
             // Send the Mouse Click as native event
-            _protoParent.getSessionCurrWindow.call(this, _session, req).sendEvent(clickType,
-                _mousePos.x, _mousePos.y, //< x, y
-                mouseButton);
+            _session.inputs.mouseButtonClick(_session, clickType, mouseButton);
             res.success(_session.getId());
         } else {
             // Neither "element" nor "xoffset/yoffset" were provided
