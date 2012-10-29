@@ -208,21 +208,33 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
 
     _postValueCommand = function(req, res) {
         var postObj = JSON.parse(req.post),
-            typeAtom = require("./webdriver_atoms.js").get("type"),
-            typeRes;
+            currWindow = _protoParent.getSessionCurrWindow.call(this, _session, req),
+            typeRes,
+            text;
 
         // Ensure all required parameters are available
         if (typeof(postObj) === "object" && typeof(postObj.value) === "object") {
-            var text = postObj.value.join("");
-            text = text.replace(/[\b]/g, '\uE003').           // Backspace
-                        replace(/\t/g, '\uE004').             // Tab
-                        replace(/(\r\n|\n|\r)/g, '\uE006');   // Return
-            // Execute the "type" atom
-            typeRes = _protoParent.getSessionCurrWindow.call(this, _session, req).evaluate(
-                typeAtom,
-                _getJSON(),
-                text.split(""));
+            // Normalize input: some binding might send an array of single characters
+            text = postObj.value.join("");
 
+            // Detect if it's an Input File type (that requires special behaviour)
+            if (_getTagName(currWindow).toLowerCase() === "input" && _getAttribute(currWindow, "type").toLowerCase() === "file") {
+                // Register a one-shot-callback to fill the file picker once invoked by clicking on the element
+                currWindow.setOneShotCallback("onFilePicker", function(oldFile) { return text; });
+
+                // Click on the element!
+                typeRes = currWindow.evaluate(require("./webdriver_atoms.js").get("click"), _getJSON());
+            } else {
+                // Substitute special characters
+                text = text.replace(/[\b]/g, '\uE003').           // Backspace
+                            replace(/\t/g, '\uE004').             // Tab
+                            replace(/(\r\n|\n|\r)/g, '\uE006');   // Return
+
+                // Execute the "type" atom
+                typeRes = currWindow.evaluate(require("./webdriver_atoms.js").get("type"), _getJSON(), text.split(""));
+            }
+
+            // Return the result of this typing
             res.respondBasedOnResult(_session, req, typeRes);
             return;
         }
@@ -358,6 +370,25 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         }
 
         throw _errors.createInvalidReqMissingCommandParameterEH(req);
+    },
+
+    _getAttribute = function(currWindow, attributeName) {
+        var attributeValueAtom = require("./webdriver_atoms.js").get("get_attribute_value"),
+            result = currWindow.evaluate(
+                attributeValueAtom, // < Atom to read an attribute
+                _getJSON(),         // < Element to read from
+                attributeName);     // < Attribute to read
+
+        return JSON.parse(result).value;
+    },
+
+    _getTagName = function(currWindow) {
+        var result = currWindow.evaluate(
+                require("./webdriver_atoms.js").get("execute_script"),
+                "return arguments[0].tagName;",
+                [_getJSON()]);
+
+        return result.value;
     },
 
     /**
