@@ -217,6 +217,36 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         res.respondBasedOnResult(_session, req, sizeRes);
     },
 
+    _normalizeSpecialChars = function(str) {
+        var resultStr = "",
+            i, ilen;
+
+        for(i = 0, ilen = str.length; i < ilen; ++i) {
+            switch(str[i]) {
+                case '\b':
+                    resultStr += '\uE003';  //< Backspace
+                    break;
+                case '\t':
+                    resultStr += '\uE004';  // Tab
+                    break;
+                case '\r':
+                    resultStr += '\uE006';  // Return
+                    if (str.length > i+1 && str[i+1] === '\n') {    //< Return on Windows
+                        ++i; //< skip the next '\n'
+                    }
+                    break;
+                case '\n':
+                    resultStr += '\uE006';  // Return
+                    break;
+                default:
+                    resultStr += str[i];
+                    break;
+            }
+        }
+
+        return resultStr;
+    },
+
     _postValueCommand = function(req, res) {
         var postObj = JSON.parse(req.post),
             currWindow = _protoParent.getSessionCurrWindow.call(this, _session, req),
@@ -236,10 +266,8 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
                 // Click on the element!
                 typeRes = currWindow.evaluate(require("./webdriver_atoms.js").get("click"), _getJSON());
             } else {
-                // Substitute special characters
-                text = text.replace(/[\b]/g, '\uE003').           // Backspace
-                            replace(/\t/g, '\uE004').             // Tab
-                            replace(/(\r\n|\n|\r)/g, '\uE006');   // Return
+                // Normalize for special characters
+                text = _normalizeSpecialChars(text);
 
                 // Execute the "type" atom on an empty string only to force focus to the element.
                 // TODO: This is a hack that needs to be corrected with a proper method to set focus.
