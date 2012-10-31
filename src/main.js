@@ -77,5 +77,5 @@ if (server.listen(listenOnPort, router.handle)) {
     }
 } else {
     console.error("ERROR: Could not start Ghost Driver");
-    phantom.exit();
+    phantom.exit(1);
 }
