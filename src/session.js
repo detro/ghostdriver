@@ -157,7 +157,7 @@ ghostdriver.Session = function(desiredCapabilities) {
                 clearTimeout(timer);
                 clearAllCallbacks();
 
-                onLoadFunc();
+                onLoadFunc.apply(thisPage, arguments);
             }
         });
         this.setOneShotCallback("onLoadFinished", function () {
@@ -165,7 +165,7 @@ ghostdriver.Session = function(desiredCapabilities) {
             clearTimeout(timer);
             clearAllCallbacks();
 
-            onLoadFunc();
+            onLoadFunc.apply(thisPage, arguments);
         });
         this.setOneShotCallback("onError", function(message, stack) {
             // console.log("onError: "+message+"\n");
@@ -180,7 +180,7 @@ ghostdriver.Session = function(desiredCapabilities) {
             clearTimeout(timer);
             clearAllCallbacks();
 
-            onErrorFunc();
+            onErrorFunc.apply(thisPage, arguments);
         });
 
         // Starting timer
@@ -188,7 +188,7 @@ ghostdriver.Session = function(desiredCapabilities) {
             thisPage.stop(); //< stop the page from loading
             clearAllCallbacks();
 
-            onErrorFunc();
+            onErrorFunc.apply(thisPage, arguments);
         }, _getTimeout(_const.TIMEOUT_NAMES.PAGE_LOAD));
 
         // We are ready to execute

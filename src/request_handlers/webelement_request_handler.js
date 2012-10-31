@@ -347,37 +347,43 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
     },
 
     _postSubmitCommand = function(req, res) {
-        var submitRes,
+        var currWindow = _protoParent.getSessionCurrWindow.call(this, _session, req),
+            submitRes,
             abortCallback = false;
 
-        // Listen for the page to Finish Loading after the submit
-        _protoParent.getSessionCurrWindow.call(this, _session, req).setOneShotCallback("onLoadFinished", function(status) {
+        currWindow.execFuncAndWaitForLoad(function() {  //< do the submit
+            submitRes = currWindow.evaluate(require("./webdriver_atoms.js").get("submit"), _getJSON());
+
+            // If Submit was NOT positive, status will be set to something else than '0'
+            submitRes = JSON.parse(submitRes);
+            if (submitRes && submitRes.status !== 0) {
+                abortCallback = true;   //< handling the error here
+                res.respondBasedOnResult(_session, req, submitRes);
+            }
+        }, function(status) {                   //< onLoadFinished
+            // Report about the Load, only if it was not already handled
             if (!abortCallback) {
                 if (status === "success") {
                     res.success(_session.getId());
                 } else {
                     _errors.handleFailedCommandEH(
                         _errors.FAILED_CMD_STATUS.UNKNOWN_ERROR,
-                        "Submit failed",
+                        "Submit succeded but Load Failed",
                         req,
                         res,
                         _session,
                         "WebElementReqHand");
                 }
             }
+        }, function() {                         //< onError / onTimeout
+            _errors.handleFailedCommandEH(
+                _errors.FAILED_CMD_STATUS.UNKNOWN_ERROR,
+                "Submit failed",
+                req,
+                res,
+                _session,
+                "WebElementReqHand");
         });
-
-        // Submit
-        submitRes = _protoParent.getSessionCurrWindow.call(this, _session, req).evaluate(
-            require("./webdriver_atoms.js").get("submit"),
-            _getJSON());
-
-        // If Submit was NOT positive, status will be set to something else than '0'
-        submitRes = JSON.parse(submitRes);
-        if (submitRes && submitRes.status !== 0) {
-            abortCallback = true; //< handling the error here
-            res.respondBasedOnResult(_session, req, submitRes);
-        }
     },
 
     _postClickCommand = function(req, res) {
