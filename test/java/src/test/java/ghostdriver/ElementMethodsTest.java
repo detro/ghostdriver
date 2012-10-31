@@ -31,6 +31,8 @@ import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import org.openqa.selenium.support.ui.ExpectedConditions;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -60,5 +62,23 @@ public class ElementMethodsTest extends BaseTest {
         WebElement el = d.findElement(By.cssSelector("input[name*='q']"));
 
         assertTrue(el.isEnabled());
+    }
+
+    @Test
+    public void SubmittingFormShouldFireOnSubmitForThatForm() {
+        WebDriver d = getDriver();
+
+        d.get("http://ci.seleniumhq.org:2310/common/javascriptPage.html");
+        WebElement formElement = d.findElement(By.id("submitListeningForm"));
+        formElement.submit();
+
+        WebDriverWait wait = new WebDriverWait(d, 30);
+        wait.until(ExpectedConditions.textToBePresentInElement(By.id("result"), "form-onsubmit"));
+
+        WebElement result = d.findElement(By.id("result"));
+        String text = result.getText();
+        boolean conditionMet = text.contains("form-onsubmit");
+
+        assertTrue(conditionMet);
     }
 }
