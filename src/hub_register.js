@@ -26,7 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 /* generate node configuration for this node */
-var nodeconf = function(port, hub){
+var nodeconf = function(ip, port, hub){
   var ref$, hubHost, hubPort;
   ref$ = hub.match(/([\w\d\.]+):(\d+)/), hubHost = ref$[1], hubPort = ref$[2];
   hubPort = +hubPort;
@@ -48,8 +48,8 @@ var nodeconf = function(port, hub){
       register: true,
       registerCycle: 5000,
       role: "wd",
-      url: "http://127.0.0.1:" + port,
-      remoteHost: "http://127.0.0.1:" + port
+      url: "http://" + ip + ":" + port,
+      remoteHost: "http://" + ip + ":" + port
     }
   };
 };

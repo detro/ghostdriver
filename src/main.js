@@ -33,7 +33,10 @@ var ghostdriver = {
     },
     server = require('webserver').create(),
     router,
-    parseURI;
+    parseURI,
+    listenOn,
+    listenOnIp = "127.0.0.1",
+    listenOnPort = "8080";
 
 // Enable "strict mode" for the 'parseURI' library
 parseURI = require("./third_party/parseuri.js");
@@ -53,12 +56,25 @@ phantom.injectJs("webelementlocator.js");
 // HTTP Request Router
 router = new ghostdriver.RouterReqHand();
 
+// Check if parameters were given, regarding the "ip:port" to listen to
+if (ghostdriver.system.args[1]) {
+    if (ghostdriver.system.args[1].indexOf(':') >= 0) {
+        listenOn = ghostdriver.system.args[1].split(':');
+        listenOnIp = listenOn[0];
+        listenOnPort = listenOn[1];
+    } else {
+        listenOnPort = ghostdriver.system.args[1];
+    }
+}
+
 // Start the server
-if (server.listen(ghostdriver.system.args[1] || 8080, router.handle)) {
+if (server.listen(listenOnPort, router.handle)) {
     console.log('Ghost Driver running on port ' + server.port);
-    var reg = ghostdriver.hub.register;
-    if (ghostdriver.system.args[2])
-        reg(ghostdriver.system.args[1], ghostdriver.system.args[2]);
+
+    // If parameters regarding a Selenium Grid HUB were given, register to it!
+    if (ghostdriver.system.args[2]) {
+        ghostdriver.hub.register(listenOnIp, listenOnPort, ghostdriver.system.args[2]);
+    }
 } else {
     console.error("ERROR: Could not start Ghost Driver");
     phantom.exit();
