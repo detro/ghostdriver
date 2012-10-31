@@ -55,7 +55,7 @@ var nodeconf = function(ip, port, hub){
 };
 
 module.exports = {
-  register: function(port, hub){
+  register: function(ip, port, hub){
     var page = require('webpage').create();
     port = +port;
     if (!hub.match(/\/$/)) {
@@ -65,16 +65,20 @@ module.exports = {
     /* Register with selenium grid server */
     page.open(hub + 'grid/register', {
       operation: 'post',
-      data: JSON.stringify(nodeconf(port, hub)),
+      data: JSON.stringify(nodeconf(ip, port, hub)),
       headers: {
         'Content-Type': 'application/json'
       }
     }, function(status){
       if (status !== 'success') {
-        return console.log("Unable to register with grid " + hub + ": " + status);
-      } else {
-        return console.log(("registered with grid hub: " + hub) + page.content);
+        console.error("Unable to contact grid " + hub + ": " + status);
+        phantom.exit(1);
       }
+      if (page.framePlainText !== "ok") {
+        console.error("Problem registering with grid " + hub + ": " + page.content);
+        phantom.exit(1);
+      }
+      console.log("Registered with grid hub: " + hub + " (" + page.framePlainText +")");
     });
   }
 };
