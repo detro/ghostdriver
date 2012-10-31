@@ -77,6 +77,24 @@ public class FileUploadTest extends BaseTest {
     }
 
     @Test
+    public void checkUploadingTheSameFileMultipleTimes() throws IOException {
+        WebDriver d = getDriver();
+
+        File file = File.createTempFile("test", "txt");
+        file.deleteOnExit();
+
+        d.get("http://ci.seleniumhq.org:2310/common/formPage.html");
+        WebElement uploadElement = d.findElement(By.id("upload"));
+        uploadElement.sendKeys(file.getAbsolutePath());
+        uploadElement.submit();
+
+        d.get("http://ci.seleniumhq.org:2310/common/formPage.html");
+        uploadElement = d.findElement(By.id("upload"));
+        uploadElement.sendKeys(file.getAbsolutePath());
+        uploadElement.submit();
+     }
+
+    @Test
     public void checkOnChangeEventIsFiredOnFileUpload() throws IOException {
         WebDriver d = getDriver();
 
