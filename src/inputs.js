@@ -2,7 +2,6 @@
 This file is part of the GhostDriver project from Neustar inc.
 
 Copyright (c) 2012, Ivan De Marino <ivan.de.marino@gmail.com / detronizator@gmail.com>
-Copyright (c) 2012, Alex Anderson <@alxndrsn>
 Copyright (c) 2012, Jim Evans <james.h.evans.jr@gmail.com>
 All rights reserved.
 
@@ -31,7 +30,7 @@ var ghostdriver = ghostdriver || {};
 
 ghostdriver.Inputs = function () {
     // private:
-    var 
+    var
     _mousePos = { x: 0, y: 0 },
     _keyboardState = {},
     _specialKeys = {
@@ -89,7 +88,7 @@ ghostdriver.Inputs = function () {
         '\uE03A': "F10",           // F10
         '\uE03B': "F11",           // F11
         '\uE03C': "F12",           // F12
-        '\uE03D': "Meta"           // Command/Meta        
+        '\uE03D': "Meta"           // Command/Meta
     },
 
     _implicitShiftKeys = {
