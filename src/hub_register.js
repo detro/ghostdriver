@@ -26,59 +26,59 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 /* generate node configuration for this node */
-var nodeconf = function(ip, port, hub){
-  var ref$, hubHost, hubPort;
-  ref$ = hub.match(/([\w\d\.]+):(\d+)/), hubHost = ref$[1], hubPort = ref$[2];
-  hubPort = +hubPort;
-  return {
-    capabilities: [{
-      browserName: "phantomjs",
-      maxInstances: 1,
-      seleniumProtocol: "WebDriver"
-    }],
-    configuration: {
-      hub: hub,
-      hubHost: hubHost,
-      hubPort: hubPort,
-      port: port,
-      proxy: "org.openqa.grid.selenium.proxy.DefaultRemoteProxy",
-      // Note that multiple webdriver sessions or instances within a single
-      // Ghostdriver process will interact in unexpected and undesirable ways.
-      maxSession: 1,
-      register: true,
-      registerCycle: 5000,
-      role: "wd",
-      url: "http://" + ip + ":" + port,
-      remoteHost: "http://" + ip + ":" + port
-    }
-  };
+var nodeconf = function(ip, port, hub) {
+    var ref$, hubHost, hubPort;
+    ref$ = hub.match(/([\w\d\.]+):(\d+)/), hubHost = ref$[1], hubPort = ref$[2];
+    hubPort = +hubPort;
+    return {
+        capabilities: [{
+            browserName: "phantomjs",
+            maxInstances: 1,
+            seleniumProtocol: "WebDriver"
+        }],
+        configuration: {
+            hub: hub,
+            hubHost: hubHost,
+            hubPort: hubPort,
+            port: port,
+            proxy: "org.openqa.grid.selenium.proxy.DefaultRemoteProxy",
+            // Note that multiple webdriver sessions or instances within a single
+            // Ghostdriver process will interact in unexpected and undesirable ways.
+            maxSession: 1,
+            register: true,
+            registerCycle: 5000,
+            role: "wd",
+            url: "http://" + ip + ":" + port,
+            remoteHost: "http://" + ip + ":" + port
+        }
+    };
 };
 
 module.exports = {
-  register: function(ip, port, hub){
-    var page = require('webpage').create();
-    port = +port;
-    if (!hub.match(/\/$/)) {
-      hub += '/';
-    }
+    register: function(ip, port, hub) {
+        var page = require('webpage').create();
+        port = +port;
+        if(!hub.match(/\/$/)) {
+            hub += '/';
+        }
 
-    /* Register with selenium grid server */
-    page.open(hub + 'grid/register', {
-      operation: 'post',
-      data: JSON.stringify(nodeconf(ip, port, hub)),
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    }, function(status){
-      if (status !== 'success') {
-        console.error("Unable to contact grid " + hub + ": " + status);
-        phantom.exit(1);
-      }
-      if (page.framePlainText !== "ok") {
-        console.error("Problem registering with grid " + hub + ": " + page.content);
-        phantom.exit(1);
-      }
-      console.log("Registered with grid hub: " + hub + " (" + page.framePlainText +")");
-    });
-  }
+        /* Register with selenium grid server */
+        page.open(hub + 'grid/register', {
+            operation: 'post',
+            data: JSON.stringify(nodeconf(ip, port, hub)),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        }, function(status) {
+            if(status !== 'success') {
+                console.error("Unable to contact grid " + hub + ": " + status);
+                phantom.exit(1);
+            }
+            if(page.framePlainText !== "ok") {
+                console.error("Problem registering with grid " + hub + ": " + page.content);
+                phantom.exit(1);
+            }
+            console.log("Registered with grid hub: " + hub + " (" + page.framePlainText + ")");
+        });
+    }
 };
