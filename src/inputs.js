@@ -215,22 +215,26 @@ ghostdriver.Inputs = function () {
             var key = keys[i];
             var actualKey = _translateKey(session, key);
 
-            if (_isModifierKey(key)) {
-                if (_isModifierKeyPressed(key)) {
-                    _keyUp(session, actualKey);
-                } else {
-                    _keyDown(session, actualKey);
-                }
+            if (key === '\uE000') {
+                _clearModifierKeys(session);
             } else {
-                if (_implicitShiftKeys.hasOwnProperty(actualKey)) {
-                    session.getCurrentWindow().sendEvent("keydown", _translateKey(session, "\uE008"));
-                    _pressKey(session, actualKey);
-                    session.getCurrentWindow().sendEvent("keyup", _translateKey(session, "\uE008"));
-                } else {
-                    if ((_currentModifierKeys & _modifierKeyValues.SHIFT) && _shiftKeys.hasOwnProperty(actualKey)) {
-                        _pressKey(session, _shiftKeys[actualKey]);
+                if (_isModifierKey(key)) {
+                    if (_isModifierKeyPressed(key)) {
+                        _keyUp(session, actualKey);
                     } else {
+                        _keyDown(session, actualKey);
+                    }
+                } else {
+                    if (_implicitShiftKeys.hasOwnProperty(actualKey)) {
+                        session.getCurrentWindow().sendEvent("keydown", _translateKey(session, "\uE008"));
                         _pressKey(session, actualKey);
+                        session.getCurrentWindow().sendEvent("keyup", _translateKey(session, "\uE008"));
+                    } else {
+                        if ((_currentModifierKeys & _modifierKeyValues.SHIFT) && _shiftKeys.hasOwnProperty(actualKey)) {
+                            _pressKey(session, _shiftKeys[actualKey]);
+                        } else {
+                            _pressKey(session, actualKey);
+                        }
                     }
                 }
             }
@@ -286,7 +290,6 @@ ghostdriver.Inputs = function () {
     },
 
     _keyUp = function (session, key) {
-        _keyEvent(session, "keyup", key);
         if (key == _translateKey(session, "\uE008")) {
             _updateModifierKeys(_modifierKeyValues.SHIFT, false);
         } else if (key == _translateKey(session, "\uE009")) {
@@ -294,6 +297,7 @@ ghostdriver.Inputs = function () {
         } else if (key == _translateKey(session, "\uE00A")) {
             _updateModifierKeys(_modifierKeyValues.ALT, false);
         }
+        _keyEvent(session, "keyup", key);
     },
 
     _mouseClick = function (session, coords) {
