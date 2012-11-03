@@ -259,9 +259,18 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
             text = postObj.value.join("");
 
             // Detect if it's an Input File type (that requires special behaviour)
-            if (_getTagName(currWindow).toLowerCase() === "input" && _getAttribute(currWindow, "type").toLowerCase() === "file") {
+            if (_getTagName(currWindow).toLowerCase() === "input" &&
+                _getAttribute(currWindow, "type").toLowerCase() === "file") {
+
                 // Register a one-shot-callback to fill the file picker once invoked by clicking on the element
-                currWindow.setOneShotCallback("onFilePicker", function(oldFile) { return text; });
+                currWindow.setOneShotCallback("onFilePicker", function(oldFile) {
+                    // Send the response as soon as we are done setting the value in the "input[type=file]" element
+                    setTimeout(function() {
+                        res.respondBasedOnResult(_session, req, typeRes);
+                    }, 1);
+
+                    return text;
+                });
 
                 // Click on the element!
                 typeRes = currWindow.evaluate(require("./webdriver_atoms.js").get("click"), _getJSON());
@@ -281,10 +290,10 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
                 if (req.urlParsed.file === _const.VALUE) {
                     _session.inputs.clearModifierKeys(_session);
                 }
-            }
 
-            // Return the result of this typing
-            res.respondBasedOnResult(_session, req, typeRes);
+                // Return the result of this typing
+                res.respondBasedOnResult(_session, req, typeRes);
+            }
             return;
         }
 
