@@ -206,8 +206,8 @@ ghostdriver.Session = function(desiredCapabilities) {
 
         thisPage[callbackName] = function() {
             // console.log("Invoking one-shot-callback for: " + callbackName);
-            thisPage[callbackName] = null;           //< once done, get rid of the handling
-            handlerFunc.apply(thisPage, arguments);  //< call the actual handler
+            thisPage[callbackName] = null;                  //< once done, get rid of the handling
+            return handlerFunc.apply(thisPage, arguments);  //< call the actual handler
         };
     },
 
