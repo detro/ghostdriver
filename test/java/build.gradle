@@ -11,7 +11,7 @@ repositories {
     mavenCentral()
 }
 
-ext.seleniumVersion = "2.25.0"
+ext.seleniumVersion = "2.26.0"
 ext.junitVersion = "4.8+"
 ext.jettyVersion = "6.1.21"
 
@@ -30,14 +30,8 @@ tasks.withType(JavaExec) {
 }
 
 test {
-    //makes the standard streams (err and out) visible at console when running tests
-    testLogging.showStandardStreams = true
-
-    //listening to test execution events
+    // Listening to test execution events
     beforeTest { descriptor ->
-        logger.lifecycle("Running test: " + descriptor)
-    }
-    onOutput { descriptor, event ->
-        logger.lifecycle("Test: " + descriptor + " produced standard out/err: " + event.message )
+        logger.lifecycle("Running " + descriptor)
     }
 }
