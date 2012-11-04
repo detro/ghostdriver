@@ -90,7 +90,7 @@ ghostdriver.Session = function(desiredCapabilities) {
     },
     _windows = {},  //< NOTE: windows are "webpage" in Phantom-dialect
     _currentWindowHandle = null,
-    _id = "SID-" + require("./third_party/uuid.js").v1(),
+    _id = require("./third_party/uuid.js").v1(),
     _inputs = ghostdriver.Inputs(),
 
     /**
