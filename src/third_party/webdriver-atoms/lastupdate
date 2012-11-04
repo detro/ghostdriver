@@ -1,7 +1,7 @@
-2012-09-27 18:19:58
+2012-11-04 20:35:20
 
 ------------------------------------------------------------------------
-r17878 | james.h.evans.jr@gmail.com | 2012-09-27 17:07:19 +0100 (Thu, 27 Sep 2012) | 1 line
+r18064 | simon.m.stewart@gmail.com | 2012-11-04 20:21:10 +0000 (Sun, 04 Nov 2012) | 1 line
 
-JimEvans: For the injected getText atom, wrap webdriver.atoms.element.getText instead of just bot.dom.getVisibleText.
+SimonStewart: We appear to use an awful lot of memory during a build.
 ------------------------------------------------------------------------
