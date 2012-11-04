@@ -28,10 +28,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package ghostdriver;
 
 import org.junit.Test;
+import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.util.concurrent.TimeUnit;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class NavigationTest extends BaseTest {
@@ -63,5 +67,21 @@ public class NavigationTest extends BaseTest {
 
         // Make sure explicit navigation still works.
         d.get("http://google.com");
+    }
+
+    @Test
+    public void navigateToGoogleAdwords() {
+        WebDriver d = getDriver();
+        d.get("http://adwords.google.com");
+        assertTrue(d.getCurrentUrl().contains("google.com"));
+    }
+
+    @Test
+    public void navigateToMyHabit() {
+        WebDriver d = getDriver();
+        d.get("http://www.myhabit.com");
+        WebDriverWait wait = new WebDriverWait(d, 10);
+        wait.until(ExpectedConditions.presenceOfElementLocated(By.name("email")));
+        assertNotNull(d.findElement(By.name("email")));
     }
 }
