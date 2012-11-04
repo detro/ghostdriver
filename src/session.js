@@ -86,7 +86,8 @@ ghostdriver.Session = function(desiredCapabilities) {
             ASYNC_SCRIPT    : "async script",
             IMPLICIT        : "implicit",
             PAGE_LOAD       : "page load"
-        }
+        },
+        ONE_SHOT_POSTFIX : "OneShot"
     },
     _windows = {},  //< NOTE: windows are "webpage" in Phantom-dialect
     _currentWindowHandle = null,
@@ -124,16 +125,6 @@ ghostdriver.Session = function(desiredCapabilities) {
             args.splice(0, 3);
         }
 
-        // This function used to ensure no callback is left behind
-        // after we are done here
-        function clearAllCallbacks() {
-            // console.log("Clearing callbacks for window: " + thisPage.windowHandle);
-            thisPage.onLoadStarted = null;
-            thisPage.onUrlChanged = null;
-            thisPage.onLoadFinished = null;
-            thisPage.onError = null;
-        }
-
         // Register event handlers
         // This logic bears some explaining. If we are loading a new page,
         // the loadStarted event will fire, then urlChanged, then loadFinished,
@@ -155,7 +146,7 @@ ghostdriver.Session = function(desiredCapabilities) {
             // and we should call "onLoadFunc()"
             if (!loadingNewPage) {
                 clearTimeout(timer);
-                clearAllCallbacks();
+                thisPage.resetOneShotCallbacks();
 
                 onLoadFunc.apply(thisPage, arguments);
             }
@@ -163,7 +154,7 @@ ghostdriver.Session = function(desiredCapabilities) {
         this.setOneShotCallback("onLoadFinished", function () {
             // console.log("onLoadFinished");
             clearTimeout(timer);
-            clearAllCallbacks();
+            thisPage.resetOneShotCallbacks();
 
             onLoadFunc.apply(thisPage, arguments);
         });
@@ -178,7 +169,7 @@ ghostdriver.Session = function(desiredCapabilities) {
 
             thisPage.stop(); //< stop the page from loading
             clearTimeout(timer);
-            clearAllCallbacks();
+            thisPage.resetOneShotCallbacks();
 
             onErrorFunc.apply(thisPage, arguments);
         });
@@ -186,7 +177,7 @@ ghostdriver.Session = function(desiredCapabilities) {
         // Starting timer
         timer = setTimeout(function() {
             thisPage.stop(); //< stop the page from loading
-            clearAllCallbacks();
+            thisPage.resetOneShotCallbacks();
 
             onErrorFunc.apply(thisPage, arguments);
         }, _getTimeout(_const.TIMEOUT_NAMES.PAGE_LOAD));
@@ -201,14 +192,34 @@ ghostdriver.Session = function(desiredCapabilities) {
         }
     },
 
-    _setOneShotCallbackDecorator = function(callbackName, handlerFunc) {
-        var thisPage = this;
+    _oneShotCallbackFactory = function(page, callbackName) {
+        return function() {
+            var retVal;
 
-        thisPage[callbackName] = function() {
-            // console.log("Invoking one-shot-callback for: " + callbackName);
-            thisPage[callbackName] = null;                  //< once done, get rid of the handling
-            return handlerFunc.apply(thisPage, arguments);  //< call the actual handler
+            if (typeof(page[callbackName + _const.ONE_SHOT_POSTFIX]) === "function") {
+                // console.log("Invoking one-shot-callback for: " + callbackName);
+                retVal = page[callbackName + _const.ONE_SHOT_POSTFIX].apply(page, arguments);
+                page[callbackName + _const.ONE_SHOT_POSTFIX] = null;
+            }
+            return retVal;
         };
+    },
+
+    _setOneShotCallbackDecorator = function(callbackName, handlerFunc) {
+        if (callbackName === "onError") {
+            this["onError"] = handlerFunc;
+        } else {
+            this[callbackName + _const.ONE_SHOT_POSTFIX] = handlerFunc;
+        }
+    },
+
+    _resetOneShotCallbacksDecorator = function() {
+        // console.log("Clearing One-Shot Callbacks");
+
+        this["onLoadStarted" + _const.ONE_SHOT_POSTFIX] = null;
+        this["onLoadFinished" + _const.ONE_SHOT_POSTFIX] = null;
+        this["onUrlChanged" + _const.ONE_SHOT_POSTFIX] = null;
+        this["onError"] = phantom.defaultErrorHandler;
     },
 
     // Add any new page to the "_windows" container of this session
@@ -230,13 +241,20 @@ ghostdriver.Session = function(desiredCapabilities) {
         // 0. Pages lifetime will be managed by Driver, not the pages
         page.ownsPages = false;
         // 1. Random Window Handle
-        page.windowHandle = "WH-" + require("./third_party/uuid.js").v1();
-        // 2. Utility methods
+        page.windowHandle = require("./third_party/uuid.js").v1();
+        // 2. Initialize the One-Shot Callbacks
+        page["onLoadStarted"] = _oneShotCallbackFactory(page, "onLoadStarted");
+        page["onLoadFinished"] = _oneShotCallbackFactory(page, "onLoadFinished");
+        page["onUrlChanged"] = _oneShotCallbackFactory(page, "onUrlChanged");
+        page["onFilePicker"] = _oneShotCallbackFactory(page, "onFilePicker");
+        page["onCallback"] = _oneShotCallbackFactory(page, "onCallback");
+        // 3. Utility methods
         page.execFuncAndWaitForLoad = _execFuncAndWaitForLoadDecorator;
         page.setOneShotCallback = _setOneShotCallbackDecorator;
-        // 3. Store every newly created page
+        page.resetOneShotCallbacks = _resetOneShotCallbacksDecorator;
+        // 4. Store every newly created page
         page.onPageCreated = _addNewPage;
-        // 4. Remove every closing page
+        // 5. Remove every closing page
         page.onClosing = _deleteClosingPage;
 
         // page.onConsoleMessage = function(msg) { console.log(msg); };
