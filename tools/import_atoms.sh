@@ -3,7 +3,7 @@
 usage() {
     echo ""
     echo "Usage:"
-    echo "    import_webdriver_atoms.sh <PATH_TO_SELENIUM_REPO>"
+    echo "    import_atoms.sh <PATH_TO_SELENIUM_REPO>"
     echo ""
 }
 
