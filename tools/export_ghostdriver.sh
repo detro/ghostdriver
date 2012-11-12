@@ -23,6 +23,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PHANTOMJS_REPO_PATH=$1
 DESTINATION_PATH="${1}/src/ghostdriver"
 DESTINATION_QRC_FILE="ghostdriver.qrc"
+LASTUPDATE_FILE="${DESTINATION_PATH}/lastupdate"
 GHOSTDRIVER_SOURCE_PATH="${SCRIPT_DIR}/../src"
 
 #1. Delete the Destination Directory, if any
@@ -60,6 +61,11 @@ echo "    </qresource>" >> $DESTINATION_QRC_FILE
 echo "</RCC>" >> $DESTINATION_QRC_FILE
 
 popd
+
+#5. Record the Timestamp and Git repo hash to the "lastupdate" file
+date +"%Y-%m-%d %H:%M:%S" > $LASTUPDATE_FILE
+echo "" >> $LASTUPDATE_FILE
+git log -n 1 >> $LASTUPDATE_FILE
 
 info "DONE!"
 
