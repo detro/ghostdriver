@@ -51,7 +51,7 @@ echo "    <qresource prefix=\"ghostdriver/\">" >> $DESTINATION_QRC_FILE
 
 for FILE in `find . | sed "s/.\///"`
 do
-    if [ $FILE != "." ]; then
+    if [[ $FILE != "." && $FILE != *.qrc ]]; then
         echo "        <file>${FILE}</file>" >> $DESTINATION_QRC_FILE
     fi
 done
