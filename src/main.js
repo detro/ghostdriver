@@ -53,29 +53,34 @@ phantom.injectJs("request_handlers/webelement_request_handler.js");
 phantom.injectJs("request_handlers/router_request_handler.js");
 phantom.injectJs("webelementlocator.js");
 
-// HTTP Request Router
-router = new ghostdriver.RouterReqHand();
+try {
+    // HTTP Request Router
+    router = new ghostdriver.RouterReqHand();
 
-// Check if parameters were given, regarding the "ip:port" to listen to
-if (ghostdriver.system.args[1]) {
-    if (ghostdriver.system.args[1].indexOf(':') >= 0) {
-        listenOn = ghostdriver.system.args[1].split(':');
-        listenOnIp = listenOn[0];
-        listenOnPort = listenOn[1];
+    // Check if parameters were given, regarding the "ip:port" to listen to
+    if (ghostdriver.system.args[1]) {
+        if (ghostdriver.system.args[1].indexOf(':') >= 0) {
+            listenOn = ghostdriver.system.args[1].split(':');
+            listenOnIp = listenOn[0];
+            listenOnPort = listenOn[1];
+        } else {
+            listenOnPort = ghostdriver.system.args[1];
+        }
+    }
+
+    // Start the server
+    if (server.listen(listenOnPort, router.handle)) {
+        console.log('Ghost Driver running on port ' + server.port);
+
+        // If parameters regarding a Selenium Grid HUB were given, register to it!
+        if (ghostdriver.system.args[2]) {
+            ghostdriver.hub.register(listenOnIp, listenOnPort, ghostdriver.system.args[2]);
+        }
     } else {
-        listenOnPort = ghostdriver.system.args[1];
+        throw new Error("ERROR: Could not start Ghost Driver");
+        phantom.exit(1);
     }
-}
-
-// Start the server
-if (server.listen(listenOnPort, router.handle)) {
-    console.log('Ghost Driver running on port ' + server.port);
-
-    // If parameters regarding a Selenium Grid HUB were given, register to it!
-    if (ghostdriver.system.args[2]) {
-        ghostdriver.hub.register(listenOnIp, listenOnPort, ghostdriver.system.args[2]);
-    }
-} else {
-    console.error("ERROR: Could not start Ghost Driver");
+} catch (e) {
+    console.error(e);
     phantom.exit(1);
 }
