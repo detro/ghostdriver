@@ -36,7 +36,7 @@ var ghostdriver = {
     parseURI,
     listenOn,
     listenOnIp = "127.0.0.1",
-    listenOnPort = "8080";
+    listenOnPort = "8910";
 
 // Enable "strict mode" for the 'parseURI' library
 parseURI = require("./third_party/parseuri.js");
