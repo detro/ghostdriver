@@ -49,7 +49,7 @@ pushd $DESTINATION_PATH
 echo "<RCC>" > $DESTINATION_QRC_FILE
 echo "    <qresource prefix=\"ghostdriver/\">" >> $DESTINATION_QRC_FILE
 
-for FILE in `find . | sed "s/.\///"`
+for FILE in `find . -type f | sed "s/.\///"`
 do
     if [[ $FILE != "." && $FILE != *.qrc ]]; then
         echo "        <file>${FILE}</file>" >> $DESTINATION_QRC_FILE
