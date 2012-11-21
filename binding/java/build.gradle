@@ -76,6 +76,10 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     }
 }
 
+task jars {
+    dependsOn jar, sourceJar, javadocJar
+}
+
 artifacts {
     archives sourceJar
     archives javadocJar
