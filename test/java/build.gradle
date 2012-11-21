@@ -17,11 +17,11 @@ ext.jettyVersion = "6.1.21"
 
 dependencies {
     ["selenium-java", "selenium-remote-driver", "selenium-server"].each {
-        compile "org.seleniumhq.selenium:$it:$seleniumVersion"
         testCompile "org.seleniumhq.selenium:$it:$seleniumVersion"
     }
     testCompile "junit:junit-dep:$junitVersion"
 	testCompile "org.mortbay.jetty:jetty:$jettyVersion"
+    testCompile files("../../binding/java/jars/phantomjsdriver-1.0.0.jar")
 }
 
 tasks.withType(JavaExec) {
