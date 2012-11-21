@@ -28,8 +28,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // Load dependencies
 // NOTE: We need to provide PhantomJS with the "require" module ASAP. This is a pretty s**t way to load dependencies
 var ghostdriver = {
-        system : require('system'),
-        hub    : require('./hub_register')
+        system  : require('system'),
+        hub     : require('./hub_register'),
+        version : "1.0.0"
     },
     server = require('webserver').create(),
     router,
