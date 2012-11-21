@@ -1,0 +1,82 @@
+apply plugin: "java"
+apply plugin: "idea"
+apply plugin: "eclipse"
+
+task wrapper(type: Wrapper) {
+    gradleVersion = "1.2"
+    jarFile = "gradle/gradle-wrapper.jar"
+}
+
+repositories {
+    mavenCentral()
+}
+
+project.archivesBaseName    = project.name
+project.version             = "1.0.0"
+
+ext.projectLongName         = "PhantomJS Driver (GhostDriver)"
+ext.projectArtefactDir      = "jars/"
+ext.projectMainClass        = "org.openqa.selenium.phantomjs.PhantomJSDriver"
+ext.projectCreator          = "Ivan De Marino (https://github.com/detro)"
+ext.seleniumVersion         = "2.26.0"
+
+dependencies {
+    ["selenium-java", "selenium-remote-driver", "selenium-server"].each {
+        compile "org.seleniumhq.selenium:$it:$seleniumVersion"
+    }
+}
+
+tasks.withType(JavaExec) {
+    classpath = configurations.compile + sourceSets.test.output
+    args project.hasProperty("args") ? project.args.split("\\s") : []
+}
+
+jar {
+    destinationDir      = file(projectArtefactDir)
+    manifest {
+        attributes(
+            "Implementation-Title"      : projectLongName,
+            "Implementation-Version"    : project.version,
+            "Gradle-Version"            : project.gradle.gradleVersion,
+            "Main-Class"                : projectMainClass,
+            "Created-By"                : projectCreator
+        )
+    }
+}
+
+task sourceJar(type: Jar, dependsOn: classes) {
+    classifier = "sources"
+    from sourceSets.main.allSource
+
+    destinationDir      = file(projectArtefactDir)
+    manifest {
+        attributes(
+            "Implementation-Title"      : projectLongName,
+            "Implementation-Version"    : project.version,
+            "Gradle-Version"            : project.gradle.gradleVersion,
+            "Main-Class"                : projectMainClass,
+            "Created-By"                : projectCreator
+        )
+    }
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+
+    destinationDir      = file(projectArtefactDir)
+    manifest {
+        attributes(
+            "Implementation-Title"      : projectLongName,
+            "Implementation-Version"    : project.version,
+            "Gradle-Version"            : project.gradle.gradleVersion,
+            "Main-Class"                : projectMainClass,
+            "Created-By"                : projectCreator
+        )
+    }
+}
+
+artifacts {
+    archives sourceJar
+    archives javadocJar
+}
