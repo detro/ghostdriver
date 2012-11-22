@@ -317,7 +317,7 @@ ghostdriver.SessionReqHand = function(session) {
 
         if (currWindow.canGoBack) {
             currWindow.execFuncAndWaitForLoad(
-                function() { currWindow.back(); },
+                function() { currWindow.goBack(); },
                 successHand,
                 successHand); //< We don't care if 'back' fails
         } else {
@@ -332,7 +332,7 @@ ghostdriver.SessionReqHand = function(session) {
 
         if (currWindow.canGoForward) {
             currWindow.execFuncAndWaitForLoad(
-                function() { currWindow.forward(); },
+                function() { currWindow.goForward(); },
                 successHand,
                 successHand); //< We don't care if 'back' fails
         } else {
