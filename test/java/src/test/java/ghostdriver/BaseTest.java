@@ -76,10 +76,21 @@ public abstract class BaseTest {
         sCaps = new DesiredCapabilities();
         sCaps.setJavascriptEnabled(true);
         sCaps.setCapability("takesScreenshot", false);
-        sCaps.setCapability(PhantomJSDriverService.PHANTOMJS_EXECUTABLE_PATH_PROPERTY,
-                sConfig.getProperty("phantomjs_exec_path"));
-        sCaps.setCapability(PhantomJSDriverService.PHANTOMJS_GHOSTDRIVER_PATH_PROPERTY,
-                sConfig.getProperty("phantomjs_driver_path"));
+
+        // Fetch configuration parameters
+        // "phantomjs_exec_path"
+        if (sConfig.getProperty("phantomjs_exec_path") != null) {
+            sCaps.setCapability(PhantomJSDriverService.PHANTOMJS_EXECUTABLE_PATH_PROPERTY, sConfig.getProperty("phantomjs_exec_path"));
+        } else {
+            throw new IOException(String.format("Property '%s' not set!", PhantomJSDriverService.PHANTOMJS_EXECUTABLE_PATH_PROPERTY));
+        }
+        // "phantomjs_driver_path"
+        if (sConfig.getProperty("phantomjs_driver_path") != null) {
+            System.out.println("Test will use an external GhostDriver");
+            sCaps.setCapability(PhantomJSDriverService.PHANTOMJS_GHOSTDRIVER_PATH_PROPERTY, sConfig.getProperty("phantomjs_driver_path"));
+        } else {
+            System.out.println("Test will use PhantomJS internal GhostDriver");
+        }
     }
 
     @Before
