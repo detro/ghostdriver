@@ -24,7 +24,7 @@ This is only temporary: **next version of PhantomJS stable release will include 
 
 1. Prepare your machine for building PhantomJS as documented [here](http://phantomjs.org/build.html), then...
 2. Add `detro` remote to local PhantomJS repo: `git remote add detro https://github.com/detro/phantomjs.git`
-3. Checkout the `ghostdriver-dev` branch: `git checkout -b detro-ghostdriver-dev remotes/detro/ghostdriver-dev`
+3. Checkout the `ghostdriver-dev` branch: `git fetch detro && git checkout -b detro-ghostdriver-dev remotes/detro/ghostdriver-dev`
 4. Build: `./build.sh`
 5. Go make some coffee (this might take a while...)
 6. `phantomjs --webdriver=8080` to **launch PhantomJS in Remote WebDriver mode**
@@ -97,7 +97,7 @@ and
 You can contribute by testing GhostDriver, reporting bugs and issues, or submitting Pull Requests.
 Any **help is welcome**, but bear in mind the following base principles:
 
-* Issue reporting requires a reproducible example, otherwise will most probably be **closed withouth worning**
+* Issue reporting requires a reproducible example, otherwise will most probably be **closed withouth warning**
 * Squash your commits by theme: I prefer a clean, readable log
 * Maintain consistency with the code-style you are surrounded by
 * If you are going to make a big, substantial change, let's discuss it first
