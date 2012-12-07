@@ -34,6 +34,7 @@ import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.remote.DriverCommand;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.remote.service.DriverCommandExecutor;
+import org.openqa.selenium.remote.service.DriverService;
 
 /**
  * A {@link org.openqa.selenium.WebDriver} implementation that controls a PhantomJS running in Remote WebDriver mode.
@@ -91,7 +92,7 @@ public class PhantomJSDriver extends RemoteWebDriver implements TakesScreenshot 
      * @param service             The service to use.
      * @param desiredCapabilities The capabilities required from PhantomJS/GhostDriver.
      */
-    public PhantomJSDriver(PhantomJSDriverService service, Capabilities desiredCapabilities) {
+    public PhantomJSDriver(DriverService service, Capabilities desiredCapabilities) {
         super(new DriverCommandExecutor(service), desiredCapabilities);
     }
 
