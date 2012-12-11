@@ -348,7 +348,8 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
                 require("./webdriver_atoms.js").get("execute_script"),
                 "return arguments[0].isSameNode(arguments[1]);",
                 [_getJSON(), _getJSON(req.urlParsed.file)]);
-            res.success(_session.getId(), result);
+
+            res.respondBasedOnResult(_session, req, result);
             return;
         }
 
