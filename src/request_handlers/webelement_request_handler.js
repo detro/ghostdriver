@@ -379,7 +379,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
                 } else {
                     _errors.handleFailedCommandEH(
                         _errors.FAILED_CMD_STATUS.UNKNOWN_ERROR,
-                        "Submit succeded but Load Failed",
+                        "Submit succeeded but Load Failed",
                         req,
                         res,
                         _session,

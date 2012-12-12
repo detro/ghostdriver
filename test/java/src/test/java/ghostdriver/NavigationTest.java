@@ -42,7 +42,6 @@ public class NavigationTest extends BaseTest {
     @Test
     public void navigateAroundMDN() {
         WebDriver d = getDriver();
-        d.manage().timeouts().pageLoadTimeout(60, TimeUnit.SECONDS);
 
         d.get("https://developer.mozilla.org/en-US/");
         assertTrue(d.getTitle().toLowerCase().contains("Mozilla".toLowerCase()));
@@ -74,14 +73,5 @@ public class NavigationTest extends BaseTest {
         WebDriver d = getDriver();
         d.get("http://adwords.google.com");
         assertTrue(d.getCurrentUrl().contains("google.com"));
-    }
-
-    @Test
-    public void navigateToMyHabit() {
-        WebDriver d = getDriver();
-        d.get("http://www.myhabit.com");
-        WebDriverWait wait = new WebDriverWait(d, 10);
-        wait.until(ExpectedConditions.presenceOfElementLocated(By.name("email")));
-        assertNotNull(d.findElement(By.name("email")));
     }
 }
