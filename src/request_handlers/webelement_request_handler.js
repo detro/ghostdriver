@@ -402,12 +402,72 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         });
     },
 
-    _postClickCommand = function(req, res) {
-        var result = _protoParent.getSessionCurrWindow.call(this, _session, req).evaluate(
-                require("./webdriver_atoms.js").get("click"),
-                _getJSON());
+    _canCausePageLoadOnClick = function(currWindow) {
+        var tagName = _getTagName(currWindow).toLowerCase(),
+            href = _getAttribute(currWindow, "href"),
+            type = _getAttribute(currWindow, "type").toLowerCase();
 
-        res.respondBasedOnResult(_session, req, result);
+        // Return "true" if it's an element that "can cause a page load if clicked"
+        if (tagName === "a" && !!href && href.length > 0) {
+            return true;
+        }
+        if (tagName === "input" && type === "submit") {
+            return true;
+        }
+        return false;
+    },
+
+    _postClickCommand = function(req, res) {
+        var currWindow = _protoParent.getSessionCurrWindow.call(this, _session, req),
+            clickRes,
+            abortCallback = false;
+
+        if (_canCausePageLoadOnClick(currWindow)) {
+            // Clicking on Current Element can cause a page load, hence we need to wait for it to happen
+            currWindow.execFuncAndWaitForLoad(function() {
+                // do the click
+                clickRes = currWindow.evaluate(require("./webdriver_atoms.js").get("click"), _getJSON());
+
+                // If Click was NOT positive, status will be set to something else than '0'
+                clickRes = JSON.parse(clickRes);
+                if (clickRes && clickRes.status !== 0) {
+                    abortCallback = true;           //< handling the error here
+                    res.respondBasedOnResult(_session, req, clickRes);
+                }
+            }, function(status) {                   //< onLoadFinished
+                // Report about the Load, only if it was not already handled
+                if (!abortCallback) {
+                    if (status === "success") {
+                        res.success(_session.getId());
+                    } else {
+                        _errors.handleFailedCommandEH(
+                            _errors.FAILED_CMD_STATUS.UNKNOWN_ERROR,
+                            "Click succeeded but Load Failed",
+                            req,
+                            res,
+                            _session,
+                            "WebElementReqHand");
+                    }
+                }
+            }, function() {
+                if (arguments.length === 0) {       //< onTimeout
+                    // onclick didn't bubble up, but we should still return success
+                    res.success(_session.getId());
+                } else {                            //< onError
+                    _errors.handleFailedCommandEH(
+                        _errors.FAILED_CMD_STATUS.UNKNOWN_ERROR,
+                        "Click failed: " + arguments[0],
+                        req,
+                        res,
+                        _session,
+                        "WebElementReqHand");
+                }
+            });
+        } else {
+            // By default, clicking on this element can't cause a Page Load: we are done after having clicked
+            clickRes = currWindow.evaluate(require("./webdriver_atoms.js").get("click"), _getJSON());
+            res.respondBasedOnResult(_session, req, clickRes);
+        }
     },
 
     _getSelectedCommand = function(req, res) {

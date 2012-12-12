@@ -31,8 +31,8 @@ import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.ui.WebDriverWait;
 import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -65,10 +65,41 @@ public class ElementMethodsTest extends BaseTest {
     }
 
     @Test
+    public void checkClickOnAHREFCausesPageLoad() {
+        WebDriver d = getDriver();
+
+        d.get("http://www.google.com");
+        WebElement link = d.findElement(By.cssSelector("a[href=\"/intl/en/ads/\"]"));
+        link.click();
+
+        assertTrue(d.getTitle().contains("Ads"));
+    }
+
+    @Test
+    public void checkClickOnINPUTSUBMITCausesPageLoad() {
+        WebDriver d = getDriver();
+
+        d.get("http://www.duckduckgo.com");
+        WebElement textInput = d.findElement(By.cssSelector("#search_form_input_homepage"));
+        WebElement submitInput = d.findElement(By.cssSelector("#search_button_homepage"));
+
+
+        assertFalse(d.getTitle().contains("clicking"));
+        textInput.click();
+        assertFalse(d.getTitle().contains("clicking"));
+        textInput.sendKeys("clicking");
+        assertFalse(d.getTitle().contains("clicking"));
+
+        submitInput.click();
+        assertTrue(d.getTitle().contains("clicking"));
+    }
+
+    @Test
     public void SubmittingFormShouldFireOnSubmitForThatForm() {
         WebDriver d = getDriver();
 
         d.get("http://ci.seleniumhq.org:2310/common/javascriptPage.html");
+
         WebElement formElement = d.findElement(By.id("submitListeningForm"));
         formElement.submit();
 
