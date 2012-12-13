@@ -74,4 +74,12 @@ public class NavigationTest extends BaseTest {
         d.get("http://adwords.google.com");
         assertTrue(d.getCurrentUrl().contains("google.com"));
     }
+
+    @Test
+    public void navigateToNameJet() {
+        // NOTE: This test is supposed to fail, because the UA of PhantomJS is rejected.
+        // We need this implemented: https://github.com/detro/ghostdriver/issues/131
+        WebDriver d = getDriver();
+        d.navigate().to("http://www.namejet.com/");
+    }
 }
