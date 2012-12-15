@@ -302,14 +302,21 @@ ghostdriver.Session = function(desiredCapabilities) {
         return page;
     },
 
-    _getCurrentWindow = function() {
-        var page = null;
+    _initCurrentWindowIfNull = function() {
+        // Ensure a Current Window is available, if it's found to be `null`
         if (_currentWindowHandle === null) {
             // First call to get the current window: need to create one
             page = _decorateNewWindow(require("webpage").create());
             _currentWindowHandle = page.windowHandle;
             _windows[_currentWindowHandle] = page;
-        } else if (_windows.hasOwnProperty(_currentWindowHandle)) {
+        }
+    },
+
+    _getCurrentWindow = function() {
+        var page = null;
+
+        _initCurrentWindowIfNull();
+        if (_windows.hasOwnProperty(_currentWindowHandle)) {
             page = _windows[_currentWindowHandle];
         }
 
@@ -442,6 +449,7 @@ ghostdriver.Session = function(desiredCapabilities) {
         getWindow : _getWindow,
         closeWindow : _closeWindow,
         getWindowsCount : _getWindowsCount,
+        initCurrentWindowIfNull : _initCurrentWindowIfNull,
         getCurrentWindowHandle : _getCurrentWindowHandle,
         getWindowHandles : _getWindowHandles,
         isValidWindowHandle : _isValidWindowHandle,

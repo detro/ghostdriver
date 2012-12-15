@@ -406,7 +406,14 @@ ghostdriver.SessionReqHand = function(session) {
     },
 
     _getWindowHandle = function (req, res) {
-        var handle = _session.getCurrentWindowHandle();
+        var handle;
+
+        // Initialize the Current Window (we need at least that)
+        _session.initCurrentWindowIfNull();
+
+        // Get current window handle
+        handle = _session.getCurrentWindowHandle();
+
         if (handle !== null) {
             res.success(_session.getId(), handle);
         } else {
@@ -420,6 +427,8 @@ ghostdriver.SessionReqHand = function(session) {
     },
 
     _getWindowHandles = function(req, res) {
+        // Initialize the Current Window (we need at least that)
+        _session.initCurrentWindowIfNull();
         res.success(_session.getId(), _session.getWindowHandles());
     },
 
