@@ -99,7 +99,23 @@ ghostdriver.Session = function(desiredCapabilities) {
     _currentWindowHandle = null,
     _id = require("./third_party/uuid.js").v1(),
     _inputs = ghostdriver.Inputs(),
+    _capsPageSettingsPref = "phantomjs.page.settings.",
+    _pageSettings = {},
+    k, settingKey;
 
+    // Searching for `phantomjs.settings.*` in the Desired Capabilities and merging with the Negotiated Capabilities
+    // Possible values: @see https://github.com/ariya/phantomjs/wiki/API-Reference#wiki-webpage-settings.
+    for (k in desiredCapabilities) {
+        if (k.indexOf(_capsPageSettingsPref) === 0) {
+            settingKey = k.substring(_capsPageSettingsPref.length);
+            if (settingKey.length > 0) {
+                _negotiatedCapabilities[k] = desiredCapabilities[k];
+                _pageSettings[settingKey] = desiredCapabilities[k];
+            }
+        }
+    }
+
+    var
     /**
      * Executes a function and waits for Load to happen.
      *
@@ -257,6 +273,8 @@ ghostdriver.Session = function(desiredCapabilities) {
     },
 
     _decorateNewWindow = function(page) {
+        var k;
+
         // Decorating:
         // 0. Pages lifetime will be managed by Driver, not the pages
         page.ownsPages = false;
@@ -276,8 +294,16 @@ ghostdriver.Session = function(desiredCapabilities) {
         page.onPageCreated = _addNewPage;
         // 5. Remove every closing page
         page.onClosing = _deleteClosingPage;
+        // 6. Applying Page settings received via capabilities
+        for (k in _pageSettings) {
+            // Apply setting only if really supported by PhantomJS
+            if (p.settings.hasOwnProperty(k)) {
+                page.settings[k] = _pageSettings[k];
+            }
+        }
 
         // page.onConsoleMessage = function(msg) { console.log(msg); };
+        // console.log("New Window/Page settings: " + JSON.stringify(page.settings, null, "  "));
 
         return page;
     },

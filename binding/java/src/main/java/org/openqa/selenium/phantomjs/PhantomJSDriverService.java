@@ -64,6 +64,12 @@ public class PhantomJSDriverService extends DriverService {
      * Value: <code>"phantomjs.ghostdriver.path"</code>.
      */
     public static final String PHANTOMJS_GHOSTDRIVER_PATH_PROPERTY = "phantomjs.ghostdriver.path";
+    /**
+     * Set capabilities with this prefix to apply it to the PhantomJS <code>page.settings.*</code> object.
+     * Every PhantomJS WebPage Setting can be used.
+     * See <a href="https://github.com/ariya/phantomjs/wiki/API-Reference#wiki-webpage-settings">PhantomJS docs/a>.
+     */
+    public static final String PHANTOMJS_PAGE_SETTINGS_PREFIX = "phantomjs.page.settings.";
 
     private static final String PHANTOMJS_DEFAULT_EXECUTABLE = "phantomjs";
 
