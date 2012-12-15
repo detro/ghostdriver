@@ -28,11 +28,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package ghostdriver;
 
 import org.junit.Test;
+import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.NoSuchWindowException;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class WindowSwitchingTest extends BaseTest {
@@ -107,5 +112,35 @@ public class WindowSwitchingTest extends BaseTest {
 
         // Try getting the title of the, now closed, google window and cause an Exception
         d.getTitle();
+    }
+
+    @Test
+    public void switchToSameWindowViaHandle() {
+        WebDriver d = getDriver();
+        d.navigate().to("http://ci.seleniumhq.org:2310/common/frameset.html");
+
+        // Get handle of the main html page
+        String windowHandle = d.getWindowHandle();
+
+        // Verify that the element can be retrieved from the main page:
+        WebElement e = d.findElement(By.tagName("frameset"));
+        assertNotNull(e);
+
+        // Switch to the frame.
+        d.switchTo().frame(0);
+        e = null;
+        try {
+            e = d.findElement(By.tagName("frameset"));
+        } catch (NoSuchElementException ex) {
+            // swallow the exception
+        }
+        assertNull(e);
+
+        // Switch back to the main page using the original window handle:
+        d.switchTo().window(windowHandle);
+
+        // This then throws an element not found exception.. the main page was not selected.
+        e = d.findElement(By.tagName("frameset"));
+        assertNotNull(e);
     }
 }

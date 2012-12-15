@@ -324,6 +324,8 @@ ghostdriver.Session = function(desiredCapabilities) {
         if (page !== null) {
             // Switch current window and return "true"
             _currentWindowHandle = page.windowHandle;
+            // Switch to the Main Frame of that window
+            page.switchToMainFrame();
             return true;
         }
 
