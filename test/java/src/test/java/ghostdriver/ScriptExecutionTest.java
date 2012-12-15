@@ -32,6 +32,7 @@ import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 
+import java.net.URLEncoder;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
@@ -107,5 +108,20 @@ public class ScriptExecutionTest extends BaseTest {
 
         // Verify that a future navigation does not cause the driver to have problems.
         d.get("http://www.google.com/");
+    }
+
+    @Test
+    public void executeAsyncScriptMultipleTimesWithoutCrashing() {
+        // NOTE: This test is supposed to fail!
+        // It's a reminder that there is some internal issue in PhantomJS still to address.
+
+        WebDriver d = getDriver();
+        String hello = URLEncoder.encode("<h1>hello</h1>");
+
+        for (int i = 1; i < 5; ++i) {
+            d.get("data:text/html;content-type=utf-8,"+hello);
+            String h = (String)((JavascriptExecutor) d).executeAsyncScript("arguments[arguments.length - 1]('hello')");
+            assertEquals("hello", h);
+        }
     }
 }
