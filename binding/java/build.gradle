@@ -12,7 +12,7 @@ repositories {
 }
 
 project.archivesBaseName    = project.name
-project.version             = "1.0.0"
+project.version             = "1.0.1"
 
 ext.projectLongName         = "PhantomJS Driver (GhostDriver)"
 ext.projectArtefactDir      = "jars/"
