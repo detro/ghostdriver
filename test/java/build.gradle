@@ -21,7 +21,7 @@ dependencies {
     }
     testCompile "junit:junit-dep:$junitVersion"
 	testCompile "org.mortbay.jetty:jetty:$jettyVersion"
-    testCompile files("../../binding/java/jars/phantomjsdriver-1.0.0.jar")
+    testCompile files("../../binding/java/jars/phantomjsdriver-1.0.1.jar")
 }
 
 tasks.withType(JavaExec) {
