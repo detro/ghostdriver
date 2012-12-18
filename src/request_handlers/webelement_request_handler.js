@@ -405,16 +405,17 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
     _canCausePageLoadOnClick = function(currWindow) {
         var tagName = _getTagName(currWindow).toLowerCase(),
             href = _getAttribute(currWindow, "href"),
-            type = _getAttribute(currWindow, "type").toLowerCase();
+            type = _getAttribute(currWindow, "type");
 
         // Return "true" if it's an element that "can cause a page load if clicked"
         if (tagName === "a" && !!href && href.length > 0) {
             return true;
         }
-        if (tagName === "input" && type === "submit") {
-            return true;
+        if (!type) {
+            return false;
         }
-        return false;
+        type = type.toLowerCase();
+        return "submit" === type || "image" === type;
     },
 
     _postClickCommand = function(req, res) {
