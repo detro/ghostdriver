@@ -46,13 +46,13 @@ to run them (I tested it with Java 7, but should work with Java 6 too).
 
 1. `git clone https://github.com/detro/ghostdriver.git`
 2. Configure `phantomjs_exec_path` inside `ghostdriver/test/config.ini` to point at the build of PhantomJS you just did
-3. `cd ghostdriver/test; ./gradlew test`
+3. `cd ghostdriver/test/java; ./gradlew test`
 
 ### Run GhostDriver yourself and launch tests against that instance
 
 1. `phantomjs --webdriver=PORT`
 2. Configure `driver` inside `ghostdriver/test/config.ini` to point at the URL `http://localhost:PORT`
-3. `cd ghostdriver/test; ./gradlew test`
+3. `cd ghostdriver/test/java; ./gradlew test`
 
 ### Register GhostDriver with a Selenium Grid hub
 
