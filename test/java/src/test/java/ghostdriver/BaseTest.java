@@ -54,8 +54,8 @@ public abstract class BaseTest {
     private static final String DRIVER_FIREFOX     = "firefox";
     private static final String DRIVER_PHANTOMJS   = "phantomjs";
 
-    private static Properties sConfig;
-    private static DesiredCapabilities sCaps;
+    protected static Properties sConfig;
+    protected static DesiredCapabilities sCaps;
 
     private static boolean isUrl(String urlString) {
         try {

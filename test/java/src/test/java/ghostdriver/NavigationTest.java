@@ -27,9 +27,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package ghostdriver;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.phantomjs.PhantomJSDriverService;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
@@ -39,6 +41,15 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class NavigationTest extends BaseTest {
+    @BeforeClass
+    public static void setUserAgentForPhantomJSDriver() {
+        // Setting a generic Chrome UA to bypass some UA spoofing
+        sCaps.setCapability(
+                PhantomJSDriverService.PHANTOMJS_PAGE_SETTINGS_PREFIX + "userAgent",
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.97 Safari/537.11"
+        );
+    }
+
     @Test
     public void navigateAroundMDN() {
         WebDriver d = getDriver();
@@ -77,8 +88,8 @@ public class NavigationTest extends BaseTest {
 
     @Test
     public void navigateToNameJet() {
-        // NOTE: This test is supposed to fail, because the UA of PhantomJS is rejected.
-        // We need this implemented: https://github.com/detro/ghostdriver/issues/131
+        // NOTE: This passes only when the User Agent is NOT PhantomJS {@see setUserAgentForPhantomJSDriver}
+        // method above.
         WebDriver d = getDriver();
         d.navigate().to("http://www.namejet.com/");
     }
