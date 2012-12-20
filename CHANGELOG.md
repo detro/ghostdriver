@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v1.0.2 (2012-12-20) ([issues](https://github.com/detro/ghostdriver/issues?labels=1.0.2&state=closed))
+
+### JavaScript Driver (Core)
+* FIX: Wait for potential "Page Load" when "Element.click()" is used on MORE Elements
+
+
 ## v1.0.1 (2012-12-15) ([issues](https://github.com/detro/ghostdriver/issues?labels=1.0.1&state=closed))
 
 ### JavaScript Driver (Core)
@@ -17,7 +23,6 @@
 ### Binding
 * BUG: PhantomJSDriverService replaced by DriverService in PhantomJSDriver constructor
 
----
 
 ## v1.0.0 (2012-11-25)
 ### JavaScript Driver (Core)
@@ -31,4 +36,3 @@
 * Java tests cover _just about_ what's needed
 * Python test are just a stub
 
----
