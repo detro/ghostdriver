@@ -186,6 +186,7 @@ ghostdriver.Session = function(desiredCapabilities) {
         this.setOneShotCallback("onLoadFinished", function () {
             // console.log("onLoadFinished");
 
+            pageLoadNotTriggered = false;
             clearTimeout(loadingTimer);
             thisPage.resetOneShotCallbacks();
             onLoadFunc.apply(thisPage, arguments);
