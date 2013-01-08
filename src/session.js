@@ -148,6 +148,13 @@ ghostdriver.Session = function(desiredCapabilities) {
             args.splice(0, 3);
         }
 
+        // Our callbacks assume that the only thing affecting the page state
+        // is the function we execute. Therefore we need to kill any
+        // pre-existing activity (such as part of the page being loaded in
+        // the background), otherwise it's events might interleave with the
+        // events from the current function.
+        this.stop();
+
         // Register event handlers
         // This logic bears some explaining. If we are loading a new page,
         // the loadStarted event will fire, then urlChanged, then loadFinished,
