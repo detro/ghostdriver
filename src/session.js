@@ -134,8 +134,8 @@ ghostdriver.Session = function(desiredCapabilities) {
             thisPage = this;
 
         // Normalize "execTypeOpt" value
-        if (typeof(execexecTypeOpt) === "undefined" ||
-            (execexecTypeOpt !== "apply" && execTypeOpt !== "eval")) {
+        if (typeof(execTypeOpt) === "undefined" ||
+            (execTypeOpt !== "apply" && execTypeOpt !== "eval")) {
             execTypeOpt = "apply";
         }
 
