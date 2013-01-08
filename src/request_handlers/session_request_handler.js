@@ -334,9 +334,9 @@ ghostdriver.SessionReqHand = function(session) {
             currWindow.execFuncAndWaitForLoad(
                 function() { currWindow.goForward(); },
                 successHand,
-                successHand); //< We don't care if 'back' fails
+                successHand); //< We don't care if 'forward' fails
         } else {
-            // We can't go back, and that's ok
+            // We can't go forward, and that's ok
             successHand();
         }
     },

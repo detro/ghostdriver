@@ -122,6 +122,7 @@ ghostdriver.Session = function(desiredCapabilities) {
      * @param func Function to execute
      * @param onLoadFunc Function to execute when page finishes Loading
      * @param onErrorFunc Function to execute in case of error
+     *        (eg. Javascript error, page load problem or timeout).
      * @param execTypeOpt Decides if to "apply" the function directly or page."eval" it.
      *                    Optional. Default value is "apply".
      */
@@ -217,17 +218,6 @@ ghostdriver.Session = function(desiredCapabilities) {
             onErrorFunc.apply(thisPage, arguments);
         }, _getPageLoadTimeout());
 
-        // In case a Page Load is not triggered at all (within 0.5s), we assume it's done and move on
-        setTimeout(function() {
-            if (pageLoadNotTriggered === true) {
-                // console.log("pageLoadNotTriggered");
-
-                clearTimeout(loadingTimer);
-                thisPage.resetOneShotCallbacks();
-                onLoadFunc.call(thisPage, "success");
-            }
-        }, 500);
-
         // We are ready to execute
         if (execTypeOpt === "eval") {
             // Invoke the Page Eval with the provided function
@@ -236,6 +226,24 @@ ghostdriver.Session = function(desiredCapabilities) {
             // "Apply" the provided function
             func.apply(this, args);
         }
+
+        // If a page load was not triggered whilst executing the function,
+        // we assume that it has completed, and that it does not actually
+        // load a page.
+        // 
+        // This means that if a page load is triggered asynchronously (eg.
+        // by event passing), we may not actually wait for it to complete.
+        // Note that we do allow a brief grace period, but this is quite
+        // short (in order to avoid unnecessary delays in script execution).
+        setTimeout(function() {
+            if (pageLoadNotTriggered === true) {
+                // console.log("pageLoadNotTriggered");
+
+                clearTimeout(loadingTimer);
+                thisPage.resetOneShotCallbacks();
+                onLoadFunc.call(thisPage, "success");
+            }
+        }, 500); //< 0.5 second
     },
 
     _oneShotCallbackFactory = function(page, callbackName) {
