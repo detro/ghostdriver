@@ -64,6 +64,8 @@ public class PhantomJSDriverService extends DriverService {
      * Value: <code>"phantomjs.ghostdriver.path"</code>.
      */
     public static final String PHANTOMJS_GHOSTDRIVER_PATH_PROPERTY = "phantomjs.ghostdriver.path";
+
+    public static final String PHANTOMJS_CLI_ARGS_CAPABILITY = "phantomjs.cli.args";
     /**
      * Set capabilities with this prefix to apply it to the PhantomJS <code>page.settings.*</code> object.
      * Every PhantomJS WebPage Setting can be used.
@@ -129,6 +131,7 @@ public class PhantomJSDriverService extends DriverService {
                 .usingGhostDriver(ghostDriverfile)
                 .usingAnyFreePort()
                 .withProxy(proxy)
+                .usingCommandLineArguments(findCommandLineArguments(desiredCapabilities))
                 .build();
     }
 
@@ -233,6 +236,18 @@ public class PhantomJSDriverService extends DriverService {
         return null;
     }
 
+    private static String[] findCommandLineArguments(Capabilities desiredCapabilities) {
+        String[] args = new String[]{};
+        if (desiredCapabilities != null) {
+            Object capability = desiredCapabilities.getCapability(PHANTOMJS_CLI_ARGS_CAPABILITY);
+            if (capability != null) {
+                args = (String[]) capability;
+            }
+        }
+        return args;
+    }
+
+
     /**
      * Builder used to configure new {@link PhantomJSDriverService} instances.
      */
@@ -244,6 +259,7 @@ public class PhantomJSDriverService extends DriverService {
         private ImmutableMap<String, String> environment = ImmutableMap.of();
         private File logFile;
         private Proxy proxy = null;
+        private String[] commandLineArguments = null;
 
         /**
          * Sets which PhantomJS executable the builder will use.
@@ -331,6 +347,16 @@ public class PhantomJSDriverService extends DriverService {
         }
 
         /**
+         * Configures the service to pass additional command line arguments to the PhantomJS executable.
+         * @param commandLineArguments list of command line arguments, e.g. "--ignore-ssl-errors=yes"
+         * @return A self reference.
+         */
+        public Builder usingCommandLineArguments(String[] commandLineArguments) {
+            this.commandLineArguments = commandLineArguments;
+            return this;
+        }
+
+        /**
          * Creates a new service. Before creating a new service, the builder will find a port for
          * the server to listen to.
          *
@@ -380,6 +406,10 @@ public class PhantomJSDriverService extends DriverService {
                             argsBuilder.add("--proxy-type=none");
                             break;
                     }
+                }
+
+                if (this.commandLineArguments != null) {
+                    argsBuilder.add(this.commandLineArguments);
                 }
 
                 if (ghostdriver != null) {
