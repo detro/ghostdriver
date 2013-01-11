@@ -1,10 +1,11 @@
 apply plugin: "java"
 apply plugin: "idea"
 apply plugin: "eclipse"
+apply plugin: "nexus"
 
 task wrapper(type: Wrapper) {
-    gradleVersion = "1.2"
-    jarFile = "gradle/gradle-wrapper.jar"
+    gradleVersion   = "1.2"
+    jarFile         = "gradle/gradle-wrapper.jar"
 }
 
 repositories {
@@ -44,7 +45,7 @@ jar {
     }
 }
 
-task sourceJar(type: Jar, dependsOn: classes) {
+task sourceJarBuild(type: Jar, dependsOn: classes) {
     classifier = "sources"
     from sourceSets.main.allSource
 
@@ -60,8 +61,8 @@ task sourceJar(type: Jar, dependsOn: classes) {
     }
 }
 
-task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier = 'javadoc'
+task javadocJarBuild(type: Jar, dependsOn: javadoc) {
+    classifier = "javadoc"
     from javadoc.destinationDir
 
     destinationDir      = file(projectArtefactDir)
@@ -77,10 +78,60 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 }
 
 task jars {
-    dependsOn jar, sourceJar, javadocJar
+    dependsOn jar, sourceJarBuild, javadocJarBuild
 }
 
-artifacts {
-    archives sourceJar
-    archives javadocJar
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath "org.gradle.api.plugins:gradle-nexus-plugin:0.2"
+    }
+}
+
+nexus {
+    sign = true
+}
+
+modifyPom {
+    project {
+        name            "PhantomJSDriver"
+        description     """
+                        PhantomJSDriver is a Java binding for the PhantomJS WebDriver, GhostDriver.
+                        The binding is developed within the GhostDriver project, and distributed through public Maven repository
+                        and Selenium official .zip package.
+                        """
+        url             "https://github.com/detro/ghostdriver"
+        inceptionYear   "2013"
+        groupId         "com.github.detro.ghostdriver"
+
+        scm {
+            url                     "git@github.com:detro/ghostdriver.git"
+            connection              "scm:git:git@github.com:detro/ghostdriver.git"
+            developerConnection     "scm:git:git@github.com:detro/ghostdriver.git"
+        }
+
+        licenses {
+            license {
+                name            "The BSD 2-Clause License"
+                url             "http://opensource.org/licenses/BSD-2-Clause"
+                distribution    "repo"
+            }
+        }
+
+        developers {
+            developer {
+                id          "detro"
+                name        "Ivan De Marino"
+                email       "detronizator@gmail.com"
+                url         "http://ivandemarino.me"
+                roles {
+                    role    "Developer"
+                }
+                timezone    "GMT"
+            }
+        }
+    }
 }
