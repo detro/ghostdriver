@@ -65,6 +65,14 @@ public class PhantomJSDriverService extends DriverService {
      */
     public static final String PHANTOMJS_GHOSTDRIVER_PATH_PROPERTY = "phantomjs.ghostdriver.path";
 
+    /**
+     * <p>Optional capability that allows to add custom command line arguments
+     * to the spawned phantomjs process.</p>
+     *
+     * <p>Set this capability with a list of of argument strings to add, e.g.
+     * <code>new String[] { "--ignore-ssl-errors=yes", "--load-images=no" }
+     * </code>.</p>
+     */
     public static final String PHANTOMJS_CLI_ARGS_CAPABILITY = "phantomjs.cli.args";
     /**
      * Set capabilities with this prefix to apply it to the PhantomJS <code>page.settings.*</code> object.
@@ -126,12 +134,15 @@ public class PhantomJSDriverService extends DriverService {
         // Find GhostDriver main JavaScript file
         File ghostDriverfile = findGhostDriver(desiredCapabilities, GHOSTDRIVER_DOC_LINK, GHOSTDRIVER_DOWNLOAD_LINK);
 
+        // Find command line arguments to add
+        String[] commandLineArguments = findCommandLineArguments(desiredCapabilities);
+
         // Build & return service
         return new Builder().usingPhantomJSExecutable(phantomjsfile)
                 .usingGhostDriver(ghostDriverfile)
                 .usingAnyFreePort()
                 .withProxy(proxy)
-                .usingCommandLineArguments(findCommandLineArguments(desiredCapabilities))
+                .usingCommandLineArguments(commandLineArguments)
                 .build();
     }
 
@@ -408,6 +419,8 @@ public class PhantomJSDriverService extends DriverService {
                     }
                 }
 
+                // Add additional command line arguments provided via the
+                // PHANTOMJS_CLI_ARGS_CAPABILITY (if any).
                 if (this.commandLineArguments != null) {
                     argsBuilder.add(this.commandLineArguments);
                 }
