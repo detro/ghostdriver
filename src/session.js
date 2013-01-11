@@ -122,6 +122,7 @@ ghostdriver.Session = function(desiredCapabilities) {
      * @param func Function to execute
      * @param onLoadFunc Function to execute when page finishes Loading
      * @param onErrorFunc Function to execute in case of error
+     *        (eg. Javascript error, page load problem or timeout).
      * @param execTypeOpt Decides if to "apply" the function directly or page."eval" it.
      *                    Optional. Default value is "apply".
      */
@@ -134,8 +135,8 @@ ghostdriver.Session = function(desiredCapabilities) {
             thisPage = this;
 
         // Normalize "execTypeOpt" value
-        if (typeof(execexecTypeOpt) === "undefined" ||
-            (execexecTypeOpt !== "apply" && execTypeOpt !== "eval")) {
+        if (typeof(execTypeOpt) === "undefined" ||
+            (execTypeOpt !== "apply" && execTypeOpt !== "eval")) {
             execTypeOpt = "apply";
         }
 
@@ -147,6 +148,13 @@ ghostdriver.Session = function(desiredCapabilities) {
         } else {
             args.splice(0, 3);
         }
+
+        // Our callbacks assume that the only thing affecting the page state
+        // is the function we execute. Therefore we need to kill any
+        // pre-existing activity (such as part of the page being loaded in
+        // the background), otherwise it's events might interleave with the
+        // events from the current function.
+        this.stop();
 
         // Register event handlers
         // This logic bears some explaining. If we are loading a new page,
@@ -179,6 +187,7 @@ ghostdriver.Session = function(desiredCapabilities) {
         this.setOneShotCallback("onLoadFinished", function () {
             // console.log("onLoadFinished");
 
+            pageLoadNotTriggered = false;
             clearTimeout(loadingTimer);
             thisPage.resetOneShotCallbacks();
             onLoadFunc.apply(thisPage, arguments);
@@ -209,17 +218,6 @@ ghostdriver.Session = function(desiredCapabilities) {
             onErrorFunc.apply(thisPage, arguments);
         }, _getPageLoadTimeout());
 
-        // In case a Page Load is not triggered at all (within 0.5s), we assume it's done and move on
-        setTimeout(function() {
-            if (pageLoadNotTriggered === true) {
-                // console.log("pageLoadNotTriggered");
-
-                clearTimeout(loadingTimer);
-                thisPage.resetOneShotCallbacks();
-                onLoadFunc.call(thisPage, "success");
-            }
-        }, 500);
-
         // We are ready to execute
         if (execTypeOpt === "eval") {
             // Invoke the Page Eval with the provided function
@@ -228,6 +226,24 @@ ghostdriver.Session = function(desiredCapabilities) {
             // "Apply" the provided function
             func.apply(this, args);
         }
+
+        // If a page load was not triggered whilst executing the function,
+        // we assume that it has completed, and that it does not actually
+        // load a page.
+        // 
+        // This means that if a page load is triggered asynchronously (eg.
+        // by event passing), we may not actually wait for it to complete.
+        // Note that we do allow a brief grace period, but this is quite
+        // short (in order to avoid unnecessary delays in script execution).
+        setTimeout(function() {
+            if (pageLoadNotTriggered === true) {
+                // console.log("pageLoadNotTriggered");
+
+                clearTimeout(loadingTimer);
+                thisPage.resetOneShotCallbacks();
+                onLoadFunc.call(thisPage, "success");
+            }
+        }, 500); //< 0.5 second
     },
 
     _oneShotCallbackFactory = function(page, callbackName) {
