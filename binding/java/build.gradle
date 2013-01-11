@@ -81,6 +81,12 @@ task jars {
     dependsOn jar, sourceJarBuild, javadocJarBuild
 }
 
+//artifacts {
+//    archives jar
+//    archives sourceJarBuild
+//    archives javadocJarBuild
+//}
+
 buildscript {
     repositories {
         mavenCentral()
