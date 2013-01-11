@@ -16,15 +16,12 @@ For more info, please take a look at the [changelog](https://github.com/detro/gh
 
 The project was created and is lead by [Ivan De Marino](https://github.com/detro).
 
-## Requirements
+## Requirements (for users)
 
-At the moment you need to compile [a specific version of PhantomJS](https://github.com/detro/phantomjs/tree/ghostdriver-dev)
-to run GhostDriver.
-This is because GhostDriver needed new features in PhantomJS to fulfill all the functionalities
-of the WebDriver _"protocol"_.
-This is only temporary: **next version of PhantomJS stable release will include GhostDriver built in**.
+* PhantomJS `">= 1.8.0`": latest stable GhostDriver will always be part of latest stable PhantomJS
+* Selenium version `">= 2.28.0`"
 
-### Checkout and Compile Ivan De Marino's PhantomJS `ghostdriver-dev` branch:
+## Requirements (for developers): checkout and compile Ivan De Marino's PhantomJS `ghostdriver-dev` branch:
 
 1. Prepare your machine for building PhantomJS as documented [here](http://phantomjs.org/build.html), then...
 2. Add `detro` remote to local PhantomJS repo: `git remote add detro https://github.com/detro/phantomjs.git`
