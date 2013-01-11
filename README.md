@@ -8,19 +8,20 @@ It's a Remote WebDriver that uses PhantomJS as back-end.
 GhostDriver is designed to be integral part of PhantomJS itself, but it's developed in isolation and progress is tracked
 by this Repository.
 
-Current version is `"1.0.0"` ([changelog](https://github.com/detro/ghostdriver/blob/master/CHANGELOG.md)).
+* Current _GhostDriver_ stable version is `"1.0.2"`
+* Current _PhantomJS-integrated_ version is `"1.0.2"`: contained in PhantomJS `"1.8.x"`
+* Current _PhantomJSDriver_ (Java binding) stable version is `"1.0.1"`
+
+For more info, please take a look at the [changelog](https://github.com/detro/ghostdriver/blob/master/CHANGELOG.md).
 
 The project was created and is lead by [Ivan De Marino](https://github.com/detro).
 
-## Requirements
+## Requirements (for users)
 
-At the moment you need to compile [a specific version of PhantomJS](https://github.com/detro/phantomjs/tree/ghostdriver-dev)
-to run GhostDriver.
-This is because GhostDriver needed new features in PhantomJS to fulfill all the functionalities
-of the WebDriver _"protocol"_.
-This is only temporary: **next version of PhantomJS stable release will include GhostDriver built in**.
+* PhantomJS `">= 1.8.0`": latest stable GhostDriver will always be part of latest stable PhantomJS
+* Selenium version `">= 2.28.0`"
 
-### Checkout and Compile Ivan De Marino's PhantomJS `ghostdriver-dev` branch:
+## Requirements (for developers): checkout and compile Ivan De Marino's PhantomJS `ghostdriver-dev` branch:
 
 1. Prepare your machine for building PhantomJS as documented [here](http://phantomjs.org/build.html), then...
 2. Add `detro` remote to local PhantomJS repo: `git remote add detro https://github.com/detro/phantomjs.git`
@@ -59,6 +60,18 @@ to run them (I tested it with Java 7, but should work with Java 6 too).
 1. Launch the grid server, which listens on 4444 by default: `java -jar /path/to/selenium-server-standalone-2.25.0.jar -role hub`
 2. Register with the hub: `phantomjs --webdriver=8080 --webdriver-selenium-grid-hub=http://127.0.0.1:4444`
 3. Now you can use your normal webdriver client with `http://127.0.0.1:4444` and just request `browserName: phantomjs`
+
+### Include Java Bindings in your Maven project
+
+Just add the following to your `pom.xml`:
+
+```xml
+<dependency>
+    <groupId>com.github.detro.ghostdriver</groupId>
+    <artifactId>phantomjsdriver</artifactId>
+    <version>1.0.1</version>
+</dependency>
+```
 
 ## Project Directory Structure
 
