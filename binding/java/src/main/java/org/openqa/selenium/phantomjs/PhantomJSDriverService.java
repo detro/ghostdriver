@@ -55,13 +55,11 @@ public class PhantomJSDriverService extends DriverService {
 
     /**
      * System property/capability that defines the location of the PhantomJS executable.
-     * Value: <code>"phantomjs.binary.path"</code>.
      */
     public static final String PHANTOMJS_EXECUTABLE_PATH_PROPERTY = "phantomjs.binary.path";
     /**
      * Optional System property/capability that defines the location of the
      * GhostDriver JavaScript launch file (i.e. <code>"src/main.js"</code>).
-     * Value: <code>"phantomjs.ghostdriver.path"</code>.
      */
     public static final String PHANTOMJS_GHOSTDRIVER_PATH_PROPERTY = "phantomjs.ghostdriver.path";
 
