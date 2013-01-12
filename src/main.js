@@ -30,7 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 var ghostdriver = {
         system  : require('system'),
         hub     : require('./hub_register'),
-        version : "1.0.2"
+        version : "1.0.3-dev"
     },
     server = require('webserver').create(),
     router,
