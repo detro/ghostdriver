@@ -64,14 +64,16 @@ public class PhantomJSDriverService extends DriverService {
     public static final String PHANTOMJS_GHOSTDRIVER_PATH_PROPERTY = "phantomjs.ghostdriver.path";
 
     /**
-     * <p>Optional capability that allows to add custom command line arguments
-     * to the spawned phantomjs process.</p>
+     * Capability that allows to add custom command line arguments to the
+     * spawned phantomjs process.
      *
-     * <p>Set this capability with a list of of argument strings to add, e.g.
-     * <code>new String[] { "--ignore-ssl-errors=yes", "--load-images=no" }
-     * </code>.</p>
+     * <p>
+     * Set this capability with a list of of argument strings to add, e.g.
+     * <code>new String[] { "--ignore-ssl-errors=yes", "--load-images=no" }</code>.
+     * </p>
      */
-    public static final String PHANTOMJS_CLI_ARGS_CAPABILITY = "phantomjs.cli.args";
+    public static final String PHANTOMJS_CLI_ARGS = "phantomjs.cli.args";
+
     /**
      * Set capabilities with this prefix to apply it to the PhantomJS <code>page.settings.*</code> object.
      * Every PhantomJS WebPage Setting can be used.
@@ -248,7 +250,7 @@ public class PhantomJSDriverService extends DriverService {
     private static String[] findCommandLineArguments(Capabilities desiredCapabilities) {
         String[] args = new String[]{};
         if (desiredCapabilities != null) {
-            Object capability = desiredCapabilities.getCapability(PHANTOMJS_CLI_ARGS_CAPABILITY);
+            Object capability = desiredCapabilities.getCapability(PHANTOMJS_CLI_ARGS);
             if (capability != null) {
                 args = (String[]) capability;
             }
@@ -417,8 +419,7 @@ public class PhantomJSDriverService extends DriverService {
                     }
                 }
 
-                // Add additional command line arguments provided via the
-                // PHANTOMJS_CLI_ARGS_CAPABILITY (if any).
+                // Additional command line arguments (if provided)
                 if (this.commandLineArguments != null) {
                     argsBuilder.add(this.commandLineArguments);
                 }

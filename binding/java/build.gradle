@@ -81,10 +81,15 @@ task jars {
     dependsOn jar, sourceJarBuild, javadocJarBuild
 }
 
-//artifacts {
-//    archives jar
-//    archives sourceJarBuild
-//    archives javadocJarBuild
+//signing {
+//    sign jar
+//    sign sourceJarBuild
+//    sign javadocJarBuild
+//}
+
+//task signJars {
+//    dependsOn jars
+//    dependsOn signJar, signJavadocJarBuild, signSourceJarBuild
 //}
 
 buildscript {
