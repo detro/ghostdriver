@@ -200,7 +200,7 @@ public class FrameSwitchingTest extends BaseTest {
         WebDriver d = getDriver();
         String expectedTitle = "Unique title";
 
-        d.get("http://ci.seleniumhq.org:2310/common/frameset.html");
+        d.get("http://localhost:2310/common/frameset.html");
         assertEquals(expectedTitle, d.findElement(By.tagName("title")).getText());
 
         d.switchTo().frame(0);

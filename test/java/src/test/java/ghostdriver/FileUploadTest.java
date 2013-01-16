@@ -58,7 +58,7 @@ public class FileUploadTest extends BaseTest {
         writer.write(FILE_HTML);
         writer.close();
 
-        d.get("http://ci.seleniumhq.org:2310/common/upload.html");
+        d.get("http://localhost:2310/common/upload.html");
         d.findElement(By.id("upload")).sendKeys(testFile.getAbsolutePath());
         d.findElement(By.id("go")).submit();
 
@@ -83,12 +83,12 @@ public class FileUploadTest extends BaseTest {
         File file = File.createTempFile("test", "txt");
         file.deleteOnExit();
 
-        d.get("http://ci.seleniumhq.org:2310/common/formPage.html");
+        d.get("http://localhost:2310/common/formPage.html");
         WebElement uploadElement = d.findElement(By.id("upload"));
         uploadElement.sendKeys(file.getAbsolutePath());
         uploadElement.submit();
 
-        d.get("http://ci.seleniumhq.org:2310/common/formPage.html");
+        d.get("http://localhost:2310/common/formPage.html");
         uploadElement = d.findElement(By.id("upload"));
         uploadElement.sendKeys(file.getAbsolutePath());
         uploadElement.submit();
@@ -98,7 +98,7 @@ public class FileUploadTest extends BaseTest {
     public void checkOnChangeEventIsFiredOnFileUpload() throws IOException {
         WebDriver d = getDriver();
 
-        d.get("http://ci.seleniumhq.org:2310/common/formPage.html");
+        d.get("http://localhost:2310/common/formPage.html");
         WebElement uploadElement = d.findElement(By.id("upload"));
         WebElement result = d.findElement(By.id("fileResults"));
         assertEquals("", result.getText());

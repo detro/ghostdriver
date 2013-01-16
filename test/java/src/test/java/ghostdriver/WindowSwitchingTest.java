@@ -117,7 +117,7 @@ public class WindowSwitchingTest extends BaseTest {
     @Test
     public void switchToSameWindowViaHandle() {
         WebDriver d = getDriver();
-        d.navigate().to("http://ci.seleniumhq.org:2310/common/frameset.html");
+        d.navigate().to("http://localhost:2310/common/frameset.html");
 
         // Get handle of the main html page
         String windowHandle = d.getWindowHandle();

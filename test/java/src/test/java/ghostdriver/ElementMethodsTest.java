@@ -98,7 +98,7 @@ public class ElementMethodsTest extends BaseTest {
     public void SubmittingFormShouldFireOnSubmitForThatForm() {
         WebDriver d = getDriver();
 
-        d.get("http://ci.seleniumhq.org:2310/common/javascriptPage.html");
+        d.get("http://localhost:2310/common/javascriptPage.html");
 
         WebElement formElement = d.findElement(By.id("submitListeningForm"));
         formElement.submit();
