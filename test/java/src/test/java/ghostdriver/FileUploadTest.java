@@ -41,6 +41,7 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class FileUploadTest extends BaseTest {
     private static final String LOREM_IPSUM_TEXT = "lorem ipsum dolor sit amet";
@@ -58,13 +59,14 @@ public class FileUploadTest extends BaseTest {
         writer.write(FILE_HTML);
         writer.close();
 
+        // Upload the temp file
         d.get("http://localhost:2310/common/upload.html");
         d.findElement(By.id("upload")).sendKeys(testFile.getAbsolutePath());
         d.findElement(By.id("go")).submit();
 
         // Uploading files across a network may take a while, even if they're really small.
         // Wait for the loading label to disappear.
-        WebDriverWait wait = new WebDriverWait(d, 30);
+        WebDriverWait wait = new WebDriverWait(d, 10);
         wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id("upload_label")));
 
         d.switchTo().frame("upload_target");
@@ -74,6 +76,21 @@ public class FileUploadTest extends BaseTest {
 
         // Navigate after file upload to verify callbacks are properly released.
         d.get("http://www.google.com/");
+    }
+
+    @Test
+    public void checkFileUploadFailsIfFileDoesNotExist() throws InterruptedException {
+        WebDriver d = getDriver();
+
+        // Trying to upload a file that doesn't exist
+        d.get("http://localhost:2310/common/upload.html");
+        d.findElement(By.id("upload")).sendKeys("file_that_does_not_exist.fake");
+        d.findElement(By.id("go")).submit();
+
+        // Uploading files across a network may take a while, even if they're really small.
+        // Wait for a while and make sure the "upload_label" is still there: means that the file was not uploaded
+        Thread.sleep(1000);
+        assertTrue(d.findElement(By.id("upload_label")).isDisplayed());
     }
 
     @Test

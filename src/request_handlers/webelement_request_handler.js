@@ -251,17 +251,18 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         var postObj = JSON.parse(req.post),
             currWindow = _protoParent.getSessionCurrWindow.call(this, _session, req),
             typeRes,
-            text;
+            text,
+            fsModule = require("fs");
 
         // Ensure all required parameters are available
         if (typeof(postObj) === "object" && typeof(postObj.value) === "object") {
             // Normalize input: some binding might send an array of single characters
             text = postObj.value.join("");
 
-            // Detect if it's an Input File type (that requires special behaviour)
+            // Detect if it's an Input File type (that requires special behaviour), and the File actually exists
             if (_getTagName(currWindow).toLowerCase() === "input" &&
-                _getAttribute(currWindow, "type").toLowerCase() === "file") {
-
+                _getAttribute(currWindow, "type").toLowerCase() === "file" &&
+                fsModule.exists(text)) {
                 // Register a one-shot-callback to fill the file picker once invoked by clicking on the element
                 currWindow.setOneShotCallback("onFilePicker", function(oldFile) {
                     // Send the response as soon as we are done setting the value in the "input[type=file]" element
