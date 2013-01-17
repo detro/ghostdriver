@@ -27,12 +27,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package ghostdriver;
 
+import ghostdriver.server.HttpRequestCallback;
 import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.Actions;
 
-public class MouseCommandsTest extends BaseTest {
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+
+public class MouseCommandsTest extends BaseTestWithServer {
     @Test
     public void move() {
         WebDriver d = getDriver();
@@ -89,5 +95,38 @@ public class MouseCommandsTest extends BaseTest {
         // Hold on the logo, then release
         actionBuilder.clickAndHold(d.findElement(By.id("logo_homepage"))).build().perform();
         actionBuilder.release();
+    }
+
+    @Test
+    public void handleClickWhenOnClickInlineCodeFails() {
+        // Define HTTP response for test
+        server.setGetHandler(new HttpRequestCallback() {
+            @Override
+            public void call(HttpServletRequest req, HttpServletResponse res) throws IOException {
+                res.getOutputStream().println("<html>" +
+                        "<head>" +
+                        "<script>\n" +
+                        "function functionThatHasErrors() {\n" +
+                        "    a.callSomeMethodThatDoesntExist();\n" +
+                        "}\n" +
+                        "function validFunction() {\n" +
+                        "    window.location = 'http://google.com';\n" +
+                        "}\n" +
+                        "</script>\n" +
+                        "</head>" +
+                        "<body>" +
+                        "\n" +
+                        "<a href=\"javascript:;\" onclick=\"validFunction();functionThatHasErrors();\">Click me</a>" +
+                        "</body>" +
+                        "</html>");
+            }
+        });
+
+        // Navigate to local server
+        WebDriver d = getDriver();
+        d.navigate().to(server.getBaseUrl());
+
+        WebElement el = d.findElement(By.linkText("Click me"));
+        el.click();
     }
 }

@@ -132,7 +132,10 @@ ghostdriver.Session = function(desiredCapabilities) {
             loadingTimer,
             loadingNewPage = false,
             pageLoadNotTriggered = true,
-            thisPage = this;
+            thisPage = this,
+            errorOccurred = false,
+            errorMsg,
+            errorStack;
 
         // Normalize "execTypeOpt" value
         if (typeof(execTypeOpt) === "undefined" ||
@@ -201,11 +204,12 @@ ghostdriver.Session = function(desiredCapabilities) {
             //     console.log("  " + message);
             // });
 
-            pageLoadNotTriggered = false;
-            thisPage.stop(); //< stop the page from loading
-            clearTimeout(loadingTimer);
-            thisPage.resetOneShotCallbacks();
-            onErrorFunc.apply(thisPage, arguments);
+            // NOTE: We don't handle the error straightaway.
+            // In case the page loading is triggered,
+            // we prefer to ignore errors and move on.
+            errorOccurred = true;
+            errorMsg = message;
+            errorStack = stack;
         });
 
         // Starting loadingTimer
@@ -213,9 +217,16 @@ ghostdriver.Session = function(desiredCapabilities) {
         loadingTimer = setTimeout(function() {
             // console.log("loadingTimer: pageLoadTimeout");
 
+            pageLoadNotTriggered = false;
             thisPage.stop();                    //< stop the page from loading
             thisPage.resetOneShotCallbacks();
-            onErrorFunc.apply(thisPage, arguments);
+
+            // Handle possible error raised before by "onError"
+            if (errorOccurred) {
+                onErrorFunc.apply(thisPage, [errorMsg, errorStack]);
+            } else {
+                onErrorFunc.apply(thisPage, []);
+            }
         }, _getPageLoadTimeout());
 
         // We are ready to execute
@@ -230,7 +241,7 @@ ghostdriver.Session = function(desiredCapabilities) {
         // If a page load was not triggered whilst executing the function,
         // we assume that it has completed, and that it does not actually
         // load a page.
-        // 
+        //
         // This means that if a page load is triggered asynchronously (eg.
         // by event passing), we may not actually wait for it to complete.
         // Note that we do allow a brief grace period, but this is quite
