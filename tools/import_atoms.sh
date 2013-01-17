@@ -83,7 +83,7 @@ done
 # Save the current timestamp to remember when this was generated
 date +"%Y-%m-%d %H:%M:%S" > $LASTUPDATE_FILE
 echo "" >> $LASTUPDATE_FILE
-svn log -l 1 >> $LASTUPDATE_FILE
+git log -n 1 --decorate=full >> $LASTUPDATE_FILE
 
 popd
 
