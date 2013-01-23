@@ -59,9 +59,16 @@ ghostdriver.SessionManagerReqHand = function() {
 
     _postNewSessionCommand = function(req, res) {
         var newSession,
-            postObj = JSON.parse(req.post);
+            postObj;
 
-        if (typeof(postObj) === "object") {
+        try {
+            postObj = JSON.parse(req.post);
+        } catch (e) {
+            // If the parsing has failed, the error is reported at the end
+        }
+
+        if (typeof(postObj) === "object" &&
+            typeof(postObj.desiredCapabilities) === "object") {
             // Create and store a new Session
             newSession = new ghostdriver.Session(postObj.desiredCapabilities);
             _sessions[newSession.getId()] = newSession;
