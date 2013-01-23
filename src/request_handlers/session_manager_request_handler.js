@@ -34,7 +34,7 @@ ghostdriver.SessionManagerReqHand = function() {
     _sessions = {}, //< will store key/value pairs like 'SESSION_ID : SESSION_OBJECT'
     _sessionRHs = {},
     _errors = _protoParent.errors,
-    _CLEANUP_WINDOWLESS_SESSIONS_TIMEOUT = 60000,
+    _CLEANUP_WINDOWLESS_SESSIONS_TIMEOUT = 300000, // 5 minutes
 
     _handle = function(req, res) {
         _protoParent.handle.call(this, req, res);
@@ -167,7 +167,7 @@ ghostdriver.SessionManagerReqHand = function() {
     };
 
     // Regularly cleanup un-used sessions
-    setInterval(_cleanupWindowlessSessions, _CLEANUP_WINDOWLESS_SESSIONS_TIMEOUT); //< every 60s
+    setInterval(_cleanupWindowlessSessions, _CLEANUP_WINDOWLESS_SESSIONS_TIMEOUT);
 
     // public:
     return {
