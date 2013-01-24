@@ -201,17 +201,16 @@ public class FrameSwitchingTest extends BaseTest {
         String expectedTitle = "Unique title";
 
         d.get("http://localhost:2310/common/frameset.html");
-        assertEquals(expectedTitle, d.findElement(By.tagName("title")).getText());
+        assertEquals(expectedTitle, d.getTitle());
 
         d.switchTo().frame(0);
-        assertEquals("", d.findElement(By.tagName("title")).getText());
         d.findElement(By.linkText("top")).click();
 
         // Wait for new content to load in the frame.
         expectedTitle = "XHTML Test Page";
         WebDriverWait wait = new WebDriverWait(d, 10);
         wait.until(ExpectedConditions.titleIs(expectedTitle));
-        assertEquals(expectedTitle, d.findElement(By.tagName("title")).getText());
+        assertEquals(expectedTitle, d.getTitle());
 
         WebElement element = d.findElement(By.id("amazing"));
         assertNotNull(element);
