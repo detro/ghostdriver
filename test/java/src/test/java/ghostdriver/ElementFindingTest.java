@@ -135,7 +135,13 @@ public class ElementFindingTest extends BaseTest {
         WebDriver d = getDriver();
 
         d.get("about:blank");
-        String injectLink = "document.body.innerHTML = \"<a onclick=\\\"setTimeout(function(){var e=document.createElement('span');e.innerText='test';e.id='testing'+document.body.childNodes.length;document.body.appendChild(e);}, 750)\\\" id='add'>add</a>\"";
+        String injectLink = "document.body.innerHTML = \"<a onclick=\\\"setTimeout(function(){" +
+                    "var e=document.createElement('span');" +
+                    "e.innerText='test';" +
+                    "e.id='testing'+document.body.childNodes.length;" +
+                    "document.body.appendChild(e);" +
+                    "}, 750)\\\"" +
+                " id='add'>add</a>\"";
         ((JavascriptExecutor)d).executeScript(injectLink);
         d.manage().timeouts().implicitlyWait(0, TimeUnit.SECONDS);
         WebElement add = d.findElement(By.id("add"));
@@ -162,7 +168,13 @@ public class ElementFindingTest extends BaseTest {
         WebDriver d = getDriver();
 
         d.get("about:blank");
-        String injectLink = "document.body.innerHTML = \"<a onclick=\\\"setTimeout(function(){var e=document.createElement('span');e.innerText='test';e.id='testing'+document.body.childNodes.length;document.body.appendChild(e);}, 750)\\\" id='add'>add</a>\"";
+        String injectLink = "document.body.innerHTML = \"<a onclick=\\\"setTimeout(function(){" +
+                    "var e=document.createElement('span');" +
+                    "e.innerText='test';" +
+                    "e.id='testing'+document.body.childNodes.length;" +
+                    "document.body.appendChild(e);" +
+                    "}, 750)\\\" " +
+                " id='add'>add</a>\"";
         ((JavascriptExecutor)d).executeScript(injectLink);
         d.manage().timeouts().implicitlyWait(0, TimeUnit.SECONDS);
         WebElement add = d.findElement(By.id("add"));

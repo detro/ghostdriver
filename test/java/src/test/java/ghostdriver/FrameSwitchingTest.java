@@ -27,17 +27,33 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package ghostdriver;
 
+import ghostdriver.server.HttpRequestCallback;
 import org.junit.Test;
-import org.openqa.selenium.*;
+import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.NoSuchFrameException;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
-import static org.junit.Assert.*;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
-public class FrameSwitchingTest extends BaseTest {
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+public class FrameSwitchingTest extends BaseTestWithServer {
 
     private String getCurrentFrameName(WebDriver driver) {
-        return (String)((JavascriptExecutor) driver).executeScript("return window.frameElement ? window.frameElement.name : '__MAIN_FRAME__';");
+        return (String)((JavascriptExecutor) driver).executeScript("return window.frameElement ? " +
+                "window.frameElement.name : " +
+                "'__MAIN_FRAME__';");
     }
 
     private boolean isAtTopWindow(WebDriver driver) {
@@ -214,5 +230,135 @@ public class FrameSwitchingTest extends BaseTest {
 
         WebElement element = d.findElement(By.id("amazing"));
         assertNotNull(element);
+    }
+
+    @Test
+    public void shouldSwitchBetweenNestedFrames() {
+        // Define HTTP response for test
+        server.setGetHandler(new HttpRequestCallback() {
+            @Override
+            public void call(HttpServletRequest req, HttpServletResponse res) throws IOException {
+                String pathInfo = req.getPathInfo();
+                ServletOutputStream out = res.getOutputStream();
+
+                // NOTE: the following pages are cut&paste from "Watir" test specs.
+                // @see https://github.com/watir/watirspec/tree/master/html/nested_frame.html
+                if (pathInfo.endsWith("nested_frame_1.html")) {
+                    // nested frame 1
+                    out.println("frame 1");
+                } else if (pathInfo.endsWith("nested_frame_2.html")) {
+                    // nested frame 2
+                    out.println("<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01//EN\">\n" +
+                            "<html>\n" +
+                            "  <body>\n" +
+                            "    <iframe id=\"three\" src=\"nested_frame_3.html\"></iframe>\n" +
+                            "  </body>\n" +
+                            "</html>");
+                } else if (pathInfo.endsWith("nested_frame_3.html")) {
+                    // nested frame 3, nested inside frame 2
+                    out.println("<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01//EN\">\n" +
+                            "<html>\n" +
+                            "  <body>\n" +
+                            "    <a id=\"four\" href=\"definition_lists.html\" target=\"_top\">this link should consume the page</a>\n" +
+                            "  </body>\n" +
+                            "</html>");
+                } else if (pathInfo.endsWith("definition_lists.html")) {
+                    // definition lists
+                    out.println("<html>\n" +
+                            "  <head>\n" +
+                            "    <title>definition_lists</title>\n" +
+                            "  </head>\n" +
+                            "</html>");
+                } else {
+                    // main page
+                    out.println("<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01//EN\">\n" +
+                            "<html>\n" +
+                            "  <frameset cols=\"20%, 80%\">\n" +
+                            "    <frame id=\"one\" src=\"nested_frame_1.html\">\n" +
+                            "    <frame id=\"two\" src=\"nested_frame_2.html\">\n" +
+                            "  </frameset>\n" +
+                            "</html>");
+                }
+            }
+        });
+
+        // Launch Driver against the above defined server
+        WebDriver d = getDriver();
+        d.get(server.getBaseUrl());
+
+        // Switch to frame "#two"
+        d.switchTo().frame("two");
+        // Switch further down into frame "#three"
+        d.switchTo().frame("three");
+        // Click on the link in frame "#three"
+        d.findElement(By.id("four")).click();
+
+        // Expect page to have loaded and title to be set correctly
+        new WebDriverWait(d, 5).until(ExpectedConditions.titleIs("definition_lists"));
+    }
+
+    @Test
+    public void shouldSwitchBetweenNestedFramesPickedViaWebElement() {
+        // Define HTTP response for test
+        server.setGetHandler(new HttpRequestCallback() {
+            @Override
+            public void call(HttpServletRequest req, HttpServletResponse res) throws IOException {
+                String pathInfo = req.getPathInfo();
+                ServletOutputStream out = res.getOutputStream();
+
+                // NOTE: the following pages are cut&paste from "Watir" test specs.
+                // @see https://github.com/watir/watirspec/tree/master/html/nested_frame.html
+                if (pathInfo.endsWith("nested_frame_1.html")) {
+                    // nested frame 1
+                    out.println("frame 1");
+                } else if (pathInfo.endsWith("nested_frame_2.html")) {
+                    // nested frame 2
+                    out.println("<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01//EN\">\n" +
+                            "<html>\n" +
+                            "  <body>\n" +
+                            "    <iframe id=\"three\" src=\"nested_frame_3.html\"></iframe>\n" +
+                            "  </body>\n" +
+                            "</html>");
+                } else if (pathInfo.endsWith("nested_frame_3.html")) {
+                    // nested frame 3, nested inside frame 2
+                    out.println("<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01//EN\">\n" +
+                            "<html>\n" +
+                            "  <body>\n" +
+                            "    <a id=\"four\" href=\"definition_lists.html\" target=\"_top\">this link should consume the page</a>\n" +
+                            "  </body>\n" +
+                            "</html>");
+                } else if (pathInfo.endsWith("definition_lists.html")) {
+                    // definition lists
+                    out.println("<html>\n" +
+                            "  <head>\n" +
+                            "    <title>definition_lists</title>\n" +
+                            "  </head>\n" +
+                            "</html>");
+                } else {
+                    // main page
+                    out.println("<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01//EN\">\n" +
+                            "<html>\n" +
+                            "  <frameset cols=\"20%, 80%\">\n" +
+                            "    <frame id=\"one\" src=\"nested_frame_1.html\">\n" +
+                            "    <frame id=\"two\" src=\"nested_frame_2.html\">\n" +
+                            "  </frameset>\n" +
+                            "</html>");
+                }
+            }
+        });
+
+        // Launch Driver against the above defined server
+        WebDriver d = getDriver();
+        d.get(server.getBaseUrl());
+
+        // Switch to frame "#two"
+        d.switchTo().frame(d.findElement(By.id("two")));
+        // Switch further down into frame "#three"
+        d.switchTo().frame(d.findElement(By.id("three")));
+        // Click on the link in frame "#three"
+        d.findElement(By.id("four")).click();
+
+        // Expect page to have loaded and title to be set correctly
+        new WebDriverWait(d, 5).until(ExpectedConditions.titleIs("definition_lists"));
     }
 }

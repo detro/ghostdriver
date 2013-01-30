@@ -518,47 +518,73 @@ ghostdriver.SessionReqHand = function(session) {
             frameName,
             switched = false;
 
+        // console.log("Frame Switching: current frames count: "+_protoParent.getSessionCurrWindow.call(this, _session, req).framesCount);
+        // var fnames = _protoParent.getSessionCurrWindow.call(this, _session, req).framesName;
+        // for (var i = 0; i < fnames.length; ++i) {
+        //     console.log("   frame #" + i + ": " + fnames[i]);
+        // }
+
         if (typeof(postObj) === "object" && typeof(postObj.id) !== "undefined") {
             if(postObj.id === null) {
+                // console.log("Frame Switching: null (main frame)");
+
                 // Reset focus on the topmost (main) Frame
                 _protoParent.getSessionCurrWindow.call(this, _session, req).switchToMainFrame();
                 switched = true;
             } else if (typeof(postObj.id) === "number") {
+                // console.log("Frame Switching: frame number");
+
                 // Switch frame by "index"
                 switched = _protoParent.getSessionCurrWindow.call(this, _session, req).switchToFrame(postObj.id);
             } else if (typeof(postObj.id) === "string") {
+                // console.log("Frame Switching: name or #id");
+
                 // Switch frame by "name" and, if not found, by "id"
                 switched = _protoParent.getSessionCurrWindow.call(this, _session, req).switchToFrame(postObj.id);
 
                 // If we haven't switched, let's try to find the frame "name" using it's "id"
                 if (!switched) {
+                    // console.log("Frame Switching: failed to switch by name, trying by #id");
+
                     // fetch the frame "name" via "id"
                     frameName = _protoParent.getSessionCurrWindow.call(this, _session, req).evaluate(function(frameId) {
                         var el = null;
                         el = document.querySelector('#'+frameId);
                         if (el !== null) {
+                            // console.log("Frame Switching: found frame by #id and it's named: "+el.name);
                             return el.name;
                         }
+
+                        // console.log("Frame Switching: no frame found by #id");
                         return null;
                     }, postObj.id);
 
+                    // console.log("Frame Switching: switching to '"+frameName+"'");
+
                     // Switch frame by "name"
-                    switched = _protoParent.getSessionCurrWindow.call(this, _session, req).switchToFrame(frameName);
+                    if (frameName !== null) {
+                        switched = _protoParent.getSessionCurrWindow.call(this, _session, req).switchToFrame(frameName);
+                    }
                 }
             } else if (typeof(postObj.id) === "object" && typeof(postObj.id["ELEMENT"]) === "string") {
+                // console.log("Frame Switching: WebDriver ELEMENT: " + JSON.stringify(postObj.id));
+
                 // Will use the Element JSON to find the frame name
                 frameName = _protoParent.getSessionCurrWindow.call(this, _session, req).evaluate(
                     require("./webdriver_atoms.js").get("execute_script"),
-                    "return arguments[0].name;",
+                    "return arguments[0].name || arguments[0].id;",
                     [postObj.id]);
 
-                // If a name was found
+                // console.log("Frame Switching: found name/#id for ELEMENT: " + frameName.value);
+
+                // If a frame name (or id) is found for the given ELEMENT, we
+                // "re-call" this very function, changing the `post` property
+                // on the `req` object. The `post` will contain this time
+                // the frame name (or id) that was found.
                 if (frameName && frameName.value) {
-                    // Switch frame by "name"
-                    switched = _protoParent.getSessionCurrWindow.call(this, _session, req).switchToFrame(frameName.value);
-                } else {
-                    // No name was found
-                    switched = false;
+                    req.post = "{\"id\" : \"" + frameName.value + "\"}";
+                    _postFrameCommand.call(this, req, res);
+                    return;
                 }
             } else {
                 throw _errors.createInvalidReqInvalidCommandMethodEH(req);
