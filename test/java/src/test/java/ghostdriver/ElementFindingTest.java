@@ -27,16 +27,27 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package ghostdriver;
 
+import ghostdriver.server.HttpRequestCallback;
 import org.junit.Test;
-import org.openqa.selenium.*;
+import org.openqa.selenium.By;
+import org.openqa.selenium.InvalidSelectorException;
+import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class ElementFindingTest extends BaseTest {
+public class ElementFindingTest extends BaseTestWithServer {
     @Test
     public void findChildElement() {
         WebDriver d = getDriver();
@@ -187,5 +198,27 @@ public class ElementFindingTest extends BaseTest {
         add.click();
         spans = d.findElements(By.tagName("span"));
         assertEquals(1, spans.size());
+    }
+
+    @Test
+    public void findElementViaXpathLocator() {
+        // Define HTTP response for test
+        server.setGetHandler(new HttpRequestCallback() {
+            @Override
+            public void call(HttpServletRequest req, HttpServletResponse res) throws IOException {
+                ServletOutputStream out = res.getOutputStream();
+                out.println("<html><body>" +
+                        "<button class='login main btn'>Login Button</button>" +
+                        "</body></html>");
+            }
+        });
+
+        WebDriver d = getDriver();
+        d.get(server.getBaseUrl());
+
+        WebElement loginButton = d.findElement(By.xpath("//button[contains(@class, 'login')]"));
+        assertNotNull(loginButton);
+        assertTrue(loginButton.getText().toLowerCase().contains("login"));
+        assertEquals("button", loginButton.getTagName().toLowerCase());
     }
 }
