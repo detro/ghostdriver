@@ -27,16 +27,20 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package ghostdriver;
 
+import ghostdriver.server.HttpRequestCallback;
 import org.junit.Test;
 import org.openqa.selenium.*;
 import org.openqa.selenium.internal.Locatable;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class ElementQueryingTest extends BaseTest {
+public class ElementQueryingTest extends BaseTestWithServer {
     @Test
     public void checkAttributesOnGoogleSearchBox() {
         WebDriver d = getDriver();
@@ -80,5 +84,34 @@ public class ElementQueryingTest extends BaseTest {
 
         assertTrue(locationBeforeScroll.x >= locationAfterScroll.x);
         assertTrue(locationBeforeScroll.y >= locationAfterScroll.y);
+    }
+
+    @Test
+    public void getTextFromDifferentLocationsOfDOMTree() {
+        server.setGetHandler(new HttpRequestCallback() {
+            @Override
+            public void call(HttpServletRequest req, HttpServletResponse res) throws IOException {
+                res.getOutputStream().println("<html><body>" +
+                        "<div class=\"item\">\n" +
+                        "    <span class=\"item-title\">\n" +
+                        "        <a href=\"#\">\n" +
+                        "             <h1>The Title of The Item</h1>\n" +
+                        "        </a>\n" +
+                        "     </span>\n" +
+                        "     <div>\n" +
+                        "         (Loads of other stuff)\n" +
+                        "     </div>\n" +
+                        "</div>" +
+                        "</body></html>");
+            }
+        });
+
+        WebDriver d = getDriver();
+        d.get(server.getBaseUrl());
+
+        assertEquals("The Title of The Item\n(Loads of other stuff)", d.findElement(By.className("item")).getText());
+        assertEquals("The Title of The Item", d.findElement(By.className("item")).findElement(By.tagName("h1")).getText());
+        assertEquals("The Title of The Item", d.findElement(By.className("item")).findElement(By.tagName("a")).getText());
+        assertEquals("The Title of The Item", d.findElement(By.className("item")).findElement(By.className("item-title")).getText());
     }
 }

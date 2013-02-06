@@ -31,6 +31,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.phantomjs.PhantomJSDriver;
 import org.openqa.selenium.phantomjs.PhantomJSDriverService;
@@ -52,6 +53,7 @@ public abstract class BaseTest {
 
     private static final String CONFIG_FILE        = "../config.ini";
     private static final String DRIVER_FIREFOX     = "firefox";
+    private static final String DRIVER_CHROME      = "chrome";
     private static final String DRIVER_PHANTOMJS   = "phantomjs";
 
     protected static Properties sConfig;
@@ -111,6 +113,8 @@ public abstract class BaseTest {
             mDriver = new RemoteWebDriver(new URL(driver), sCaps);
         } else if (driver.equals(DRIVER_FIREFOX)) {
             mDriver = new FirefoxDriver(sCaps);
+        } else if (driver.equals(DRIVER_CHROME)) {
+            mDriver = new ChromeDriver(sCaps);
         } else if (driver.equals(DRIVER_PHANTOMJS)) {
             mDriver = new PhantomJSDriver(sCaps);
         }
