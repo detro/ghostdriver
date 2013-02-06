@@ -97,6 +97,60 @@ Here follows the output of the `tree` command, trimmed of files and "build direc
 └── tools                   <--- Tools (import/export)
 ```
 
+### WebDriver Atoms
+
+Being GhostDriver a WebDriver implementation, it embeds the standard/default WebDriver Atoms to operate inside open
+webpages. In the specific, the Atoms cover scenarios where the "native" PhantomJS `require('webpage')` don't stretch.
+
+Documentation about how those work can be found [here](http://code.google.com/p/selenium/wiki/AutomationAtoms)
+and [here](http://www.aosabook.org/en/selenium.html).
+
+How are those Atoms making their way into GhostDriver? If you look inside the `/tools` directory you can find a bash
+script: `/tools/import_atoms.sh`. That script accepts the path to a Selenium local repo, runs the
+[CrazyFunBuild](http://code.google.com/p/selenium/wiki/CrazyFunBuild) to produce the compressed/minified Atoms,
+grabs those and copies them over to the `/src/third_party/webdriver-atoms` directory.
+
+The Atoms original source lives inside the Selenium repo in the subtree of `/javascript`. To understand how the build
+works, you need to spend a bit of time reading about
+[CrazyFunBuild](http://code.google.com/p/selenium/wiki/CrazyFunBuild): worth your time if you want to contribute to
+GhostDriver (or any WebDriver, as a matter of fact).
+
+One thing it's important to mention, is that CrazyFunBuild relies on the content of `build.desc` file to understand
+what and how to build it. Those files define what exactly is built and what it depends on. In the case of the Atoms,
+the word "build" means "run Google Clojure Compiler over a set of files and compress functions into Atoms".
+The definition of the Atoms that GhostDriver uses lives at `/tools/atoms_build_dir/build.desc`.
+
+Let's take this small portion of our `build.desc`:
+```
+js_deps(name = "deps",
+  srcs = "*.js",
+  deps = ["//javascript/atoms:deps",
+          "//javascript/webdriver/atoms:deps"])
+
+js_fragment(name = "get_element_from_cache",
+  module = "bot.inject.cache",
+  function = "bot.inject.cache.getElement",
+  deps = [ "//javascript/atoms:deps" ])
+
+js_deps(name = "build_atoms",
+  deps = [
+    ...
+    "//javascript/webdriver/atoms:execute_script",
+    ...
+  ]
+```
+The first part (`js_deps(name = "deps"...`) declares what are the dependency of this `build.desc`: with that CrazyFunBuild knows
+what to build before fulfilling our build.
+
+The second part (`js_fragment(...`) defines an Atom: the `get_element_from_cache` is going to be the name of
+an Atom to build; it can be found in the module `bot.inject.cache` and is realised by the function named
+`bot.inject.cache.getElement`.
+
+The third part (`js_deps(name = "build_atoms"...`) is a list of the Atoms (either defined by something like the second
+part or in one of the files we declared as dependency) that we want to build.
+
+If you reached this stage in understanding the Atoms, you are ready to go further by yourself.
+
 ## Presentation and Slides (old)
 
 In April 2012 I (Ivan De Marino) presented GhostDriver at the
