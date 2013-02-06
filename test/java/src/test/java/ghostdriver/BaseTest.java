@@ -49,7 +49,8 @@ import java.util.Properties;
  * Takes care of initialising the Remote WebDriver
  */
 public abstract class BaseTest {
-    private WebDriver mDriver = null;
+    private WebDriver mDriver                      = null;
+    private boolean mAutoQuitDriver                = true;
 
     private static final String CONFIG_FILE        = "../config.ini";
     private static final String DRIVER_FIREFOX     = "firefox";
@@ -124,9 +125,21 @@ public abstract class BaseTest {
         return mDriver;
     }
 
+    protected void disableAutoQuitDriver() {
+        mAutoQuitDriver = false;
+    }
+
+    protected void enableAutoQuitDriver() {
+        mAutoQuitDriver = true;
+    }
+
+    protected boolean isAutoQuitDriverEnabled() {
+        return mAutoQuitDriver;
+    }
+
     @After
     public void quitDriver() {
-        if (mDriver != null) {
+        if (mAutoQuitDriver && mDriver != null) {
             mDriver.quit();
             mDriver = null;
         }
