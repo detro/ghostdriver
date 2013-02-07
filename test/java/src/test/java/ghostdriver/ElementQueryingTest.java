@@ -114,4 +114,35 @@ public class ElementQueryingTest extends BaseTestWithServer {
         assertEquals("The Title of The Item", d.findElement(By.className("item")).findElement(By.tagName("a")).getText());
         assertEquals("The Title of The Item", d.findElement(By.className("item")).findElement(By.className("item-title")).getText());
     }
+
+    @Test(expected = ElementNotVisibleException.class)
+    public void throwExceptionWhenInteractingWithInvisibleElement() {
+        server.setGetHandler(new HttpRequestCallback() {
+            @Override
+            public void call(HttpServletRequest req, HttpServletResponse res) throws IOException {
+                res.getOutputStream().println("<!DOCTYPE html>" +
+                        "<html>" +
+                        "    <head>\n" +
+                        "        <title>test</title>\n" +
+                        "    </head>\n" +
+                        "    <body>\n" +
+                        "        <input id=\"visible\">\n" +
+                        "        <input style=\"display:none\" id=\"invisible\">\n" +
+                        "    </body>" +
+                        "</html>");
+            }
+        });
+
+        WebDriver d = getDriver();
+        d.get(server.getBaseUrl());
+
+        WebElement visibleInput = d.findElement(By.id("visible"));
+        WebElement invisibleInput = d.findElement(By.id("invisible"));
+
+        String textToType = "text to type";
+        visibleInput.sendKeys(textToType);
+        assertEquals(textToType, visibleInput.getAttribute("value"));
+
+        invisibleInput.sendKeys(textToType);
+    }
 }
