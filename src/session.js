@@ -33,6 +33,8 @@ ghostdriver.Session = function(desiredCapabilities) {
     _defaultCapabilities = {    // TODO - Actually try to match the "desiredCapabilities" instead of ignoring them
         "browserName" : "phantomjs",
         "version" : phantom.version.major + '.' + phantom.version.minor + '.' + phantom.version.patch,
+        "driverName" : "ghostdriver",
+        "driverVersion" : ghostdriver.version,
         "platform" : ghostdriver.system.os.name + '-' + ghostdriver.system.os.version + '-' + ghostdriver.system.os.architecture,
         "javascriptEnabled" : true,
         "takesScreenshot" : true,
