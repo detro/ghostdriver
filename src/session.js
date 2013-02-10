@@ -357,7 +357,9 @@ ghostdriver.Session = function(desiredCapabilities) {
         return page;
     },
 
-    _initCurrentWindowIfNull = function() {
+    _init = function() {
+        var page;
+
         // Ensure a Current Window is available, if it's found to be `null`
         if (_currentWindowHandle === null) {
             // First call to get the current window: need to create one
@@ -370,7 +372,6 @@ ghostdriver.Session = function(desiredCapabilities) {
     _getCurrentWindow = function() {
         var page = null;
 
-        _initCurrentWindowIfNull();
         if (_windows.hasOwnProperty(_currentWindowHandle)) {
             page = _windows[_currentWindowHandle];
         }
@@ -491,6 +492,10 @@ ghostdriver.Session = function(desiredCapabilities) {
         }
     };
 
+    // Initialize the Session.
+    // Particularly, create the first empty page/window.
+    _init();
+
     // console.log("Session '" + _id + "' - Capabilities: " + JSON.stringify(_negotiatedCapabilities, null, "  "));
     // console.log("Desired: "+JSON.stringify(desiredCapabilities, null, "  "));
 
@@ -504,7 +509,6 @@ ghostdriver.Session = function(desiredCapabilities) {
         getWindow : _getWindow,
         closeWindow : _closeWindow,
         getWindowsCount : _getWindowsCount,
-        initCurrentWindowIfNull : _initCurrentWindowIfNull,
         getCurrentWindowHandle : _getCurrentWindowHandle,
         getWindowHandles : _getWindowHandles,
         isValidWindowHandle : _isValidWindowHandle,
