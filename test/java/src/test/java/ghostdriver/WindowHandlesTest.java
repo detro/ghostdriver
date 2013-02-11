@@ -27,15 +27,23 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package ghostdriver;
 
+import ghostdriver.server.HttpRequestCallback;
 import org.junit.Test;
+import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Iterator;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-public class WindowHandlesTest extends BaseTest {
+public class WindowHandlesTest extends BaseTestWithServer {
     @Test
     public void enumerateWindowHandles() {
         WebDriver d = getDriver();
@@ -57,5 +65,46 @@ public class WindowHandlesTest extends BaseTest {
         // Didn't open any page yet: no Window Handles yet
         String whandle = d.getWindowHandle();
         assertFalse(whandle.isEmpty());
+    }
+
+    @Test
+    public void openPopupAndGetCurrentUrl() throws InterruptedException {
+        server.setGetHandler(new HttpRequestCallback() {
+            @Override
+            public void call(HttpServletRequest req, HttpServletResponse res) throws IOException {
+                res.getOutputStream().println("<html>" +
+                        "<head>" +
+                        "<script language=\"javascript\" type=\"text/javascript\">\n" +
+                        "function openProjectPopup(url) {\n" +
+                        "    var popWidth  = 1024;\n" +
+                        "    var leftX  = (screen.width) ? (screen.width-popWidth)/2 : 0;\n" +
+                        "    var height = screen.availHeight;\n" +
+                        "    var win = window.open(url, \"projectPopup\", \"left=\"+leftX+\",top=0,width=\"+popWidth+\",height=\"+height+\",location=yes,menubar=no,resizable=yes,status=no,scrollbars=yes\");\n" +
+                        "    win.location.href='http://www.jnto.go.jp/'; //put a link to a slow loading webpage here\n" +
+                        "    win.focus();\n" +
+                        "}\n" +
+                        "</script>\n" +
+                        "</head>\n" +
+                        "   <body>\n" +
+                        "       <a href=\"popup.htm\" onclick=\"return openProjectPopup('popup.htm')\">Link to popup</a>" +
+                        "   </body>\n" +
+                        "</html>");
+            }
+        });
+
+        // Load page
+        WebDriver d = getDriver();
+        d.get(server.getBaseUrl());
+
+        // Click on link that will cause popup to be created
+        d.findElement(By.xpath("//a")).click();
+        // Switch to new popup
+        Iterator<String> handleIter = d.getWindowHandles().iterator();
+        handleIter.next();
+        String popupHandle = handleIter.next();
+        d.switchTo().window(popupHandle);
+
+        // Wait for page to be loaded
+        new WebDriverWait(d, 5).until(ExpectedConditions.titleContains("Japan"));
     }
 }
