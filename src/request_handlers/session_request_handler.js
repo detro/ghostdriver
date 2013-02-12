@@ -687,7 +687,21 @@ ghostdriver.SessionReqHand = function(session) {
     },
 
     _postCookieCommand = function(req, res) {
-        var postObj = JSON.parse(req.post || "{}");
+        var postObj = JSON.parse(req.post || "{}"),
+            currWindow = _protoParent.getSessionCurrWindow.call(this, _session, req);
+
+        // If the page has not loaded anything yet, setting cookies is forbidden
+        if (currWindow.url.indexOf("about:blank") === 0) {
+            // Something else went wrong
+            _errors.handleFailedCommandEH(
+                _errors.FAILED_CMD_STATUS.UNABLE_TO_SET_COOKIE,
+                "Unable to set Cookie: no URL has been loaded yet",
+                req,
+                res,
+                _session,
+                "SessionReqHand");
+            return;
+        }
 
         if (postObj.cookie) {
             // JavaScript deals with Timestamps in "milliseconds since epoch": normalize!
@@ -697,12 +711,12 @@ ghostdriver.SessionReqHand = function(session) {
 
             // If the cookie is expired OR if it was successfully added
             if ((postObj.cookie.expiry && postObj.cookie.expiry <= new Date().getTime()) ||
-                _protoParent.getSessionCurrWindow.call(this, _session, req).addCookie(postObj.cookie)) {
+                currWindow.addCookie(postObj.cookie)) {
                 // Notify success
                 res.success(_session.getId());
             } else {
                 // Something went wrong while trying to set the cookie
-                if (_protoParent.getSessionCurrWindow.call(this, _session, req).url.indexOf(postObj.cookie.domain) < 0) {
+                if (currWindow.url.indexOf(postObj.cookie.domain) < 0) {
                     // Domain mismatch
                     _errors.handleFailedCommandEH(
                         _errors.FAILED_CMD_STATUS.INVALID_COOKIE_DOMAIN,
@@ -728,6 +742,18 @@ ghostdriver.SessionReqHand = function(session) {
     },
 
     _getCookieCommand = function(req, res) {
+        // var i, cookies;
+        // cookies = _protoParent.getSessionCurrWindow.call(this, _session, req).cookies;
+        // console.log("Current Page Cookies:")
+        // for (i = 0; i < cookies.length; ++i) {
+        //     console.log("   "+i+": "+JSON.stringify(cookies[i]));
+        // }
+        // cookies = phantom.cookies;
+        // console.log("Current PhantomJS Cookies:")
+        // for (i = 0; i < cookies.length; ++i) {
+        //     console.log("   "+i+": "+JSON.stringify(cookies[i]));
+        // }
+
         // Get all the cookies the session at current URL can see/access
         res.success(
             _session.getId(),

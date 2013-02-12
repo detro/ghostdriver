@@ -255,4 +255,15 @@ public class CookieTest extends BaseTestWithServer {
         Cookie cookie = d.manage().getCookieNamed("expired");
         assertNull(cookie);
     }
+
+    @Test(expected = Exception.class)
+    public void shouldThrowExceptionIfAddingCookieBeforeLoadingAnyUrl() {
+        // NOTE: At the time of writing, this test doesn't pass with FirefoxDriver.
+        // ChromeDriver is fine instead.
+        String xval = "123456789101112"; //< detro: I buy you a beer if you guess what am I quoting here
+        WebDriver d = getDriver();
+
+        // Set cookie, without opening any page: should throw an exception
+        d.manage().addCookie(new Cookie("x", xval));
+    }
 }
