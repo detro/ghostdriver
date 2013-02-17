@@ -34,6 +34,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.openqa.selenium.Cookie;
 import org.openqa.selenium.InvalidCookieDomainException;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 
 import javax.servlet.http.HttpServletRequest;
@@ -265,5 +266,55 @@ public class CookieTest extends BaseTestWithServer {
 
         // Set cookie, without opening any page: should throw an exception
         d.manage().addCookie(new Cookie("x", xval));
+    }
+
+    @Test
+    public void shouldBeAbleToCreateCookieViaJavascriptOnGoogle() {
+        String ckey = "cookiekey";
+        String cval = "cookieval";
+
+        WebDriver d = getDriver();
+        d.get("http://www.google.com");
+        JavascriptExecutor js = (JavascriptExecutor) d;
+
+        // Of course, no cookie yet(!)
+        Cookie c = d.manage().getCookieNamed(ckey);
+        assertNull(c);
+
+        // Attempt to create cookie on multiple Google domains
+        js.executeScript("javascript:(" +
+                "function() {" +
+                "   cook = document.cookie;" +
+                "   begin = cook.indexOf('"+ckey+"=');" +
+                "   var val;" +
+                "   if (begin !== -1) {" +
+                "       var end = cook.indexOf(\";\",begin);" +
+                "       if (end === -1)" +
+                "           end=cook.length;" +
+                "       val=cook.substring(begin+11,end);" +
+                "   }" +
+                "   val = ['"+cval+"'];" +
+                "   if (val) {" +
+                "       var d=Array('com','co.jp','ca','fr','de','co.uk','it','es','com.br');" +
+                "       for (var i = 0; i < d.length; i++) {" +
+                "           document.cookie = '"+ckey+"='+val+';path=/;domain=.google.'+d[i]+'; ';" +
+                "       }" +
+                "   }" +
+                "})();");
+        c = d.manage().getCookieNamed(ckey);
+        assertNotNull(c);
+        assertEquals(cval, c.getValue());
+
+        // Set cookie as empty
+        js.executeScript("javascript:(" +
+                "function() {" +
+                "   var d = Array('com','co.jp','ca','fr','de','co.uk','it','cn','es','com.br');" +
+                "   for(var i = 0; i < d.length; i++) {" +
+                "       document.cookie='"+ckey+"=;path=/;domain=.google.'+d[i]+'; ';" +
+                "   }" +
+                "})();");
+        c = d.manage().getCookieNamed(ckey);
+        assertNotNull(c);
+        assertEquals("", c.getValue());
     }
 }
