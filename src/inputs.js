@@ -40,7 +40,7 @@ ghostdriver.Inputs = function () {
         '\uE004': "Tab",           // Tab
         '\uE005': "Clear",         // Clear
         '\uE006': "\n",
-        '\uE007': "\n",
+        '\uE007': "Enter",
         '\uE008': "Shift",         // Shift
         '\uE009': "Control",       // Control
         '\uE00A': "Alt",           // Alt
@@ -261,12 +261,13 @@ ghostdriver.Inputs = function () {
     },
 
     _translateKey = function (session, key) {
-        var actualKey = key;
-        var phantomjskeys = session.getCurrentWindow().event.key;
+        var
+            actualKey = key,
+            phantomjskeys = session.getCurrentWindow().event.key;
         if (_specialKeys.hasOwnProperty(key)) {
             actualKey = _specialKeys[key];
-            if (session.getCurrentWindow().event.key.hasOwnProperty(actualKey)) {
-                actualKey = session.getCurrentWindow().event.key[actualKey];
+            if (phantomjskeys.hasOwnProperty(actualKey)) {
+                actualKey = phantomjskeys[actualKey];
             }
         }
         return actualKey;
