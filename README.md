@@ -117,7 +117,7 @@ GhostDriver (or any WebDriver, as a matter of fact).
 
 One thing it's important to mention, is that CrazyFunBuild relies on the content of `build.desc` file to understand
 what and how to build it. Those files define what exactly is built and what it depends on. In the case of the Atoms,
-the word "build" means "run Google Clojure Compiler over a set of files and compress functions into Atoms".
+the word "build" means "run Google Closure Compiler over a set of files and compress functions into Atoms".
 The definition of the Atoms that GhostDriver uses lives at `/tools/atoms_build_dir/build.desc`.
 
 Let's take this small portion of our `build.desc`:
