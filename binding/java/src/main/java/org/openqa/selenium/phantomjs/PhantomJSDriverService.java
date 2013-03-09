@@ -40,6 +40,7 @@ import org.openqa.selenium.remote.service.DriverService;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import static com.google.common.base.Preconditions.*;
 
@@ -52,6 +53,11 @@ import static com.google.common.base.Preconditions.*;
  * @author Ivan De Marino <http://ivandemarino.me>
  */
 public class PhantomJSDriverService extends DriverService {
+
+    /**
+     * Internal Logger
+     */
+    private static final Logger LOG = Logger.getLogger(PhantomJSDriverService.class.getName());
 
     /**
      * System property/capability that defines the location of the PhantomJS executable.
@@ -102,6 +108,12 @@ public class PhantomJSDriverService extends DriverService {
                                    ImmutableList<String> args,
                                    ImmutableMap<String, String> environment) throws IOException {
         super(executable, port, args, environment);
+
+        // Print out the parameters used to launch PhantomJS Driver Service
+        LOG.info("executable: " + executable.getAbsolutePath());
+        LOG.info("port: " + port);
+        LOG.info("arguments: " + args.toString());
+        LOG.info("environment: " + environment.toString());
     }
 
     /**
@@ -142,6 +154,7 @@ public class PhantomJSDriverService extends DriverService {
                 .usingGhostDriver(ghostDriverfile)
                 .usingAnyFreePort()
                 .withProxy(proxy)
+                .withLogFile(new File("ghostdriver.log"))
                 .usingCommandLineArguments(commandLineArguments)
                 .build();
     }
@@ -424,16 +437,15 @@ public class PhantomJSDriverService extends DriverService {
                     argsBuilder.add(this.commandLineArguments);
                 }
 
-                if (ghostdriver != null) {
-                    // Path to GhostDriver provided: use it simply as a PhantomJS script
+                // Should use an external GhostDriver?
+                if (ghostdriver != null) { //< Path to GhostDriver provided: use it simply as a PhantomJS script
 
                     // Add the canonical path to GhostDriver
                     argsBuilder.add(ghostdriver.getCanonicalPath());
 
                     // Add the port to listed on
                     argsBuilder.add(String.format("%d", port));
-                } else {
-                    // Path to GhostDriver not provided: use PhantomJS's internal GhostDriver (default behaviour)
+                } else { //< Path to GhostDriver not provided: use PhantomJS's internal GhostDriver (default behaviour)
 
                     // Append required parameters
                     argsBuilder.add(String.format("--webdriver=%d", port));
