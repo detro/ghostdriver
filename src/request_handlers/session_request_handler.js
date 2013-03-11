@@ -184,6 +184,7 @@ ghostdriver.SessionReqHand = function(session) {
 
     _createOnSuccessHandler = function(res) {
         return function (status) {
+            // console.debug("SessionReqHand - onSuccessHandler: "+status);
             res.success(_session.getId());
         };
     },
@@ -460,15 +461,26 @@ ghostdriver.SessionReqHand = function(session) {
                     currWindow.open(postObj.url);
                 },
                 _createOnSuccessHandler(res),           //< success
-                function() {                            //< failure/timeout
-                    // Request timed out
-                    _errors.handleFailedCommandEH(
+                function(errMsg) {                      //< failure/timeout
+                    if (errMsg === "timeout") {
+                        // Request timed out
+                        _errors.handleFailedCommandEH(
                             _errors.FAILED_CMD_STATUS.TIMEOUT,
-                            "URL '" + postObj.url + "' didn't load within " + _session.getPageLoadTimeout() + "ms",
+                            "URL '" + postObj.url + "' didn't load within the 'Page Load Timeout'",
                             req,
                             res,
                             _session,
                             "SessionReqHand");
+                    } else {
+                        // Unknown error
+                        _errors.handleFailedCommandEH(
+                            _errors.FAILED_CMD_STATUS.UNKNOWN_ERROR,
+                            "URL '" + postObj.url + "' didn't load. Error: '" + errMsg + "'",
+                            req,
+                            res,
+                            _session,
+                            "SessionReqHand");
+                    }
                 });
         } else {
             throw _errors.createInvalidReqMissingCommandParameterEH(req);

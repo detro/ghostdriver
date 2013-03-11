@@ -27,6 +27,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package ghostdriver;
 
+import ghostdriver.server.HttpRequestCallback;
 import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
@@ -34,10 +35,15 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class ElementMethodsTest extends BaseTest {
+public class ElementMethodsTest extends BaseTestWithServer {
     @Test
     public void checkDisplayedOnGoogleSearchBox() {
         WebDriver d = getDriver();
@@ -132,5 +138,36 @@ public class ElementMethodsTest extends BaseTest {
         // Instead, clicking on the actual Input element DOES
         submitSearchInputEl.click();
         assertTrue(d.getTitle().contains("GhostDriver"));
+    }
+
+    @Test
+    public void shouldWaitForOnClickCallbackToFinishBeforeContinuing() {
+        server.setGetHandler(new HttpRequestCallback() {
+            @Override
+            public void call(HttpServletRequest req, HttpServletResponse res) throws IOException {
+                res.getOutputStream().println("<script type=\"text/javascript\">\n" +
+                        "    function sleep(milliseconds) {\n" +
+                        "          var start = new Date().getTime();\n" +
+                        "          for (;;) {\n" +
+                        "            if ((new Date().getTime() - start) > milliseconds){\n" +
+                        "              break;\n" +
+                        "            }\n" +
+                        "          }\n" +
+                        "        }   \n" +
+                        "        function myFunction() {\n" +
+                        "            sleep(1000)\n" +
+                        "            window.location.href = 'http://www.google.com';\n" +
+                        "        }\n" +
+                        "    </script>\n" +
+                        "    <a href=\"#\" onclick=\"myFunction()\">Click Here</a>");
+            }
+        });
+
+        WebDriver d = getDriver();
+
+        d.get(server.getBaseUrl());
+        d.findElement(By.xpath("html/body/a")).click();
+
+        assertNotNull(d.getTitle().toLowerCase().contains("google"));
     }
 }

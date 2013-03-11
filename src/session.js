@@ -83,7 +83,7 @@ ghostdriver.Session = function(desiredCapabilities) {
     _timeouts = {
         "script"            : _max32bitInt,
         "async script"      : _max32bitInt,
-        "implicit"          : 0,            //< 0s
+        "implicit"          : 5,            //< 5ms
         "page load"         : _max32bitInt,
     },
     _const = {
@@ -119,37 +119,24 @@ ghostdriver.Session = function(desiredCapabilities) {
     /**
      * Executes a function and waits for Load to happen.
      *
-     * @param func Function to execute
+     * @param code Code to execute: a Function or just plain code
      * @param onLoadFunc Function to execute when page finishes Loading
      * @param onErrorFunc Function to execute in case of error
      *        (eg. Javascript error, page load problem or timeout).
      * @param execTypeOpt Decides if to "apply" the function directly or page."eval" it.
      *                    Optional. Default value is "apply".
      */
-    _execFuncAndWaitForLoadDecorator = function(func, onLoadFunc, onErrorFunc, execTypeOpt) {
+    _execFuncAndWaitForLoadDecorator = function(code, onLoadFunc, onErrorFunc, execTypeOpt) {
         // convert 'arguments' to a real Array
         var args = Array.prototype.splice.call(arguments, 0),
-            loadingTimer,
-            loadingNewPage = false,
-            pageLoadNotTriggered = true,
             thisPage = this,
-            errorOccurred = false,
-            errorMsg,
-            errorStack;
+            onLoadFinishedArgs = null,
+            onErrorArgs = null;
 
         // Normalize "execTypeOpt" value
         if (typeof(execTypeOpt) === "undefined" ||
             (execTypeOpt !== "apply" && execTypeOpt !== "eval")) {
             execTypeOpt = "apply";
-        }
-
-        // Separating arguments for the "function call" from the callback handlers.
-        if (execTypeOpt === "eval") {
-            // NOTE: I'm also passing 'evalFunc' as first parameter
-            // for the 'evaluate' call, and '0' as timeout.
-            args.splice(0, 3, evalFunc, 0);
-        } else {
-            args.splice(0, 3);
         }
 
         // Our callbacks assume that the only thing affecting the page state
@@ -159,102 +146,84 @@ ghostdriver.Session = function(desiredCapabilities) {
         // events from the current function.
         this.stop();
 
-        // Register event handlers
-        // This logic bears some explaining. If we are loading a new page,
-        // the loadStarted event will fire, then urlChanged, then loadFinished,
-        // assuming no errors. However, when navigating to a fragment on the
-        // same page, neither the loadStarted nor the loadFinished events will
-        // fire. So if we receive a urlChanged event without a corresponding
-        // loadStarted event, we know we are only navigating to a fragment on
-        // the same page, and should fire the onLoadFunc callback. Otherwise,
-        // we need to wait until the loadFinished event before firing the
-        // callback.
-        this.setOneShotCallback("onLoadStarted", function () {
-            // console.log("onLoadStarted");
+        // Register Callbacks to grab any async event we are interested in
+        this.setOneShotCallback("onLoadFinished", function (status) {
+            // console.debug("Session - _execFuncAndWaitForLoadDecorator - onLoadFinished: "+status);
 
-            pageLoadNotTriggered = false;
-            loadingNewPage = true;
-        });
-        this.setOneShotCallback("onUrlChanged", function () {
-            // console.log("onUrlChanged");
-
-            pageLoadNotTriggered = false;
-            // If "not loading a new page" it's just a fragment change
-            // and we should call "onLoadFunc()"
-            if (!loadingNewPage) {
-                clearTimeout(loadingTimer);
-                thisPage.resetOneShotCallbacks();
-                onLoadFunc.call(thisPage, "success");
-            }
-        });
-        this.setOneShotCallback("onLoadFinished", function () {
-            // console.log("onLoadFinished");
-
-            pageLoadNotTriggered = false;
-            clearTimeout(loadingTimer);
-            thisPage.resetOneShotCallbacks();
-            onLoadFunc.apply(thisPage, arguments);
+            onLoadFinishedArgs = Array.prototype.slice.call(arguments);
         });
         this.setOneShotCallback("onError", function(message, stack) {
-            // console.log("onError: "+message+"\n");
+            // console.debug("Sessions - _execFuncAndWaitForLoadDecorator - onError: "+message+"\n");
             // stack.forEach(function(item) {
-            //     var message = item.file + ":" + item.line;
-            //     if (item["function"])
-            //         message += " in " + item["function"];
-            //     console.log("  " + message);
+            //     var msg = item.file + ":" + item.line;
+            //     msg += item["function"] ? " in " + item["function"] : "";
+            //     console.debug("  " + msg);
             // });
 
-            // NOTE: We don't handle the error straightaway.
-            // In case the page loading is triggered,
-            // we prefer to ignore errors and move on.
-            errorOccurred = true;
-            errorMsg = message;
-            errorStack = stack;
+            onErrorArgs = Array.prototype.slice.call(arguments);
         });
 
-        // Starting loadingTimer
-        // console.log("Setting 'loadingTimer' to: " + _getPageLoadTimeout());
-        loadingTimer = setTimeout(function() {
-            // console.log("loadingTimer: pageLoadTimeout");
-
-            pageLoadNotTriggered = false;
-            thisPage.stop();                    //< stop the page from loading
-            thisPage.resetOneShotCallbacks();
-
-            // Handle possible error raised before by "onError"
-            if (errorOccurred) {
-                onErrorFunc.apply(thisPage, [errorMsg, errorStack]);
-            } else {
-                onErrorFunc.apply(thisPage, []);
-            }
-        }, _getPageLoadTimeout());
-
-        // We are ready to execute
+        // Execute "code"
         if (execTypeOpt === "eval") {
+            // Remove arguments used by this function before providing them to the target code.
+            // NOTE: Passing 'code' (to evaluate) and '0' (timeout) to 'evaluateAsync'.
+            args.splice(0, 3, code, 0);
             // Invoke the Page Eval with the provided function
             this.evaluateAsync.apply(this, args);
         } else {
+            // Remove arguments used by this function before providing them to the target function.
+            args.splice(0, 3);
             // "Apply" the provided function
-            func.apply(this, args);
+            code.apply(this, args);
         }
 
-        // If a page load was not triggered whilst executing the function,
-        // we assume that it has completed, and that it does not actually
-        // load a page.
-        //
-        // This means that if a page load is triggered asynchronously (eg.
-        // by event passing), we may not actually wait for it to complete.
-        // Note that we do allow a brief grace period, but this is quite
-        // short (in order to avoid unnecessary delays in script execution).
+        // Wait 10ms before proceeding any further: in this window of time
+        // the page can react and start loading (if it has to).
         setTimeout(function() {
-            if (pageLoadNotTriggered === true) {
-                // console.log("pageLoadNotTriggered");
+            var loadingStartedTs,
+                checkLoadingFinished;
 
-                clearTimeout(loadingTimer);
-                thisPage.resetOneShotCallbacks();
-                onLoadFunc.call(thisPage, "success");
-            }
-        }, 500); //< 0.5 second
+            loadingStartedTs = new Date().getTime();
+
+            checkLoadingFinished = function() {
+                if (!_isLoading()) {               //< page finished loading
+                    // console.debug("NOT Loading");
+                    // console.debug(JSON.stringify(_getWindowHandles()));
+
+                    thisPage.resetOneShotCallbacks();
+
+                    if (onLoadFinishedArgs !== null) {
+                        // Report the result of the "Load Finished" event
+                        onLoadFunc.apply(thisPage, onLoadFinishedArgs);
+                    } else if (onErrorArgs !== null) {
+                        // Report the "Error" event
+                        onErrorFunc.apply(thisPage, onErrorArgs);
+                    } else {
+                        // No page load was caused: just report "success"
+                        onLoadFunc.call(thisPage, "success");
+                    }
+
+                    return;
+                }
+
+                // console.debug("Loading");
+                // console.debug(JSON.stringify(_getWindowHandles()));
+
+                // Timeout error?
+                if (new Date().getTime() - loadingStartedTs > _getPageLoadTimeout()) {
+                    thisPage.resetOneShotCallbacks();
+
+                    // Report the "Timeout" event
+                    onErrorFunc.call(thisPage, "timeout");
+
+                    return;
+                }
+
+                // Retry in 100ms
+                setTimeout(checkLoadingFinished, 100);
+            };
+            checkLoadingFinished();
+        }, 10);
     },
 
     _oneShotCallbackFactory = function(page, callbackName) {
@@ -335,6 +304,23 @@ ghostdriver.Session = function(desiredCapabilities) {
         // console.log("New Window/Page settings: " + JSON.stringify(page.settings, null, "  "));
 
         return page;
+    },
+
+    /**
+     * Is any window in this Session Loading?
+     * @returns "true" if at least 1 window is loading.
+     */
+    _isLoading = function() {
+        var wHandle;
+
+        for (wHandle in _windows) {
+            if (_windows[wHandle].loading) {
+                return true;
+            }
+        }
+
+        // If we arrived here, means that no window is loading
+        return false;
     },
 
     _getWindow = function(handleOrName) {
@@ -522,7 +508,8 @@ ghostdriver.Session = function(desiredCapabilities) {
         getAsyncScriptTimeout : _getAsyncScriptTimeout,
         getImplicitTimeout : _getImplicitTimeout,
         getPageLoadTimeout : _getPageLoadTimeout,
-        timeoutNames : _const.TIMEOUT_NAMES
+        timeoutNames : _const.TIMEOUT_NAMES,
+        isLoading : _isLoading
     };
 };
 

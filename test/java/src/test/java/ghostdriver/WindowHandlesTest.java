@@ -42,6 +42,7 @@ import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class WindowHandlesTest extends BaseTestWithServer {
     @Test
@@ -99,12 +100,9 @@ public class WindowHandlesTest extends BaseTestWithServer {
         // Click on link that will cause popup to be created
         d.findElement(By.xpath("//a")).click();
         // Switch to new popup
-        Iterator<String> handleIter = d.getWindowHandles().iterator();
-        handleIter.next();
-        String popupHandle = handleIter.next();
+        String popupHandle = (String)d.getWindowHandles().toArray()[1];
         d.switchTo().window(popupHandle);
 
-        // Wait for page to be loaded
-        new WebDriverWait(d, 5).until(ExpectedConditions.titleContains("Japan"));
+        assertTrue(d.getTitle().contains("Japan"));
     }
 }

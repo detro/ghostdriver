@@ -11,7 +11,7 @@ public class DriverBasicTest extends BaseTest {
         WebDriver d = getDriver();
         disableAutoQuitDriver();
 
-        d.get("http://www.google.com");
+        d.get("http://www.google.com/");
         d.quit();
     }
 
