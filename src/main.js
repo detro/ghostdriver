@@ -28,11 +28,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // Load dependencies
 // NOTE: We need to provide PhantomJS with the "require" module ASAP. This is a pretty s**t way to load dependencies
 var ghostdriver = {
-        system  : require('system'),
-        hub     : require('./hub_register'),
+        system  : require("system"),
+        hub     : require("./hub_register.js"),
+        logger  : require("./logger.js"),
         version : "1.0.3-dev"
     },
-    server = require('webserver').create(),
+    server = require("webserver").create(),
     router,
     parseURI,
     listenOn,
@@ -71,7 +72,7 @@ try {
 
     // Start the server
     if (server.listen(listenOnPort, router.handle)) {
-        console.log('Ghost Driver running on port ' + server.port);
+        console.log("Ghost Driver running on port " + server.port);
 
         // If parameters regarding a Selenium Grid HUB were given, register to it!
         if (ghostdriver.system.args[2]) {
