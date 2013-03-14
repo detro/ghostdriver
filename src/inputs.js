@@ -29,9 +29,7 @@ var ghostdriver = ghostdriver || {};
 
 ghostdriver.Inputs = function () {
     // private:
-    var
-    _mousePos = { x: 0, y: 0 },
-    _keyboardState = {},
+    const
     _specialKeys = {
         '\uE000': "Escape",        // NULL
         '\uE001': "Cancel",        // Cancel
@@ -196,8 +194,11 @@ ghostdriver.Inputs = function () {
         "ALT": 0x08000000,     // An Alt key on the keyboard is pressed.
         "META": 0x10000000,    // A Meta key on the keyboard is pressed.
         "NUMPAD": 0x20000000   // Keypad key.
-    },
+    };
 
+    var
+    _mousePos = { x: 0, y: 0 },
+    _keyboardState = {},
     _currentModifierKeys = 0,
 
     _isModifierKey = function (key) {

@@ -29,7 +29,7 @@ var ghostdriver = ghostdriver || {};
 
 ghostdriver.WebElementLocator = function(session) {
     // private:
-    var
+    const
     _supportedStrategies = [
         "class name", "className",              //< Returns an element whose class name contains the search value; compound class names are not permitted.
         "css", "css selector",                  //< Returns an element matching a CSS selector.
@@ -39,7 +39,9 @@ ghostdriver.WebElementLocator = function(session) {
         "partial link text", "partialLinkText", //< Returns an anchor element whose visible text partially matches the search value.
         "tag name", "tagName",                  //< Returns an element whose tag name matches the search value.
         "xpath"                                 //< Returns an element matching an XPath expression.
-    ],
+    ];
+
+    var
     _session = session,
     _errors = require("./errors.js"),
 

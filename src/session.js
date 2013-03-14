@@ -29,6 +29,17 @@ var ghostdriver = ghostdriver || {};
 
 ghostdriver.Session = function(desiredCapabilities) {
     // private:
+    const
+    _const = {
+        TIMEOUT_NAMES : {
+            SCRIPT          : "script",
+            ASYNC_SCRIPT    : "async script",
+            IMPLICIT        : "implicit",
+            PAGE_LOAD       : "page load"
+        },
+        ONE_SHOT_POSTFIX : "OneShot"
+    };
+
     var
     _defaultCapabilities = {    // TODO - Actually try to match the "desiredCapabilities" instead of ignoring them
         "browserName" : "phantomjs",
@@ -86,21 +97,13 @@ ghostdriver.Session = function(desiredCapabilities) {
         "implicit"          : 5,            //< 5ms
         "page load"         : _max32bitInt,
     },
-    _const = {
-        TIMEOUT_NAMES : {
-            SCRIPT          : "script",
-            ASYNC_SCRIPT    : "async script",
-            IMPLICIT        : "implicit",
-            PAGE_LOAD       : "page load"
-        },
-        ONE_SHOT_POSTFIX : "OneShot"
-    },
     _windows = {},  //< NOTE: windows are "webpage" in Phantom-dialect
     _currentWindowHandle = null,
     _id = require("./third_party/uuid.js").v1(),
     _inputs = ghostdriver.Inputs(),
     _capsPageSettingsPref = "phantomjs.page.settings.",
     _pageSettings = {},
+    _log = ghostdriver.logger.create("Session [" + _id + "]"),
     k, settingKey;
 
     // Searching for `phantomjs.settings.*` in the Desired Capabilities and merging with the Negotiated Capabilities
