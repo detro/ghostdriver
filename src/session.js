@@ -151,17 +151,17 @@ ghostdriver.Session = function(desiredCapabilities) {
 
         // Register Callbacks to grab any async event we are interested in
         this.setOneShotCallback("onLoadFinished", function (status) {
-            // console.debug("Session - _execFuncAndWaitForLoadDecorator - onLoadFinished: "+status);
+            _log.debug("_execFuncAndWaitForLoadDecorator", "onLoadFinished: " + status);
 
             onLoadFinishedArgs = Array.prototype.slice.call(arguments);
         });
         this.setOneShotCallback("onError", function(message, stack) {
-            // console.debug("Sessions - _execFuncAndWaitForLoadDecorator - onError: "+message+"\n");
-            // stack.forEach(function(item) {
-            //     var msg = item.file + ":" + item.line;
-            //     msg += item["function"] ? " in " + item["function"] : "";
-            //     console.debug("  " + msg);
-            // });
+            _log.debug("_execFuncAndWaitForLoadDecorator", "onError: "+message+"\n");
+            stack.forEach(function(item) {
+                var msg = item.file + ":" + item.line;
+                msg += item["function"] ? " in " + item["function"] : "";
+                _log.debug("_execFuncAndWaitForLoadDecorator", "  " + msg);
+            });
 
             onErrorArgs = Array.prototype.slice.call(arguments);
         });
@@ -190,8 +190,7 @@ ghostdriver.Session = function(desiredCapabilities) {
 
             checkLoadingFinished = function() {
                 if (!_isLoading()) {               //< page finished loading
-                    // console.debug("NOT Loading");
-                    // console.debug(JSON.stringify(_getWindowHandles()));
+                    _log.debug("_execFuncAndWaitForLoadDecorator", "Page Loading in Session: false");
 
                     thisPage.resetOneShotCallbacks();
 
@@ -207,10 +206,8 @@ ghostdriver.Session = function(desiredCapabilities) {
                     }
 
                     return;
-                }
-
-                // console.debug("Loading");
-                // console.debug(JSON.stringify(_getWindowHandles()));
+                } // else:
+                _log.debug("_execFuncAndWaitForLoadDecorator", "Page Loading in Session: true");
 
                 // Timeout error?
                 if (new Date().getTime() - loadingStartedTs > _getPageLoadTimeout()) {
@@ -234,7 +231,8 @@ ghostdriver.Session = function(desiredCapabilities) {
             var retVal;
 
             if (typeof(page[callbackName + _const.ONE_SHOT_POSTFIX]) === "function") {
-                // console.log("Invoking one-shot-callback for: " + callbackName);
+                _log.debug("_oneShotCallback", callbackName);
+
                 retVal = page[callbackName + _const.ONE_SHOT_POSTFIX].apply(page, arguments);
                 page[callbackName + _const.ONE_SHOT_POSTFIX] = null;
             }
@@ -251,7 +249,7 @@ ghostdriver.Session = function(desiredCapabilities) {
     },
 
     _resetOneShotCallbacksDecorator = function() {
-        // console.log("Clearing One-Shot Callbacks");
+        _log.debug("_resetOneShotCallbacksDecorator");
 
         this["onLoadStarted" + _const.ONE_SHOT_POSTFIX] = null;
         this["onLoadFinished" + _const.ONE_SHOT_POSTFIX] = null;
@@ -261,12 +259,16 @@ ghostdriver.Session = function(desiredCapabilities) {
 
     // Add any new page to the "_windows" container of this session
     _addNewPage = function(newPage) {
+        _log.debug("_addNewPage");
+
         _decorateNewWindow(newPage);                //< decorate the new page
         _windows[newPage.windowHandle] = newPage;   //< store the page/window
     },
 
     // Delete any closing page from the "_windows" container of this session
     _deleteClosingPage = function(closingPage) {
+        _log.debug("_deleteClosingPage");
+
         // Need to be defensive, as the "closing" can be cause by Client Commands
         if (_windows.hasOwnProperty(closingPage.windowHandle)) {
             delete _windows[closingPage.windowHandle];
@@ -303,8 +305,9 @@ ghostdriver.Session = function(desiredCapabilities) {
             }
         }
 
-        // page.onConsoleMessage = function(msg) { console.log(msg); };
-        // console.log("New Window/Page settings: " + JSON.stringify(page.settings, null, "  "));
+        page.onConsoleMessage = function(msg) { _log.debug("page.onConsoleMessage", msg); };
+
+        _log.debug("_decorateNewWindow", "page.settings: " + JSON.stringify(page.settings));
 
         return page;
     },
@@ -485,8 +488,8 @@ ghostdriver.Session = function(desiredCapabilities) {
     // Particularly, create the first empty page/window.
     _init();
 
-    // console.log("Session '" + _id + "' - Capabilities: " + JSON.stringify(_negotiatedCapabilities, null, "  "));
-    // console.log("Desired: "+JSON.stringify(desiredCapabilities, null, "  "));
+    _log.info("CONSTRUCTOR", "Desired Capabilities: " + JSON.stringify(desiredCapabilities));
+    _log.info("CONSTRUCTOR", "Negotiated Capabilities: " + JSON.stringify(_negotiatedCapabilities));
 
     // public:
     return {
