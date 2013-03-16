@@ -27,35 +27,36 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* generate node configuration for this node */
 var nodeconf = function(ip, port, hub) {
-    var ref$, hubHost, hubPort;
+        var ref$, hubHost, hubPort;
 
-    ref$ = hub.match(/([\w\d\.]+):(\d+)/);
-    hubHost = ref$[1];
-    hubPort = +ref$[2]; //< ensure it's of type "number"
+        ref$ = hub.match(/([\w\d\.]+):(\d+)/);
+        hubHost = ref$[1];
+        hubPort = +ref$[2]; //< ensure it's of type "number"
 
-    return {
-        capabilities: [{
-            browserName: "phantomjs",
-            maxInstances: 1,
-            seleniumProtocol: "WebDriver"
-        }],
-        configuration: {
-            hub: hub,
-            hubHost: hubHost,
-            hubPort: hubPort,
-            port: port,
-            proxy: "org.openqa.grid.selenium.proxy.DefaultRemoteProxy",
-            // Note that multiple webdriver sessions or instances within a single
-            // Ghostdriver process will interact in unexpected and undesirable ways.
-            maxSession: 1,
-            register: true,
-            registerCycle: 5000,
-            role: "wd",
-            url: "http://" + ip + ":" + port,
-            remoteHost: "http://" + ip + ":" + port
-        }
-    };
-};
+        return {
+            capabilities: [{
+                browserName: "phantomjs",
+                maxInstances: 1,
+                seleniumProtocol: "WebDriver"
+            }],
+            configuration: {
+                hub: hub,
+                hubHost: hubHost,
+                hubPort: hubPort,
+                port: port,
+                proxy: "org.openqa.grid.selenium.proxy.DefaultRemoteProxy",
+                // Note that multiple webdriver sessions or instances within a single
+                // Ghostdriver process will interact in unexpected and undesirable ways.
+                maxSession: 1,
+                register: true,
+                registerCycle: 5000,
+                role: "wd",
+                url: "http://" + ip + ":" + port,
+                remoteHost: "http://" + ip + ":" + port
+            }
+        };
+    },
+    _log = ghostdriver.logger.create("HUB Register");
 
 module.exports = {
     register: function(ip, port, hub) {
@@ -75,14 +76,14 @@ module.exports = {
                 }
             }, function(status) {
                 if(status !== 'success') {
-                    console.error("Unable to contact grid " + hub + ": " + status);
+                    _log.error("register", "Unable to contact grid " + hub + ": " + status);
                     phantom.exit(1);
                 }
                 if(page.framePlainText !== "ok") {
-                    console.error("Problem registering with grid " + hub + ": " + page.content);
+                    _log.error("register", "Problem registering with grid " + hub + ": " + page.content);
                     phantom.exit(1);
                 }
-                console.log("Registered with grid hub: " + hub + " (" + page.framePlainText + ")");
+                _log.info("register", "Registered with grid hub: " + hub + " (" + page.framePlainText + ")");
             });
         } catch (e) {
             throw new Error("Could not register to Selenium Grid Hub: " + hub);
