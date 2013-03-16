@@ -38,7 +38,8 @@ var ghostdriver = {
     parseURI,
     listenOn,
     listenOnIp = "127.0.0.1",
-    listenOnPort = "8910";
+    listenOnPort = "8910",
+    _log = ghostdriver.logger.create("GhostDriver");
 
 // Enable "strict mode" for the 'parseURI' library
 parseURI = require("./third_party/parseuri.js");
@@ -72,17 +73,18 @@ try {
 
     // Start the server
     if (server.listen(listenOnPort, router.handle)) {
-        console.log("Ghost Driver running on port " + server.port);
+        _log.info("Main", "running on port "+server.port);
 
         // If parameters regarding a Selenium Grid HUB were given, register to it!
         if (ghostdriver.system.args[2]) {
+            _log.info("Main", "registering to Selenium HUB '"+ghostdriver.system.args[2]+"' using '"+listenOnIp+":"+listenOnPort+"'");
             ghostdriver.hub.register(listenOnIp, listenOnPort, ghostdriver.system.args[2]);
         }
     } else {
-        throw new Error("ERROR: Could not start Ghost Driver");
+        throw new Error("Could not start Ghost Driver");
         phantom.exit(1);
     }
 } catch (e) {
-    console.error(e);
+    _log.error("Main", e.message + " => "+ JSON.stringify(e, null, "  "));
     phantom.exit(1);
 }
