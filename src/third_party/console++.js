@@ -180,10 +180,10 @@ var _invokeOnOutput = function(msg, level) {
         levelName;
 
     if (_onOutput !== null && typeof(_onOutput) === "function") {
-        formattedMessage = _formatMessage(msg, levelName);
         levelName = console.getLevelName(level);
+        formattedMessage = _formatMessage(msg, levelName);
 
-        _onOutput(formattedMessage, levelName);
+        _onOutput.call(null, formattedMessage, levelName);
     }
 };
 
