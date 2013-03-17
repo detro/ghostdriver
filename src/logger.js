@@ -83,3 +83,27 @@ function Logger (context) {
 exports.create = function (context) {
     return new Logger(context);
 };
+
+/**
+ * Export: Add Log File.
+ *
+ * @param logFileName {String Name of the file were to output (append) the Logs.
+ */
+exports.addLogFile = function(logFileName) {
+    var fs = require("fs"),
+        f = fs.open(fs.absolute(logFileName), 'a');
+
+    // Append line to Log File
+    console.onOutput(function(msg, levelName) {
+        f.writeLine(msg);
+        f.flush();
+    });
+
+    // Flush the Log File when process exits
+    phantom.aboutToExit.connect(f.flush);
+};
+
+/**
+ * Export: Console object
+ */
+exports.console = console;

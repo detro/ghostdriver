@@ -59,8 +59,6 @@ phantom.injectJs("request_handlers/router_request_handler.js");
 phantom.injectJs("webelementlocator.js");
 
 try {
-    _log.debug("Main", "Configuration => " + JSON.stringify(ghostdriver.config));
-
     // HTTP Request Router
     router = new ghostdriver.RouterReqHand();
 
@@ -70,7 +68,9 @@ try {
 
         // If a Selenium Grid HUB was provided, register to it!
         if (ghostdriver.config.hub !== null) {
-            _log.info("Main", "registering to Selenium HUB '" + ghostdriver.config.hub + "' using '" + ghostdriver.config.ip + ":" + ghostdriver.config.port + "'");
+            _log.info("Main", "registering to Selenium HUB"+
+                " '" + ghostdriver.config.hub + "'" +
+                " using '" + ghostdriver.config.ip + ":" + ghostdriver.config.port + "'");
             ghostdriver.hub.register(ghostdriver.config.ip,
                 ghostdriver.config.port,
                 ghostdriver.config.hub);

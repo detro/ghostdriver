@@ -42,15 +42,17 @@ var defaultConfig = {
         "logLevel"  : defaultConfig.logLevel,
         "logColor"  : defaultConfig.logColor
     },
-    logOutputFile = null;
+    logOutputFile = null,
+    logger = require("./logger.js"),
+    _log = logger.create("Config");
 
 function apply () {
     // Normalise and Set Console Logging Level
     config.logLevel = config.logLevel.toUpperCase();
-    if (!console.LEVELS.hasOwnProperty(config.logLevel)) {
+    if (!logger.console.LEVELS.hasOwnProperty(config.logLevel)) {
         config.logLevel = defaultConfig.logLevel;
     }
-    console.setLevel(console.LEVELS[config.logLevel]);
+    logger.console.setLevel(logger.console.LEVELS[config.logLevel]);
 
     // Normalise and Set Console Color
     try {
@@ -59,9 +61,14 @@ function apply () {
         config.logColor = defaultConfig.logColor;
     }
     if (config.logColor) {
-        console.enableColor();
+        logger.console.enableColor();
     } else {
-        console.disableColor();
+        logger.console.disableColor();
+    }
+
+    // Add a Log File (if any)
+    if (config.logFile !== null) {
+        logger.addLogFile(config.logFile);
     }
 }
 
@@ -82,8 +89,10 @@ exports.init = function(cliArgs) {
         }
     }
 
-    // Normalize the Configuration before returning
+    // Apply/Normalize the Configuration before returning
     apply();
+
+    _log.debug("init", "Configuration => " + JSON.stringify(config));
 };
 
 exports.get = function() {
