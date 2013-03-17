@@ -56,12 +56,14 @@ var nodeconf = function(ip, port, hub) {
             }
         };
     },
-    _log = ghostdriver.logger.create("HUB Register");
+    _log = require("./logger.js").create("HUB Register");
 
 module.exports = {
     register: function(ip, port, hub) {
+        var page;
+
         try {
-            var page = require('webpage').create();
+            page = require('webpage').create();
             port = +port; //< ensure it's of type "number"
             if(!hub.match(/\/$/)) {
                 hub += '/';

@@ -28,10 +28,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // Init Console++
 require("./third_party/console++.js");
 
-// Configure Console++
-console.disableColor();
-console.setLevel(console.LEVELS.DEBUG);
-
 // Constants
 const
 separator = " - ";

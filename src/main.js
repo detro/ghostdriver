@@ -31,20 +31,22 @@ var ghostdriver = {
         system  : require("system"),
         hub     : require("./hub_register.js"),
         logger  : require("./logger.js"),
+        config  : null,                         //< will be set in a short while
         version : "1.0.3-dev"
     },
     server = require("webserver").create(),
     router,
-    parseURI,
-    listenOn,
-    listenOnIp = "127.0.0.1",
-    listenOnPort = "8910",
+    parseURI = require("./third_party/parseuri.js"),
     _log = ghostdriver.logger.create("GhostDriver");
 
+// Initialize the configuration
+require("./config.js").init(ghostdriver.system.args);
+ghostdriver.config = require("./config.js").get();
+
 // Enable "strict mode" for the 'parseURI' library
-parseURI = require("./third_party/parseuri.js");
 parseURI.options.strictMode = true;
 
+// Load all the core dependencies
 phantom.injectJs("session.js");
 phantom.injectJs("inputs.js");
 phantom.injectJs("request_handlers/request_handler.js");
@@ -57,28 +59,21 @@ phantom.injectJs("request_handlers/router_request_handler.js");
 phantom.injectJs("webelementlocator.js");
 
 try {
+    _log.debug("Main", "Configuration => " + JSON.stringify(ghostdriver.config));
+
     // HTTP Request Router
     router = new ghostdriver.RouterReqHand();
 
-    // Check if parameters were given, regarding the "ip:port" to listen to
-    if (ghostdriver.system.args[1]) {
-        if (ghostdriver.system.args[1].indexOf(':') >= 0) {
-            listenOn = ghostdriver.system.args[1].split(':');
-            listenOnIp = listenOn[0];
-            listenOnPort = listenOn[1];
-        } else {
-            listenOnPort = ghostdriver.system.args[1];
-        }
-    }
-
     // Start the server
-    if (server.listen(listenOnPort, router.handle)) {
-        _log.info("Main", "running on port "+server.port);
+    if (server.listen(ghostdriver.config.port, router.handle)) {
+        _log.info("Main", "running on port " + server.port);
 
-        // If parameters regarding a Selenium Grid HUB were given, register to it!
-        if (ghostdriver.system.args[2]) {
-            _log.info("Main", "registering to Selenium HUB '"+ghostdriver.system.args[2]+"' using '"+listenOnIp+":"+listenOnPort+"'");
-            ghostdriver.hub.register(listenOnIp, listenOnPort, ghostdriver.system.args[2]);
+        // If a Selenium Grid HUB was provided, register to it!
+        if (ghostdriver.config.hub !== null) {
+            _log.info("Main", "registering to Selenium HUB '" + ghostdriver.config.hub + "' using '" + ghostdriver.config.ip + ":" + ghostdriver.config.port + "'");
+            ghostdriver.hub.register(ghostdriver.config.ip,
+                ghostdriver.config.port,
+                ghostdriver.config.hub);
         }
     } else {
         throw new Error("Could not start Ghost Driver");
