@@ -236,7 +236,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
                     }
                     break;
                 case '\n':
-                    resultStr += '\uE006';  // Return
+                    resultStr += '\uE007';  // Enter
                     break;
                 default:
                     resultStr += str[i];
