@@ -15,25 +15,25 @@ public class DriverBasicTest extends BaseTest {
         d.quit();
     }
 
-    @Test
-    public void shouldSurviveExecutingManyTimesTheSameCommand() {
-        WebDriver d = getDriver();
-        d.get("http://www.google.com");
-        for (int j = 0; j < 100; j++) {
-            try {
-                d.findElement(By.linkText(org.apache.commons.lang3.RandomStringUtils.randomAlphabetic(4))).isDisplayed();
-            } catch (NoSuchElementException nsee) {
-                // swallow exceptions: we don't care about the result
-            }
-        }
-    }
-
-    @Test
-    public void shouldSurviveExecutingManyTimesTheSameTest() throws Exception {
-        for (int i = 0; i < 100; ++i) {
-            prepareDriver();
-            shouldSurviveExecutingManyTimesTheSameCommand();
-            quitDriver();
-        }
-    }
+//    @Test
+//    public void shouldSurviveExecutingManyTimesTheSameCommand() {
+//        WebDriver d = getDriver();
+//        d.get("http://www.google.com");
+//        for (int j = 0; j < 100; j++) {
+//            try {
+//                d.findElement(By.linkText(org.apache.commons.lang3.RandomStringUtils.randomAlphabetic(4))).isDisplayed();
+//            } catch (NoSuchElementException nsee) {
+//                // swallow exceptions: we don't care about the result
+//            }
+//        }
+//    }
+//
+//    @Test
+//    public void shouldSurviveExecutingManyTimesTheSameTest() throws Exception {
+//        for (int i = 0; i < 100; ++i) {
+//            prepareDriver();
+//            shouldSurviveExecutingManyTimesTheSameCommand();
+//            quitDriver();
+//        }
+//    }
 }
