@@ -66,6 +66,8 @@ ghostdriver.Session = function(desiredCapabilities) {
     _negotiatedCapabilities = {
         "browserName"               : _defaultCapabilities.browserName,
         "version"                   : _defaultCapabilities.version,
+        "driverName"                : _defaultCapabilities.driverName,
+        "driverVersion"             : _defaultCapabilities.driverVersion,
         "platform"                  : _defaultCapabilities.platform,
         "javascriptEnabled"         : typeof(desiredCapabilities.javascriptEnabled) === "undefined" ?
             _defaultCapabilities.javascriptEnabled :
