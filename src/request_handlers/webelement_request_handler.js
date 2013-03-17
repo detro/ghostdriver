@@ -30,11 +30,7 @@ var ghostdriver = ghostdriver || {};
 
 ghostdriver.WebElementReqHand = function(idOrElement, session) {
     // private:
-    var
-    _id = ((typeof(idOrElement) === "object") ? idOrElement["ELEMENT"] : idOrElement),
-    _session = session,
-    _locator = new ghostdriver.WebElementLocator(_session),
-    _protoParent = ghostdriver.WebElementReqHand.prototype,
+    const
     _const = {
         ELEMENT             : "element",
         ELEMENTS            : "elements",
@@ -53,13 +49,18 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         LOCATION            : "location",
         LOCATION_IN_VIEW    : "location_in_view",
         SIZE                : "size"
-    },
+    };
+
+    var
+    _id = ((typeof(idOrElement) === "object") ? idOrElement["ELEMENT"] : idOrElement),
+    _session = session,
+    _locator = new ghostdriver.WebElementLocator(_session),
+    _protoParent = ghostdriver.WebElementReqHand.prototype,
     _errors = _protoParent.errors,
+    _log = ghostdriver.logger.create("WebElementReqHand"),
 
     _handle = function(req, res) {
         _protoParent.handle.call(this, req, res);
-
-        // console.log("Request => " + JSON.stringify(req, null, '  '));
 
         if (req.urlParsed.file === _const.ELEMENT && req.method === "POST") {
             _locator.handleLocateCommand(req, res, _locator.locateElement, _getJSON());
@@ -146,7 +147,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
     _getLocation = function(req) {
         var result = _getLocationResult(req);
 
-        // console.log("Location: "+JSON.stringify(result));
+        _log.debug("_getLocation", JSON.stringify(result));
 
         if (result.status === 0) {
             return result.value;
@@ -158,7 +159,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
     _getLocationCommand = function(req, res) {
         var locationRes = _getLocationResult(req);
 
-        // console.log("Location (cmd): "+JSON.stringify(locationRes));
+        _log.debug("_getLocationCommand", JSON.stringify(locationRes));
 
         res.respondBasedOnResult(_session, req, locationRes);
     },
@@ -173,7 +174,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
     _getLocationInView = function (req) {
         var result = _getLocationInViewResult(req);
 
-        // console.log("Location: "+JSON.stringify(result));
+        _log.debug("_getLocationInView", JSON.stringify(result));
 
         if (result.status === 0) {
             return result.value;
@@ -185,7 +186,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
     _getLocationInViewCommand = function (req, res) {
         var locationInViewRes = _getLocationInViewResult(req);
 
-        // console.log("Scrolling into View result: "+JSON.stringify(locationInViewRes));
+        _log.debug("_getLocationInViewCommand", JSON.stringify(locationInViewRes));
 
         // Something went wrong: report the error
         res.respondBasedOnResult(_session, req, locationInViewRes);
@@ -200,7 +201,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
     _getSize = function (req) {
         var result = JSON.parse(_getSizeResult(req));
 
-        // console.log("Size: " + JSON.stringify(result));
+        _log.debug("_getSize", JSON.stringify(result));
 
         if (result.status === 0) {
             return result.value;
@@ -212,7 +213,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
     _getSizeCommand = function (req, res) {
         var sizeRes = _getSizeResult(req);
 
-        // console.log("Size (cmd): "+JSON.stringify(sizeRes));
+        _log.debug("_getSizeCommand", JSON.stringify(sizeRes))
 
         res.respondBasedOnResult(_session, req, sizeRes);
     },
@@ -408,88 +409,59 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         });
     },
 
-    _canCausePageLoadOnClick = function(currWindow) {
-        var tagName = _getTagName(currWindow).toLowerCase(),
-            href = (_getAttribute(currWindow, "href") || ""),
-            type = (_getAttribute(currWindow, "type") || "").toLowerCase();
-
-        // Return "true" if it's an element that "could cause a page load when clicked"
-        // 1. "A" tag with "HREF" set
-        if (tagName === "a" && href.length > 0) {
-            return true;
-        }
-        // 2. "INPUT/BUTTON" tag with "TYPE" set to "SUBMIT/IMAGE"
-        if (tagName === "input" || tagName === "button") {
-            if (type === "submit" || type === "image") {
-                return true;
-            }
-        }
-        return false;
-    },
-
     _postClickCommand = function(req, res) {
         var currWindow = _protoParent.getSessionCurrWindow.call(this, _session, req),
             clickRes,
             abortCallback = false;
 
-        // if (_canCausePageLoadOnClick(currWindow)) {
-            // Clicking on Current Element can cause a page load, hence we need to wait for it to happen
-            currWindow.execFuncAndWaitForLoad(function() {
-                // do the click
-                clickRes = currWindow.evaluate(require("./webdriver_atoms.js").get("click"), _getJSON());
+        // Clicking on Current Element can cause a page load, hence we need to wait for it to happen
+        currWindow.execFuncAndWaitForLoad(function() {
+            // do the click
+            clickRes = currWindow.evaluate(require("./webdriver_atoms.js").get("click"), _getJSON());
 
-                // If Click was NOT positive, status will be set to something else than '0'
-                clickRes = JSON.parse(clickRes);
-                if (clickRes && clickRes.status !== 0) {
-                    abortCallback = true;           //< handling the error here
-                    res.respondBasedOnResult(_session, req, clickRes);
+            // If Click was NOT positive, status will be set to something else than '0'
+            clickRes = JSON.parse(clickRes);
+            if (clickRes && clickRes.status !== 0) {
+                abortCallback = true;           //< handling the error here
+                res.respondBasedOnResult(_session, req, clickRes);
+            }
+        }, function(status) {                   //< onLoadFinished
+            // Report Load Finished, only if callbacks were not "aborted"
+            if (!abortCallback) {
+                if (status === "success") {
+                    res.success(_session.getId());
+                } else {
+                    _errors.handleFailedCommandEH(
+                        _errors.FAILED_CMD_STATUS.UNKNOWN_ERROR,
+                        "Click succeeded but Load Failed. Status: '" + status + "'",
+                        req,
+                        res,
+                        _session,
+                        "WebElementReqHand");
                 }
-            }, function(status) {                   //< onLoadFinished
-                // console.log("click: onLoadFinished: "+status);
-
-                // Report Load Finished, only if callbacks were not "aborted"
-                if (!abortCallback) {
-                    if (status === "success") {
-                        res.success(_session.getId());
-                    } else {
-                        _errors.handleFailedCommandEH(
-                            _errors.FAILED_CMD_STATUS.UNKNOWN_ERROR,
-                            "Click succeeded but Load Failed. Status: '" + status + "'",
-                            req,
-                            res,
-                            _session,
-                            "WebElementReqHand");
-                    }
+            }
+        }, function(errMsg) {
+            // Report Load Error, only if callbacks were not "aborted"
+            if (!abortCallback) {
+                if (errMsg === "timeout") {       //< onTimeout
+                    _errors.handleFailedCommandEH(
+                        _errors.FAILED_CMD_STATUS.TIMEOUT,
+                        "Click failed: " + arguments[0],
+                        req,
+                        res,
+                        _session,
+                        "WebElementReqHand");
+                } else {                            //< onError
+                    _errors.handleFailedCommandEH(
+                        _errors.FAILED_CMD_STATUS.UNKNOWN_ERROR,
+                        "Click failed: " + arguments[0],
+                        req,
+                        res,
+                        _session,
+                        "WebElementReqHand");
                 }
-            }, function(errMsg) {
-                // console.log("click: onLoadError");
-
-                // Report Load Error, only if callbacks were not "aborted"
-                if (!abortCallback) {
-                    if (errMsg === "timeout") {       //< onTimeout
-                        _errors.handleFailedCommandEH(
-                            _errors.FAILED_CMD_STATUS.TIMEOUT,
-                            "Click failed: " + arguments[0],
-                            req,
-                            res,
-                            _session,
-                            "WebElementReqHand");
-                    } else {                            //< onError
-                        _errors.handleFailedCommandEH(
-                            _errors.FAILED_CMD_STATUS.UNKNOWN_ERROR,
-                            "Click failed: " + arguments[0],
-                            req,
-                            res,
-                            _session,
-                            "WebElementReqHand");
-                    }
-                }
-            });
-        // } else {
-        //     // By default, clicking on this element can't cause a Page Load: we are done after having clicked
-        //     clickRes = currWindow.evaluate(require("./webdriver_atoms.js").get("click"), _getJSON());
-        //     res.respondBasedOnResult(_session, req, clickRes);
-        // }
+            }
+        });
     },
 
     _getSelectedCommand = function(req, res) {
