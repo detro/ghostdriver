@@ -523,6 +523,7 @@ ghostdriver.SessionReqHand = function(session) {
     _postFrameCommand = function(req, res) {
         var postObj = JSON.parse(req.post),
             frameName,
+            framePos,
             switched = false,
             currWindow = _protoParent.getSessionCurrWindow.call(this, _session, req);
 
@@ -541,13 +542,13 @@ ghostdriver.SessionReqHand = function(session) {
                 // Switch frame by "index"
                 switched = currWindow.switchToFrame(postObj.id);
             } else if (typeof(postObj.id) === "string") {
-                // Switch frame by "name" and, if not found, by "id"
+                // Switch frame by "name" or by "id"
+                _log.debug("_postFrameCommand", "Switching to frame #id: " + postObj.id);
+
                 switched = currWindow.switchToFrame(postObj.id);
 
                 // If we haven't switched, let's try to find the frame "name" using it's "id"
                 if (!switched) {
-                    _log.debug("_postFrameCommand", "Switching to frame #id: " + postObj.id);
-
                     // fetch the frame "name" via "id"
                     frameName = currWindow.evaluate(function(frameId) {
                         var el = null;
@@ -559,21 +560,49 @@ ghostdriver.SessionReqHand = function(session) {
                         return null;
                     }, postObj.id);
 
+                    _log.debug("_postFrameCommand", "Failed to switch by #id, trying by name: " + frameName);
+
                     // Switch frame by "name"
                     if (frameName !== null) {
                         switched = currWindow.switchToFrame(frameName);
                     }
-                }
 
-                _log.debug("_postFrameCommand", "Switching to frame name: " + postObj.id);
+                    if (!switched) {
+                        // fetch the frame "position" via "id"
+                        framePos = currWindow.evaluate(function(frameIdOrName) {
+                            var allFrames = document.querySelectorAll("frame,iframe"),
+                                theFrame = document.querySelector('#'+frameIdOrName) || document.querySelector('[name='+frameIdOrName+']'),
+                                i;
+
+                            for (i = allFrames.length -1; i >= 0; --i) {
+                                if (allFrames[i].contentWindow === theFrame.contentWindow) {
+                                    return i;
+                                }
+                            }
+                        }, postObj.id);
+
+                        if (framePos >= 0) {
+                            _log.debug("_postFrameCommand", "Failed to switch by #id or name, trying by position: "+framePos);
+                            switched = currWindow.switchToFrame(framePos);
+                        } else {
+                            _log.warn("_postFrameCommand", "Unable to locate the Frame!");
+                        }
+                    }
+                }
             } else if (typeof(postObj.id) === "object" && typeof(postObj.id["ELEMENT"]) === "string") {
                 _log.debug("_postFrameCommand", "Switching to frame ELEMENT: " + JSON.stringify(postObj.id));
 
                 // Will use the Element JSON to find the frame name
                 frameName = currWindow.evaluate(
                     require("./webdriver_atoms.js").get("execute_script"),
+                    "if (!arguments[0].name && !arguments[0].id) { " +
+                    "   arguments[0].name = '_random_name_id_' + new Date().getTime(); " +
+                    "   arguments[0].id = arguments[0].name; " +
+                    "} " +
                     "return arguments[0].name || arguments[0].id;",
                     [postObj.id]);
+
+                _log.debug("_postFrameCommand", "Will try to switch to Frame using: "+frameName.value);
 
                 // If a frame name (or id) is found for the given ELEMENT, we
                 // "re-call" this very function, changing the `post` property

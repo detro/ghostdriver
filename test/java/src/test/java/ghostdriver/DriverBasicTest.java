@@ -1,8 +1,6 @@
 package ghostdriver;
 
 import org.junit.Test;
-import org.openqa.selenium.By;
-import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebDriver;
 
 public class DriverBasicTest extends BaseTest {
