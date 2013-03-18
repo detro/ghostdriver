@@ -1,5 +1,25 @@
 # CHANGELOG
 
+## v1.0.3 (2013-03-18) ([issues](https://github.com/detro/ghostdriver/issues?labels=1.0.3&state=closed))
+
+### JavaScript Driver (Core)
+* FIX: Rewritten code that deals with "wait for Page Load" on Clicks (based on new `page.loading` property - see below) - This closed multiple issues
+* FIX: `sendKeys('\n')` should deliver an `Enter` keycode, not `Return`
+* FIX: New Sessions have at least 1 Window on creation: this stops the `_cleanWindowlessSessions` code to delete brand new session that haven't yet been used
+* FIX: Handle Frame-Switching when frame has no name
+* FIX: Handle Frame-Switching when frame has no name and no #id
+* FIX: Ensure File exists before attempting Upload
+* ENHANCEMENT: Upgraded WebDriver Atoms to **Selenium 2.31.0**
+
+### Binding
+* FIX: Issues with "save_screenshot" method
+* FIX: Java Binding should handle Proxy configuration provided as a Map in the Capabilities (like Ruby or NodeJS bindings do)
+* FIX: `PhantomJSDriver.Builder.withLogFile()` is now implemented correctly and not ignored
+* ENHANCEMENT: Ability to pass CLI Arguments to PhantomJS process via Capability `phantomjs.cli.args`
+
+### PhantomJS (code in PhantomJS master repo)
+* ENHANCEMENT: Added properties `page.loading` and `page.loadingProgress` to help track Page Loading
+
 ## v1.0.2 (2012-12-20) ([issues](https://github.com/detro/ghostdriver/issues?labels=1.0.2&state=closed))
 
 ### JavaScript Driver (Core)
