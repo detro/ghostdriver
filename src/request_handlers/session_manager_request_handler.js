@@ -35,6 +35,7 @@ ghostdriver.SessionManagerReqHand = function() {
     _sessionRHs = {},
     _errors = _protoParent.errors,
     _CLEANUP_WINDOWLESS_SESSIONS_TIMEOUT = 300000, // 5 minutes
+    _log = ghostdriver.logger.create("SessionManagerReqHand"),
 
     _handle = function(req, res) {
         _protoParent.handle.call(this, req, res);
@@ -73,7 +74,7 @@ ghostdriver.SessionManagerReqHand = function() {
             newSession = new ghostdriver.Session(postObj.desiredCapabilities);
             _sessions[newSession.getId()] = newSession;
 
-            // console.log("New Session Created: " + newSession.getId());
+            _log.info("_postNewSessionCommand", "New Session Created: " + newSession.getId());
 
             // Redirect to the newly created Session
             res.statusCode = 303; //< "303 See Other"
@@ -162,12 +163,11 @@ ghostdriver.SessionManagerReqHand = function() {
 
         // Do this cleanup only if there are sessions
         if (Object.keys(_sessions).length > 0) {
-            console.log("Asynchronous Sessions cleanup phase starting NOW");
+            _log.info("_cleanupWindowlessSessions", "Asynchronous Sessions clean-up phase starting NOW");
             for (sId in _sessions) {
                 if (_sessions[sId].getWindowsCount() === 0) {
-                    console.log("About to delete Session '"+sId+"', because windowless...");
                     _deleteSession(sId);
-                    console.log("... deleted!");
+                    _log.info("_cleanupWindowlessSessions", "Deleted Session '"+sId+"', because windowless");
                 }
             }
         }

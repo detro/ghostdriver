@@ -30,10 +30,7 @@ var ghostdriver = ghostdriver || {};
 
 ghostdriver.SessionReqHand = function(session) {
     // private:
-    var
-    _session = session,
-    _protoParent = ghostdriver.SessionReqHand.prototype,
-    _locator = new ghostdriver.WebElementLocator(session),
+    const
     _const = {
         URL             : "url",
         ELEMENT         : "element",
@@ -67,15 +64,19 @@ ghostdriver.SessionReqHand = function(session) {
         BUTTON_DOWN     : "buttondown",
         BUTTON_UP       : "buttonup",
         DOUBLE_CLICK    : "doubleclick"
-    },
+    };
+
+    var
+    _session = session,
+    _protoParent = ghostdriver.SessionReqHand.prototype,
+    _locator = new ghostdriver.WebElementLocator(session),
     _errors = _protoParent.errors,
+    _log = ghostdriver.logger.create("SessionReqHand"),
 
     _handle = function(req, res) {
         var element;
 
         _protoParent.handle.call(this, req, res);
-
-        // console.log("Request => " + JSON.stringify(req, null, '  '));
 
         // Handle "/url" GET and POST
         if (req.urlParsed.file === _const.URL) {                                         //< ".../url"
@@ -184,7 +185,7 @@ ghostdriver.SessionReqHand = function(session) {
 
     _createOnSuccessHandler = function(res) {
         return function (status) {
-            // console.debug("SessionReqHand - onSuccessHandler: "+status);
+            _log.debug("_SuccessHandler", "status: " + status);
             res.success(_session.getId());
         };
     },
@@ -194,8 +195,7 @@ ghostdriver.SessionReqHand = function(session) {
             command,
             targetWindow;
 
-        // console.log("_doWindowHandleCommands");
-        // console.log(JSON.stringify(req, null, "  "));
+        _log.debug("_doWindowHandleCommands", "req => " + JSON.stringify(req));
 
         // Ensure all the parameters are provided
         if (req.urlParsed.chunks.length === 3) {
@@ -385,11 +385,12 @@ ghostdriver.SessionReqHand = function(session) {
     _executeAsyncCommand = function(req, res) {
         var postObj = JSON.parse(req.post);
 
-        // console.log("executeAsync - " + JSON.stringify(postObj));
+        _log.debug("_executeCommand", "postObj => " + JSON.stringify(postObj));
 
         if (typeof(postObj) === "object" && postObj.script && postObj.args) {
             _protoParent.getSessionCurrWindow.call(this, _session, req).setOneShotCallback("onCallback", function() {
-                // console.log("onCallback - " + JSON.stringify(postObj));
+                _log.debug("_executeCommand", "onCallback - arguments => " + JSON.stringify(arguments));
+
                 res.respondBasedOnResult(_session, req, arguments[0]);
             });
 
@@ -448,12 +449,11 @@ ghostdriver.SessionReqHand = function(session) {
         var postObj = JSON.parse(req.post),
             currWindow = _protoParent.getSessionCurrWindow.call(this, _session, req);
 
-        // console.log("Session '"+ _session.getId() +"' is about to load URL: " + postObj.url);
+        _log.debug("_postUrlCommand", "Session '"+ _session.getId() +"' is about to load URL: " + postObj.url);
 
         if (typeof(postObj) === "object" && postObj.url) {
             // Switch to the main frame first
             currWindow.switchToMainFrame();
-            // console.log("Session '"+ _session.getId() +"' has switched to the MainFrame");
 
             // Load URL and wait for load to finish (or timeout)
             currWindow.execFuncAndWaitForLoad(
@@ -523,66 +523,86 @@ ghostdriver.SessionReqHand = function(session) {
     _postFrameCommand = function(req, res) {
         var postObj = JSON.parse(req.post),
             frameName,
-            switched = false;
+            framePos,
+            switched = false,
+            currWindow = _protoParent.getSessionCurrWindow.call(this, _session, req);
 
-        // console.log("Frame Switching: current frames count: "+_protoParent.getSessionCurrWindow.call(this, _session, req).framesCount);
-        // var fnames = _protoParent.getSessionCurrWindow.call(this, _session, req).framesName;
-        // for (var i = 0; i < fnames.length; ++i) {
-        //     console.log("   frame #" + i + ": " + fnames[i]);
-        // }
+        _log.debug("_postFrameCommand", "Current frames count: " + currWindow.framesCount);
 
         if (typeof(postObj) === "object" && typeof(postObj.id) !== "undefined") {
             if(postObj.id === null) {
-                // console.log("Frame Switching: null (main frame)");
+                _log.debug("_postFrameCommand", "Switching to 'null' (main frame)");
 
                 // Reset focus on the topmost (main) Frame
-                _protoParent.getSessionCurrWindow.call(this, _session, req).switchToMainFrame();
+                currWindow.switchToMainFrame();
                 switched = true;
             } else if (typeof(postObj.id) === "number") {
-                // console.log("Frame Switching: frame number");
+                _log.debug("_postFrameCommand", "Switching to frame number: " + postObj.id);
 
                 // Switch frame by "index"
-                switched = _protoParent.getSessionCurrWindow.call(this, _session, req).switchToFrame(postObj.id);
+                switched = currWindow.switchToFrame(postObj.id);
             } else if (typeof(postObj.id) === "string") {
-                // console.log("Frame Switching: name or #id");
+                // Switch frame by "name" or by "id"
+                _log.debug("_postFrameCommand", "Switching to frame #id: " + postObj.id);
 
-                // Switch frame by "name" and, if not found, by "id"
-                switched = _protoParent.getSessionCurrWindow.call(this, _session, req).switchToFrame(postObj.id);
+                switched = currWindow.switchToFrame(postObj.id);
 
                 // If we haven't switched, let's try to find the frame "name" using it's "id"
                 if (!switched) {
-                    // console.log("Frame Switching: failed to switch by name, trying by #id");
-
                     // fetch the frame "name" via "id"
-                    frameName = _protoParent.getSessionCurrWindow.call(this, _session, req).evaluate(function(frameId) {
+                    frameName = currWindow.evaluate(function(frameId) {
                         var el = null;
                         el = document.querySelector('#'+frameId);
                         if (el !== null) {
-                            // console.log("Frame Switching: found frame by #id and it's named: "+el.name);
                             return el.name;
                         }
 
-                        // console.log("Frame Switching: no frame found by #id");
                         return null;
                     }, postObj.id);
 
-                    // console.log("Frame Switching: switching to '"+frameName+"'");
+                    _log.debug("_postFrameCommand", "Failed to switch by #id, trying by name: " + frameName);
 
                     // Switch frame by "name"
                     if (frameName !== null) {
-                        switched = _protoParent.getSessionCurrWindow.call(this, _session, req).switchToFrame(frameName);
+                        switched = currWindow.switchToFrame(frameName);
+                    }
+
+                    if (!switched) {
+                        // fetch the frame "position" via "id"
+                        framePos = currWindow.evaluate(function(frameIdOrName) {
+                            var allFrames = document.querySelectorAll("frame,iframe"),
+                                theFrame = document.querySelector('#'+frameIdOrName) || document.querySelector('[name='+frameIdOrName+']'),
+                                i;
+
+                            for (i = allFrames.length -1; i >= 0; --i) {
+                                if (allFrames[i].contentWindow === theFrame.contentWindow) {
+                                    return i;
+                                }
+                            }
+                        }, postObj.id);
+
+                        if (framePos >= 0) {
+                            _log.debug("_postFrameCommand", "Failed to switch by #id or name, trying by position: "+framePos);
+                            switched = currWindow.switchToFrame(framePos);
+                        } else {
+                            _log.warn("_postFrameCommand", "Unable to locate the Frame!");
+                        }
                     }
                 }
             } else if (typeof(postObj.id) === "object" && typeof(postObj.id["ELEMENT"]) === "string") {
-                // console.log("Frame Switching: WebDriver ELEMENT: " + JSON.stringify(postObj.id));
+                _log.debug("_postFrameCommand", "Switching to frame ELEMENT: " + JSON.stringify(postObj.id));
 
                 // Will use the Element JSON to find the frame name
-                frameName = _protoParent.getSessionCurrWindow.call(this, _session, req).evaluate(
+                frameName = currWindow.evaluate(
                     require("./webdriver_atoms.js").get("execute_script"),
+                    "if (!arguments[0].name && !arguments[0].id) { " +
+                    "   arguments[0].name = '_random_name_id_' + new Date().getTime(); " +
+                    "   arguments[0].id = arguments[0].name; " +
+                    "} " +
                     "return arguments[0].name || arguments[0].id;",
                     [postObj.id]);
 
-                // console.log("Frame Switching: found name/#id for ELEMENT: " + frameName.value);
+                _log.debug("_postFrameCommand", "Will try to switch to Frame using: "+frameName.value);
 
                 // If a frame name (or id) is found for the given ELEMENT, we
                 // "re-call" this very function, changing the `post` property
@@ -633,7 +653,8 @@ ghostdriver.SessionReqHand = function(session) {
         }
         // Check that either an Element ID or an X-Y Offset was provided
         if (elementSpecified || offsetSpecified) {
-            // console.log("element: " + elementSpecified + ", offset: " + offsetSpecified);
+            _log.debug("_postMouseMoveToCommand", "element: " + elementSpecified + ", offset: " + offsetSpecified);
+
             // If an Element was provided...
             if (elementSpecified) {
                 // Get Element's Location and add it to the coordinates
@@ -645,22 +666,22 @@ ghostdriver.SessionReqHand = function(session) {
                     coords.x = elementLocation.x;
                     coords.y = elementLocation.y;
                 }
-                // console.log("element specified. initial coordinates (" + coords.x + "," + coords.y + ")");
             } else {
                 coords = _session.inputs.getCurrentCoordinates();
-                // console.log("no element specified. initial coordinates (" + coords.x + "," + coords.y + ")");
             }
+
+            _log.debug("_postMouseMoveToCommand", "initial coordinates: (" + coords.x + "," + coords.y + ")");
 
             if (elementSpecified && !offsetSpecified && elementSize !== null) {
                 coords.x += Math.floor(elementSize.width / 2);
                 coords.y += Math.floor(elementSize.height / 2);
-                // console.log("element specified and no offset. coordinates adjusted to (" + coords.x + "," + coords.y + ")");
             } else {
                 // Add up the offset (if any)
                 coords.x += postObj.xoffset || 0;
                 coords.y += postObj.yoffset || 0;
-                // console.log("offset specified. coordinates adjusted to (" + coords.x + "," + coords.y + ")");
             }
+
+            _log.debug("_postMouseMoveToCommand", "coordinates adjusted to: (" + coords.x + "," + coords.y + ")");
 
             // Send the Mouse Move as native event
             _session.inputs.mouseMove(_session, coords);
@@ -754,18 +775,6 @@ ghostdriver.SessionReqHand = function(session) {
     },
 
     _getCookieCommand = function(req, res) {
-        // var i, cookies;
-        // cookies = _protoParent.getSessionCurrWindow.call(this, _session, req).cookies;
-        // console.log("Current Page Cookies:")
-        // for (i = 0; i < cookies.length; ++i) {
-        //     console.log("   "+i+": "+JSON.stringify(cookies[i]));
-        // }
-        // cookies = phantom.cookies;
-        // console.log("Current PhantomJS Cookies:")
-        // for (i = 0; i < cookies.length; ++i) {
-        //     console.log("   "+i+": "+JSON.stringify(cookies[i]));
-        // }
-
         // Get all the cookies the session at current URL can see/access
         res.success(
             _session.getId(),

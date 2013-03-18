@@ -361,4 +361,24 @@ public class FrameSwitchingTest extends BaseTestWithServer {
         // Expect page to have loaded and title to be set correctly
         new WebDriverWait(d, 5).until(ExpectedConditions.titleIs("definition_lists"));
     }
+
+    @Test
+    public void shouldBeAbleToSwitchToIFrameThatHasNoNameNorId() {
+        server.setGetHandler(new HttpRequestCallback() {
+            @Override
+            public void call(HttpServletRequest req, HttpServletResponse res) throws IOException {
+                res.getOutputStream().println("<html>" +
+                        "<body>" +
+                        "   <iframe></iframe>" +
+                        "</body>" +
+                        "</html>");
+            }
+        });
+
+        WebDriver d = getDriver();
+        d.get(server.getBaseUrl());
+
+        WebElement el = d.findElement(By.tagName("iframe"));
+        d.switchTo().frame(el);
+    }
 }
