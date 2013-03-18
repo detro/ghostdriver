@@ -5788,13 +5788,17 @@ bot.action.focusOnElement = function(element) {
  *                           bot.Keyboard.Key.SHIFT, 'cd']);
  *
  * @param {!Element} element The element receiving the event.
- * @param {(string|!bot.Keyboard.Key|!Array.<(string|!bot.Keyboard.Key)>)}
- *    values Value or values to type on the element.
+ * @param {(string|!bot.Keyboard.Key|
+ *          !Array.<(string|!bot.Keyboard.Key)>)} values Value or values to
+ *     type on the element.
  * @param {bot.Keyboard=} opt_keyboard Keyboard to use; if not provided,
- *    constructs one.
+ *     constructs one.
+ * @param {boolean=} opt_persistModifiers Whether modifier keys should remain
+ *     pressed when this function ends.
  * @throws {bot.Error} If the element cannot be interacted with.
  */
-bot.action.type = function(element, values, opt_keyboard) {
+bot.action.type = function(
+    element, values, opt_keyboard, opt_persistModifiers) {
   bot.action.checkShown_(element);
   bot.action.checkInteractable_(element);
   var keyboard = opt_keyboard || new bot.Keyboard();
@@ -5832,12 +5836,14 @@ bot.action.type = function(element, values, opt_keyboard) {
     typeValue(values);
   }
 
-  // Release all the modifier keys.
-  goog.array.forEach(bot.Keyboard.MODIFIERS, function(key) {
-    if (keyboard.isPressed(key)) {
-      keyboard.releaseKey(key);
-    }
-  });
+  if (!opt_persistModifiers) {
+    // Release all the modifier keys.
+    goog.array.forEach(bot.Keyboard.MODIFIERS, function(key) {
+      if (keyboard.isPressed(key)) {
+        keyboard.releaseKey(key);
+      }
+    });
+  }
 };
 
 
@@ -8280,10 +8286,10 @@ bot.dom.isShown = function(elem, opt_ignoreOpacity) {
       var sizeOfParent = bot.dom.getElementSize(parent);
       var locOfParent = goog.style.getClientPosition(parent);
       var locOfElement = goog.style.getClientPosition(e);
-      if (locOfParent.x + sizeOfParent.width < locOfElement.x) {
+      if (locOfParent.x + sizeOfParent.width <= locOfElement.x) {
         return false;
       }
-      if (locOfParent.y + sizeOfParent.height < locOfElement.y) {
+      if (locOfParent.y + sizeOfParent.height <= locOfElement.y) {
         return false;
       }
       return isOverflowHiding(parent);
@@ -8309,8 +8315,8 @@ bot.dom.isShown = function(elem, opt_ignoreOpacity) {
     if (transform && transform !== "none") {
       var locOfElement = goog.style.getClientPosition(e);
       var sizeOfElement = bot.dom.getElementSize(e);
-      if ((locOfElement.x + (sizeOfElement.width/2)) >= 0 && 
-          (locOfElement.y + (sizeOfElement.height/2)) >= 0){
+      if ((locOfElement.x + (sizeOfElement.width)) >= 0 && 
+          (locOfElement.y + (sizeOfElement.height)) >= 0){
         return true;
       } else {
         return false;
@@ -8323,6 +8329,64 @@ bot.dom.isShown = function(elem, opt_ignoreOpacity) {
   return isTransformHiding(elem);
 };
 
+/**
+* Checks whether the element is currently scrolled into the parent's overflow
+* region, such that the offset given, relative to the top-left corner of the
+* element, is currently in the overflow region.
+*
+* @param {!Element} element The element to check.
+* @param {!goog.math.Coordinate=} opt_coords Coordinate in the element,
+*     relative to the top-left corner of the element, to check. If none are
+*     specified, checks that the center of the element is in in the overflow.
+* @return {boolean} Whether the coordinates specified, relative to the element,
+*     are scrolled in the parent overflow.
+*/
+bot.dom.isInParentOverflow = function (element, opt_coords) {
+  var parent = goog.style.getOffsetParent(element);
+  var parentNode = goog.userAgent.GECKO || goog.userAgent.IE ||
+      goog.userAgent.OPERA ? bot.dom.getParentElement(element) : parent;
+
+  // Gecko will skip the BODY tag when calling getOffsetParent. However, the
+  // combination of the overflow values on the BODY _and_ HTML tags determine
+  // whether scroll bars are shown, so we need to guarantee that both values
+  // are checked.
+  if ((goog.userAgent.GECKO || goog.userAgent.IE || goog.userAgent.OPERA) &&
+      bot.dom.isElement(parentNode, goog.dom.TagName.BODY)) {
+    parent = parentNode;
+  }
+
+  if (parent && (bot.dom.getEffectiveStyle(parent, 'overflow') == 'scroll' ||
+                 bot.dom.getEffectiveStyle(parent, 'overflow') == 'auto')) {
+    var sizeOfParent = bot.dom.getElementSize(parent);
+    var locOfParent = goog.style.getClientPosition(parent);
+    var locOfElement = goog.style.getClientPosition(element);
+    var offsetX, offsetY;
+    if (opt_coords) {
+      offsetX = opt_coords.x;
+      offsetY = opt_coords.y;
+    } else {
+      var sizeOfElement = bot.dom.getElementSize(element);
+      offsetX = sizeOfElement.width / 2;
+      offsetY = sizeOfElement.height / 2;
+    }
+    var elementPointX = locOfElement.x + offsetX;
+    var elementPointY = locOfElement.y + offsetY;
+    if (elementPointX >= locOfParent.x + sizeOfParent.width) {
+      return true;
+    }
+    if (elementPointX <= locOfParent.x) {
+      return true;
+    }
+    if (elementPointY >= locOfParent.y + sizeOfParent.height) {
+      return true;
+    }
+    if (elementPointY <= locOfParent.y) {
+      return true;
+    }
+    return bot.dom.isInParentOverflow(parent);
+  }
+  return false;
+};
 
 /**
  * Trims leading and trailing whitespace from strings, leaving non-breaking
@@ -14558,15 +14622,29 @@ webdriver.atoms.element.getText = function(element) {
  * @param {!Array.<string>} keys The keys to type on the element.
  * @param {bot.Keyboard=} opt_keyboard Keyboard to use; if not provided,
  *    constructs one.
+ * @param {boolean=} opt_persistModifiers Whether modifier keys should remain
+ *     pressed when this function ends.
  * @see bot.action.type
  * @see http://code.google.com/p/selenium/wiki/JsonWireProtocol
  */
-webdriver.atoms.element.type = function(element, keys, opt_keyboard) {
-  // Convert to bot.Keyboard.Key values.
-  /** @type {!Array.<!Array.<(string|!bot.Keyboard.Key)>>} */
+webdriver.atoms.element.type = function(
+    element, keys, opt_keyboard, opt_persistModifiers) {
+  var persistModifierKeys = !!opt_persistModifiers;
+  function createSequenceRecord() {
+    return {persist: persistModifierKeys, keys: []};
+  }
+
+  /**
+   * @type {!Array.<{persist: boolean,
+   *                 keys: !Array.<(string|!bot.Keyboard.Key)>}>}
+   */
   var convertedSequences = [];
-  /** @type {!Array.<(string|!bot.Keyboard.Key)>} */
-  var current = [];
+
+  /**
+   * @type {{persist: boolean,
+   *         keys: !Array.<(string|!bot.Keyboard.Key)>}}
+   */
+  var current = createSequenceRecord();
   convertedSequences.push(current);
 
   goog.array.forEach(keys, function(sequence) {
@@ -14576,10 +14654,17 @@ webdriver.atoms.element.type = function(element, keys, opt_keyboard) {
         // goog.isNull uses ==, which accepts undefined.
         if (webdriverKey === null) {
           // bot.action.type does not support a "null" key, so we have to
-          // terminate the entire sequence to release modifier keys.
-          convertedSequences.push(current = []);
+          // terminate the entire sequence to release modifier keys. If
+          // we currently allow modifier key state to persist across key
+          // sequences, we need to inject a dummy sequence that does not
+          // persist state so every modifier key gets released.
+          convertedSequences.push(current = createSequenceRecord());
+          if (persistModifierKeys) {
+            current.persist = false;
+            convertedSequences.push(current = createSequenceRecord());
+          }
         } else if (goog.isDef(webdriverKey)) {
-          current.push(webdriverKey);
+          current.keys.push(webdriverKey);
         } else {
           throw Error('Unsupported WebDriver key: \\u' +
               key.charCodeAt(0).toString(16));
@@ -14588,16 +14673,16 @@ webdriver.atoms.element.type = function(element, keys, opt_keyboard) {
         // Handle common aliases.
         switch (key) {
           case '\n':
-            current.push(bot.Keyboard.Keys.ENTER);
+            current.keys.push(bot.Keyboard.Keys.ENTER);
             break;
           case '\t':
-            current.push(bot.Keyboard.Keys.TAB);
+            current.keys.push(bot.Keyboard.Keys.TAB);
             break;
           case '\b':
-            current.push(bot.Keyboard.Keys.BACKSPACE);
+            current.keys.push(bot.Keyboard.Keys.BACKSPACE);
             break;
           default:
-            current.push(key);
+            current.keys.push(key);
             break;
         }
       }
@@ -14605,7 +14690,8 @@ webdriver.atoms.element.type = function(element, keys, opt_keyboard) {
   });
 
   goog.array.forEach(convertedSequences, function(sequence) {
-    bot.action.type(element, sequence, opt_keyboard);
+    bot.action.type(element, sequence.keys, opt_keyboard,
+        sequence.persist);
   });
 
   function isWebDriverKey(c) {
@@ -14714,23 +14800,25 @@ goog.require('webdriver.atoms.element');
 /**
  * Send keyboard input to a particular element.
  *
- * @param {Element} element The element to send the keyboard input to.
+ * @param {Element} element The element to send the keyboard input to, or
+ *     {@code null} to use the document's active element.
+ * @param {!Array.<string>} keys The keys to type on the element.
  * @param {Array.<!bot.Keyboard.Key>=} opt_state The keyboard to use, or
  *     construct one.
- * @param {...(string|!Array.<string>)} var_args What to type.
+ * @param {boolean=} opt_persistModifiers Whether modifier keys should remain
+ *     pressed when this function ends.
  * @return {Array.<!bot.Keyboard.Key>} The keyboard state.
  */
-webdriver.atoms.inputs.sendKeys = function(element, opt_state, var_args) {
+webdriver.atoms.inputs.sendKeys = function(
+    element, keys, opt_state, opt_persistModifiers) {
   var keyboard = new bot.Keyboard(opt_state);
-  var to_type = goog.array.slice(arguments, 2);
-  var flattened = goog.array.flatten(to_type);
   if (!element) {
     element = bot.dom.getActiveElement(document);
   }
   if (!element) {
     throw Error('No element to send keys to');
   }
-  webdriver.atoms.element.type(element, flattened, keyboard);
+  webdriver.atoms.element.type(element, keys, keyboard, opt_persistModifiers);
 
   return keyboard.getState();
 };
