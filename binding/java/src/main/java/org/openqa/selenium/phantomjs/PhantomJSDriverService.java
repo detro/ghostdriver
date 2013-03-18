@@ -32,9 +32,9 @@ import com.google.common.collect.ImmutableMap;
 import org.openqa.selenium.Capabilities;
 import org.openqa.selenium.Proxy;
 import org.openqa.selenium.WebDriverException;
+import org.openqa.selenium.browserlaunchers.Proxies;
 import org.openqa.selenium.net.PortProber;
 import org.openqa.selenium.os.CommandLine;
-import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.remote.service.DriverService;
 
 import java.io.File;
@@ -42,7 +42,9 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import static com.google.common.base.Preconditions.*;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 /**
  * Service that controls the life-cycle of a PhantomJS in Remote WebDriver mode.
@@ -143,7 +145,7 @@ public class PhantomJSDriverService extends DriverService {
         // Look for Proxy configuration within the Capabilities
         Proxy proxy = null;
         if (desiredCapabilities != null) {
-            proxy = (Proxy) desiredCapabilities.getCapability(CapabilityType.PROXY);
+            proxy = Proxies.extractProxy(desiredCapabilities);
         }
 
         // Find PhantomJS executable
