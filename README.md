@@ -32,6 +32,14 @@ The project was created and is lead by [Ivan De Marino](https://github.com/detro
 
 **NOTE:** Type `phantomjs -h` for more options.
 
+## (Java) Bindings
+
+This project provides WebDriver bindings for Java under the name _PhantomJSDriver_.
+[Here is the JavaDoc](http://cdn.ivandemarino.me/phantomjsdriver-javadoc/index.html).
+
+Bindings for other languages (C#, Python, Ruby, ...) are developed and maintained
+under the same name within the [Selenium project](http://docs.seleniumhq.org/docs/) itself.
+
 ## How to use it
 
 Launching PhantomJS in Remote WebDriver mode it's simple:
