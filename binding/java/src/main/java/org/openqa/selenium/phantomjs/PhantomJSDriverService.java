@@ -87,6 +87,12 @@ public class PhantomJSDriverService extends DriverService {
      */
     public static final String PHANTOMJS_PAGE_SETTINGS_PREFIX = "phantomjs.page.settings.";
 
+    /**
+     * Default Log file name.
+     * Can be changed using {@link PhantomJSDriverService.Builder#withLogFile(java.io.File)}.
+     */
+    private static final String PHANTOMJS_DEFAULT_LOGFILE = "phantomjsdriver.log";
+
     private static final String PHANTOMJS_DEFAULT_EXECUTABLE = "phantomjs";
 
     private static final String PHANTOMJS_DOC_LINK = "https://github.com/ariya/phantomjs/wiki";
@@ -154,7 +160,7 @@ public class PhantomJSDriverService extends DriverService {
                 .usingGhostDriver(ghostDriverfile)
                 .usingAnyFreePort()
                 .withProxy(proxy)
-                .withLogFile(new File("ghostdriver.log"))
+                .withLogFile(new File(PHANTOMJS_DEFAULT_LOGFILE))
                 .usingCommandLineArguments(commandLineArguments)
                 .build();
     }
@@ -444,11 +450,21 @@ public class PhantomJSDriverService extends DriverService {
                     argsBuilder.add(ghostdriver.getCanonicalPath());
 
                     // Add the port to listed on
-                    argsBuilder.add(String.format("%d", port));
+                    argsBuilder.add(String.format("--port=%d", port));
+
+                    // Add Log File
+                    if (logFile != null) {
+                        argsBuilder.add(String.format("--logFile=%s", logFile.getAbsolutePath()));
+                    }
                 } else { //< Path to GhostDriver not provided: use PhantomJS's internal GhostDriver (default behaviour)
 
                     // Append required parameters
                     argsBuilder.add(String.format("--webdriver=%d", port));
+
+                    // Add Log File
+                    if (logFile != null) {
+                        argsBuilder.add(String.format("--webdriver-logfile=%s", logFile.getAbsolutePath()));
+                    }
                 }
 
                 // Create a new service
