@@ -8,9 +8,9 @@ It's a Remote WebDriver that uses PhantomJS as back-end.
 GhostDriver is designed to be integral part of PhantomJS itself, but it's developed in isolation and progress is tracked
 by this Repository.
 
-* Current _GhostDriver_ stable version is `"1.0.2"`
+* Current _GhostDriver_ stable version is `"1.0.3"`
 * Current _PhantomJS-integrated_ version is `"1.0.2"`: contained in PhantomJS `"1.8.x"`
-* Current _PhantomJSDriver_ (Java binding) stable version is `"1.0.1"`
+* Current _PhantomJSDriver_ (Java binding) stable version is `"1.0.3"`
 
 For more info, please take a look at the [changelog](https://github.com/detro/ghostdriver/blob/master/CHANGELOG.md).
 
@@ -69,7 +69,7 @@ Just add the following to your `pom.xml`:
 <dependency>
     <groupId>com.github.detro.ghostdriver</groupId>
     <artifactId>phantomjsdriver</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.3</version>
 </dependency>
 ```
 
