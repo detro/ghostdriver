@@ -32,7 +32,7 @@ var ghostdriver = {
         hub     : require("./hub_register.js"),
         logger  : require("./logger.js"),
         config  : null,                         //< will be set in a short while
-        version : "1.0.3-dev"
+        version : "1.0.3"
     },
     server = require("webserver").create(),
     router,
