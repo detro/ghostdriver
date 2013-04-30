@@ -42,9 +42,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.base.Preconditions.*;
 
 /**
  * Service that controls the life-cycle of a PhantomJS in Remote WebDriver mode.
@@ -73,7 +71,7 @@ public class PhantomJSDriverService extends DriverService {
 
     /**
      * Capability that allows to add custom command line arguments to the
-     * spawned phantomjs process.
+     * spawned PhantomJS process.
      *
      * <p>
      * Set this capability with a list of of argument strings to add, e.g.
@@ -81,6 +79,30 @@ public class PhantomJSDriverService extends DriverService {
      * </p>
      */
     public static final String PHANTOMJS_CLI_ARGS = "phantomjs.cli.args";
+
+    /**
+     * Capability that allows to pass custom command line arguments to the
+     * GhostDriver JavaScript launch file, spawned PhantomJS process.
+     * NOTE: This is useful only when used together with PhantomJSDriverService#PHANTOMJS_GHOSTDRIVER_PATH_PROPERTY.
+     *
+     * <p>
+     * Set this capability with a list of of argument strings to add, e.g.
+     * <code>new String[] { "--logFile=PATH", "--logLevel=DEBUG" }</code>.
+     * </p>
+     *
+     * <p>
+     * Acceptable arguments:
+     * <ul>
+     *     <li><code>--ip=IP_GHOSTDRIVER_SHOULD_LISTEN_ON</code></li>
+     *     <li><code>--port=PORT_GHOSTDRIVER_SHOULD_LISTEN_ON</code></li>
+     *     <li><code>--hub=HTTP_ADDRESS_TO_SELENIUM_HUB</code></li>
+     *     <li><code>--logFile=PATH_TO_LOGFILE</code></li>
+     *     <li><code>--logLevel=(INFO|DEBUG|WARN|ERROR)</code></li>
+     *     <li><code>--logColor=(false|true)</code></li>
+     * </ul>
+     * </p>
+     */
+    public static final String PHANTOMJS_GHOSTDRIVER_CLI_ARGS = "phantomjs.ghostdriver.cli.args";
 
     /**
      * Set capabilities with this prefix to apply it to the PhantomJS <code>page.settings.*</code> object.
@@ -154,16 +176,16 @@ public class PhantomJSDriverService extends DriverService {
         // Find GhostDriver main JavaScript file
         File ghostDriverfile = findGhostDriver(desiredCapabilities, GHOSTDRIVER_DOC_LINK, GHOSTDRIVER_DOWNLOAD_LINK);
 
-        // Find command line arguments to add
-        String[] commandLineArguments = findCommandLineArguments(desiredCapabilities);
-
         // Build & return service
         return new Builder().usingPhantomJSExecutable(phantomjsfile)
                 .usingGhostDriver(ghostDriverfile)
                 .usingAnyFreePort()
                 .withProxy(proxy)
                 .withLogFile(new File(PHANTOMJS_DEFAULT_LOGFILE))
-                .usingCommandLineArguments(commandLineArguments)
+                .usingCommandLineArguments(
+                        findCLIArgumentsFromCaps(desiredCapabilities, PHANTOMJS_CLI_ARGS))
+                .usingGhostDriverCommandLineArguments(
+                        findCLIArgumentsFromCaps(desiredCapabilities, PHANTOMJS_GHOSTDRIVER_CLI_ARGS))
                 .build();
     }
 
@@ -268,17 +290,15 @@ public class PhantomJSDriverService extends DriverService {
         return null;
     }
 
-    private static String[] findCommandLineArguments(Capabilities desiredCapabilities) {
-        String[] args = new String[]{};
+    private static String[] findCLIArgumentsFromCaps(Capabilities desiredCapabilities, String capabilityName) {
         if (desiredCapabilities != null) {
-            Object capability = desiredCapabilities.getCapability(PHANTOMJS_CLI_ARGS);
-            if (capability != null) {
-                args = (String[]) capability;
+            Object cap = desiredCapabilities.getCapability(capabilityName);
+            if (cap != null) {
+                return (String[]) cap;
             }
         }
-        return args;
+        return new String[]{};  // nothing found: return an empty array of arguments
     }
-
 
     /**
      * Builder used to configure new {@link PhantomJSDriverService} instances.
@@ -292,6 +312,7 @@ public class PhantomJSDriverService extends DriverService {
         private File logFile;
         private Proxy proxy = null;
         private String[] commandLineArguments = null;
+        private String[] ghostdriverCommandLineArguments = null;
 
         /**
          * Sets which PhantomJS executable the builder will use.
@@ -389,6 +410,16 @@ public class PhantomJSDriverService extends DriverService {
         }
 
         /**
+         * Configures the service to pass additional command line arguments to GhostDriver, run by PhantomJS executable.
+         * @param ghostdriverCommandLineArguments list of command line arguments for GhostDriver
+         * @return A self reference.
+         */
+        public Builder usingGhostDriverCommandLineArguments(String[] ghostdriverCommandLineArguments) {
+            this.ghostdriverCommandLineArguments = ghostdriverCommandLineArguments;
+            return this;
+        }
+
+        /**
          * Creates a new service. Before creating a new service, the builder will find a port for
          * the server to listen to.
          *
@@ -447,7 +478,6 @@ public class PhantomJSDriverService extends DriverService {
 
                 // Should use an external GhostDriver?
                 if (ghostdriver != null) { //< Path to GhostDriver provided: use it simply as a PhantomJS script
-
                     // Add the canonical path to GhostDriver
                     argsBuilder.add(ghostdriver.getCanonicalPath());
 
@@ -457,6 +487,11 @@ public class PhantomJSDriverService extends DriverService {
                     // Add Log File
                     if (logFile != null) {
                         argsBuilder.add(String.format("--logFile=%s", logFile.getAbsolutePath()));
+                    }
+
+                    // Additional GhostDriver command line arguments (if provided)
+                    if (this.ghostdriverCommandLineArguments!= null) {
+                        argsBuilder.add(this.ghostdriverCommandLineArguments);
                     }
                 } else { //< Path to GhostDriver not provided: use PhantomJS's internal GhostDriver (default behaviour)
 

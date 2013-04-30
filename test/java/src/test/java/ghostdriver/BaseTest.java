@@ -101,6 +101,11 @@ public abstract class BaseTest {
             "--ssl-protocol=any",
             "--ignore-ssl-errors=true"
         });
+
+        // Control LogLevel for GhostDriver, via CLI arguments
+        sCaps.setCapability(PhantomJSDriverService.PHANTOMJS_GHOSTDRIVER_CLI_ARGS, new String[] {
+            "--logLevel=" + (sConfig.getProperty("phantomjs_driver_loglevel") != null ? sConfig.getProperty("phantomjs_driver_loglevel") : "INFO")
+        });
     }
 
     @Before
