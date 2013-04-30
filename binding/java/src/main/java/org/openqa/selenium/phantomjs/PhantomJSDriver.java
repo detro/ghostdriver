@@ -31,6 +31,7 @@ import org.openqa.selenium.Capabilities;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriverException;
+import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.DriverCommand;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.remote.service.DriverCommandExecutor;
@@ -74,6 +75,16 @@ import org.openqa.selenium.remote.service.DriverService;
  * @see PhantomJSDriverService#createDefaultService()
  */
 public class PhantomJSDriver extends RemoteWebDriver implements TakesScreenshot {
+
+    /**
+     * Creates a new PhantomJSDriver instance. The instance will have a
+     * default set of desired capabilities.
+     *
+     * @see org.openqa.selenium.phantomjs.PhantomJSDriverService#createDefaultService() for configuration details.
+     */
+    public PhantomJSDriver() {
+        this(DesiredCapabilities.phantomjs());
+    }
 
     /**
      * Creates a new PhantomJSDriver instance.
