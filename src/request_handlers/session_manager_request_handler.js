@@ -40,10 +40,10 @@ ghostdriver.SessionManagerReqHand = function() {
     _handle = function(req, res) {
         _protoParent.handle.call(this, req, res);
 
-        if (req.urlParsed.file === "session" && req.method === "POST") {
+        if (req.urlParsed.chunks.length === 1 && req.urlParsed.file === "session" && req.method === "POST") {
             _postNewSessionCommand(req, res);
             return;
-        } else if (req.urlParsed.file === "sessions" && req.method === "GET") {
+        } else if (req.urlParsed.chunks.length === 1 && req.urlParsed.file === "sessions" && req.method === "GET") {
             _getActiveSessionsCommand(req, res);
             return;
         } else if (req.urlParsed.directory === "/session/") {
