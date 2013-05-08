@@ -1,0 +1,32 @@
+doctype 5
+html
+  head
+    title Ghostdriver
+    link(rel="stylesheet", type="text/css", href="/styles/main.css")
+  body
+    div.container
+      h1 Ghostdriver Test page.
+      div.element one
+      div#html This my innerHTML
+      div.element TWO
+      div.element THREE
+      form#form(method="post", action="/submit")
+        input(type="text", name="q", value="this an test")
+        input#radio_checked(type="radio", name="p", value="on", checked)
+        input#radio_unchecked(type="radio", name="p", value="off")
+        input#checkbox_checked(type="checkbox", value="on", checked)
+        input#checkbox_unchecked(type="checkbox", value="off")
+        select#select
+          option(value="on", selected) On
+          option(value="off") Off
+        input#disabled(type="text", style="display: none", disabled)
+        input#send(type="submit", value="Send")
+        div#show_in_right_click(style="display: none") FROM RIGHT CLICK
+        br
+        a#alert Open alert
+        br
+        a#popup Open new popup
+        br
+        a#popup_post Open new popup and submit the form
+      div#output
+    script(type="text/javascript", src="/js/index.js")

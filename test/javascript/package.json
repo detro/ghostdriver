@@ -1,0 +1,23 @@
+{
+  "name": "tests",
+  "version": "0.0.1",
+  "description": "Test script with mocha for ghostdriver",
+  "main": "test.js",
+  "dependencies": {
+    "selenium-webdriver": "~2.32.1",
+    "should": "~1.2.2"
+  },
+  "devDependencies": {
+    "should": "~1.2.2",
+    "selenium-webdriver": "~2.32.1",
+    "mocha": "~1.9.0",
+    "express": "~3.2.1",
+    "jade": "~0.30.0"
+  },
+  "scripts": {
+    "test": "make test"
+  },
+  "repository": "",
+  "author": "Loduis Madariaga",
+  "license": "BSD"
+}
