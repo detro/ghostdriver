@@ -194,7 +194,17 @@ ghostdriver.Session = function(desiredCapabilities) {
                 if (!_isLoading()) {               //< page finished loading
                     _log.debug("_execFuncAndWaitForLoadDecorator", "Page Loading in Session: false");
 
-                    thisPage.resetOneShotCallbacks();
+                    try {
+                        // In case this command closed the window, "thisPage"
+                        // might now be invalid/deleted and calls to methods
+                        // attached to it will throw exceptions.
+                        // So, we just need to wrap it and move on.
+                        thisPage.resetOneShotCallbacks();
+                    } catch (e) {
+                        // swallow the exception: once this call is done
+                        // the window would have become invalid and any attempt
+                        // to access it will correctly throw a "NoWindow" Exception.
+                    }
 
                     if (onLoadFinishedArgs !== null) {
                         // Report the result of the "Load Finished" event

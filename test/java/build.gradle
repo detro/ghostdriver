@@ -14,13 +14,15 @@ repositories {
 ext.seleniumVersion = "2.32.0"
 ext.junitVersion = "4.8+"
 ext.jettyVersion = "6.1.21"
+ext.jsr305Version = "2.0.1"
 
 dependencies {
     ["selenium-java", "selenium-remote-driver", "selenium-server"].each {
         testCompile "org.seleniumhq.selenium:$it:$seleniumVersion"
     }
+    testCompile "com.google.code.findbugs:jsr305:$jsr305Version"
     testCompile "junit:junit-dep:$junitVersion"
-	testCompile "org.mortbay.jetty:jetty:$jettyVersion"
+    testCompile "org.mortbay.jetty:jetty:$jettyVersion"
     testCompile files("../../binding/java/jars/phantomjsdriver-1.1.0-dev.jar")
 }
 

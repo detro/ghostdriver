@@ -27,18 +27,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package ghostdriver;
 
+import com.google.common.base.Function;
 import org.junit.Test;
-import org.openqa.selenium.By;
-import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.NoSuchElementException;
-import org.openqa.selenium.NoSuchWindowException;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import javax.annotation.Nullable;
+
+import static org.junit.Assert.*;
 
 public class WindowSwitchingTest extends BaseTest {
     @Test
@@ -142,5 +138,38 @@ public class WindowSwitchingTest extends BaseTest {
         // This then throws an element not found exception.. the main page was not selected.
         e = d.findElement(By.tagName("frameset"));
         assertNotNull(e);
+    }
+
+    @Test
+    public void shouldBeAbleToClickALinkThatClosesAWindow() throws Exception {
+        final WebDriver d = getDriver();
+        d.get("http://localhost:2310/common/javascriptPage.html");
+
+        String handle = d.getWindowHandle();
+        d.findElement(By.id("new_window")).click();
+
+        // Wait until we can switch to the new window
+        WebDriverWait waiter = new WebDriverWait(d, 10);
+        waiter.until(new Function<WebDriver, Object>() {
+            @Override
+            public Object apply(@Nullable WebDriver input) {
+                try {
+                    d.switchTo().window("close_me");
+                    return true;
+                } catch (Exception e) {
+                    return false;
+                }
+            }
+        });
+        assertEquals(0, d.findElements(By.id("new_window")).size());
+
+        // Click on the "close" link.
+        // NOTE : This will cause the window currently in focus to close
+        d.findElement(By.id("close")).click();
+
+        d.switchTo().window(handle);
+        assertNotNull(d.findElement(By.id("new_window")));
+
+        // NOTE: If we haven't seen an exception or hung the test has passed
     }
 }
