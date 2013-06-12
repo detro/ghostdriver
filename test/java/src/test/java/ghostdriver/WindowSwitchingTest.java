@@ -173,7 +173,7 @@ public class WindowSwitchingTest extends BaseTest {
         // NOTE: If we haven't seen an exception or hung the test has passed
     }
 
-    @Test(expected = NoSuchWindowException.class)
+    @Test
     public void shouldNotBeAbleToSwitchBackToInitialWindowUsingEmptyWindowNameParameter() {
         final WebDriver d = getDriver();
 
@@ -202,9 +202,19 @@ public class WindowSwitchingTest extends BaseTest {
         // Check we are on the new window
         assertEquals(1, d.findElements(By.id("greeting")).size());
 
-        d.switchTo().window(initialWindowHandle);
+        // Switch to the first screen that has "window.name = ''". Usually, the first window of the Session.
+        d.switchTo().window("");
+        // Close the window
         d.close();
 
-        d.switchTo().window("");
+        try {
+            // This second call to switch to window with empty string should fail.
+            // NOTE: I can't use "@Test(expected..." because the first call might throw the same exception
+            // and we won't be able to distinguish.
+            d.switchTo().window("");
+            fail();
+        } catch (NoSuchWindowException nswe) {
+            // If we are here, all is happening as expected
+        }
     }
 }
