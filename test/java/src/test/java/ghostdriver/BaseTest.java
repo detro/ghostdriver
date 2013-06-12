@@ -80,19 +80,23 @@ public abstract class BaseTest {
         sCaps.setJavascriptEnabled(true);
         sCaps.setCapability("takesScreenshot", false);
 
-        // Fetch configuration parameters
-        // "phantomjs_exec_path"
-        if (sConfig.getProperty("phantomjs_exec_path") != null) {
-            sCaps.setCapability(PhantomJSDriverService.PHANTOMJS_EXECUTABLE_PATH_PROPERTY, sConfig.getProperty("phantomjs_exec_path"));
-        } else {
-            throw new IOException(String.format("Property '%s' not set!", PhantomJSDriverService.PHANTOMJS_EXECUTABLE_PATH_PROPERTY));
-        }
-        // "phantomjs_driver_path"
-        if (sConfig.getProperty("phantomjs_driver_path") != null) {
-            System.out.println("Test will use an external GhostDriver");
-            sCaps.setCapability(PhantomJSDriverService.PHANTOMJS_GHOSTDRIVER_PATH_PROPERTY, sConfig.getProperty("phantomjs_driver_path"));
-        } else {
-            System.out.println("Test will use PhantomJS internal GhostDriver");
+        String driver = sConfig.getProperty("driver", DRIVER_PHANTOMJS);
+
+        // Fetch PhantomJS-specific configuration parameters
+        if (driver.equals(DRIVER_PHANTOMJS)) {
+            // "phantomjs_exec_path"
+            if (sConfig.getProperty("phantomjs_exec_path") != null) {
+                sCaps.setCapability(PhantomJSDriverService.PHANTOMJS_EXECUTABLE_PATH_PROPERTY, sConfig.getProperty("phantomjs_exec_path"));
+            } else {
+                throw new IOException(String.format("Property '%s' not set!", PhantomJSDriverService.PHANTOMJS_EXECUTABLE_PATH_PROPERTY));
+            }
+            // "phantomjs_driver_path"
+            if (sConfig.getProperty("phantomjs_driver_path") != null) {
+                System.out.println("Test will use an external GhostDriver");
+                sCaps.setCapability(PhantomJSDriverService.PHANTOMJS_GHOSTDRIVER_PATH_PROPERTY, sConfig.getProperty("phantomjs_driver_path"));
+            } else {
+                System.out.println("Test will use PhantomJS internal GhostDriver");
+            }
         }
 
         // Disable "web-security", enable all possible "ssl-protocols" and "ignore-ssl-errors" for PhantomJSDriver

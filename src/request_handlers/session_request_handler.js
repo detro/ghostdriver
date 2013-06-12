@@ -820,7 +820,7 @@ ghostdriver.SessionReqHand = function(session) {
     _postWindowCommand = function(req, res) {
         var params = JSON.parse(req.post);
 
-        if (typeof(params) === "object" && params.name) {
+        if (typeof(params) === "object" && typeof(params.name) === "string") {
             // Report a success if we manage to switch the current window,
             // otherwise throw a Failed Command Error
             if (_session.switchToWindow(params.name)) {

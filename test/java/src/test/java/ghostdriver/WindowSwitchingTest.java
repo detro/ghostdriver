@@ -172,4 +172,39 @@ public class WindowSwitchingTest extends BaseTest {
 
         // NOTE: If we haven't seen an exception or hung the test has passed
     }
+
+    @Test(expected = NoSuchWindowException.class)
+    public void shouldNotBeAbleToSwitchBackToInitialWindowUsingEmptyWindowNameParameter() {
+        final WebDriver d = getDriver();
+
+        d.get("http://localhost:2310/common/xhtmlTest.html");
+
+        // Store the first window handle
+        String initialWindowHandle = d.getWindowHandle();
+
+        // Ensure we are where we think we are, then click on "windowOne" to open another window
+        assertEquals(1, d.findElements(By.name("windowOne")).size());
+        d.findElement(By.name("windowOne")).click();
+
+        // Wait until we can switch to the new window
+        WebDriverWait waiter = new WebDriverWait(d, 10);
+        waiter.until(new Function<WebDriver, Object>() {
+            @Override
+            public Object apply(@Nullable WebDriver input) {
+                try {
+                    d.switchTo().window("result");
+                    return true;
+                } catch (Exception e) {
+                    return false;
+                }
+            }
+        });
+        // Check we are on the new window
+        assertEquals(1, d.findElements(By.id("greeting")).size());
+
+        d.switchTo().window(initialWindowHandle);
+        d.close();
+
+        d.switchTo().window("");
+    }
 }
