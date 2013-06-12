@@ -168,6 +168,7 @@ public class ElementMethodsTest extends BaseTestWithServer {
         d.get(server.getBaseUrl());
         d.findElement(By.xpath("html/body/a")).click();
 
-        assertNotNull(d.getTitle().toLowerCase().contains("google"));
+        assertTrue(d.getTitle().toLowerCase().contains("google"));
     }
+
 }
