@@ -40,7 +40,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class ElementMethodsTest extends BaseTestWithServer {
@@ -171,4 +170,28 @@ public class ElementMethodsTest extends BaseTestWithServer {
         assertTrue(d.getTitle().toLowerCase().contains("google"));
     }
 
+    @Test
+    public void shouldNotHandleCasesWhenAsyncJavascriptInitiatesALoadUsingDefaultImplicitWait() {
+        server.setGetHandler(new HttpRequestCallback() {
+            @Override
+            public void call(HttpServletRequest req, HttpServletResponse res) throws IOException {
+                res.getOutputStream().println("<script type=\"text/javascript\">\n" +
+                        "    function myFunction() {\n" +
+                        "        setTimeout(function() {\n" +
+                        "            window.location.href = 'http://www.google.com';\n" +
+                        "        }, 5000);\n" +
+                        "    }\n" +
+                        "    </script>\n" +
+                        "    <a href=\"#\" onclick=\"myFunction()\">Click Here</a>");
+            }
+        });
+
+        WebDriver d = getDriver();
+        d.get(server.getBaseUrl());
+
+        d.findElement(By.xpath("html/body/a")).click();
+
+        // "google.com" hasn't loaded yet at this stage
+        assertFalse(d.getTitle().toLowerCase().contains("google"));
+    }
 }
