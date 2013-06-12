@@ -96,7 +96,7 @@ ghostdriver.Session = function(desiredCapabilities) {
     _timeouts = {
         "script"            : _max32bitInt,
         "async script"      : _max32bitInt,
-        "implicit"          : 5,            //< 5ms
+        "implicit"          : 50,               //< 50ms
         "page load"         : _max32bitInt,
     },
     _windows = {},  //< NOTE: windows are "webpage" in Phantom-dialect
@@ -235,7 +235,7 @@ ghostdriver.Session = function(desiredCapabilities) {
                 setTimeout(checkLoadingFinished, 100);
             };
             checkLoadingFinished();
-        }, 10);
+        }, _getImplicitTimeout());
     },
 
     _oneShotCallbackFactory = function(page, callbackName) {
