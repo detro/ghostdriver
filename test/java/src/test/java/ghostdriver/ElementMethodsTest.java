@@ -39,8 +39,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class ElementMethodsTest extends BaseTestWithServer {
     @Test
@@ -158,7 +157,7 @@ public class ElementMethodsTest extends BaseTestWithServer {
                         "            window.location.href = 'http://www.google.com';\n" +
                         "        }\n" +
                         "    </script>\n" +
-                        "    <a href=\"#\" onclick=\"myFunction()\">Click Here</a>");
+                        "    <a onclick=\"javascript: myFunction();\">Click Here</a>");
             }
         });
 
@@ -171,7 +170,7 @@ public class ElementMethodsTest extends BaseTestWithServer {
     }
 
     @Test
-    public void shouldNotHandleCasesWhenAsyncJavascriptInitiatesALoadUsingDefaultImplicitWait() {
+    public void shouldNotHandleCasesWhenAsyncJavascriptInitiatesAPageLoadFarInTheFuture() {
         server.setGetHandler(new HttpRequestCallback() {
             @Override
             public void call(HttpServletRequest req, HttpServletResponse res) throws IOException {
@@ -182,16 +181,43 @@ public class ElementMethodsTest extends BaseTestWithServer {
                         "        }, 5000);\n" +
                         "    }\n" +
                         "    </script>\n" +
-                        "    <a href=\"#\" onclick=\"myFunction()\">Click Here</a>");
+                        "    <a onclick=\"javascript: myFunction();\">Click Here</a>");
             }
         });
 
         WebDriver d = getDriver();
         d.get(server.getBaseUrl());
 
+        // Initiate timer that will finish with loading Google in the window
         d.findElement(By.xpath("html/body/a")).click();
 
         // "google.com" hasn't loaded yet at this stage
         assertFalse(d.getTitle().toLowerCase().contains("google"));
+    }
+
+    @Test
+    public void shouldHandleCasesWhereJavascriptCodeInitiatesPageLoadsThatFail() throws InterruptedException {
+        final String crazyUrl = "http://abcdefghilmnopqrstuvz.zvutsr";
+
+        server.setGetHandler(new HttpRequestCallback() {
+            @Override
+            public void call(HttpServletRequest req, HttpServletResponse res) throws IOException {
+                res.getOutputStream().println("<script type=\"text/javascript\">\n" +
+                        "    function myFunction() {\n" +
+                        "        window.location.href = \"" + crazyUrl + "\";\n" +
+                        "    }\n" +
+                        "    </script>\n" +
+                        "    <a onclick=\"javascript: myFunction();\">Click Here</a>");
+            }
+        });
+
+        WebDriver d = getDriver();
+        d.get(server.getBaseUrl());
+
+        // Click on the link to kickstart the javascript that will attempt to load a page that is supposed to fail
+        d.findElement(By.xpath("html/body/a")).click();
+
+        // The crazy URL should have not been loaded
+        assertTrue(!d.getCurrentUrl().equals(crazyUrl));
     }
 }

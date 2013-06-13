@@ -157,16 +157,6 @@ ghostdriver.Session = function(desiredCapabilities) {
 
             onLoadFinishedArgs = Array.prototype.slice.call(arguments);
         });
-        this.setOneShotCallback("onError", function(message, stack) {
-            _log.debug("_execFuncAndWaitForLoadDecorator", "onError: "+message+"\n");
-            stack.forEach(function(item) {
-                var msg = item.file + ":" + item.line;
-                msg += item["function"] ? " in " + item["function"] : "";
-                _log.debug("_execFuncAndWaitForLoadDecorator", "  " + msg);
-            });
-
-            onErrorArgs = Array.prototype.slice.call(arguments);
-        });
 
         // Execute "code"
         if (execTypeOpt === "eval") {
@@ -209,9 +199,6 @@ ghostdriver.Session = function(desiredCapabilities) {
                     if (onLoadFinishedArgs !== null) {
                         // Report the result of the "Load Finished" event
                         onLoadFunc.apply(thisPage, onLoadFinishedArgs);
-                    } else if (onErrorArgs !== null) {
-                        // Report the "Error" event
-                        onErrorFunc.apply(thisPage, onErrorArgs);
                     } else {
                         // No page load was caused: just report "success"
                         onLoadFunc.call(thisPage, "success");

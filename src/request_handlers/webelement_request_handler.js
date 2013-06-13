@@ -381,7 +381,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
                 } else {
                     _errors.handleFailedCommandEH(
                         _errors.FAILED_CMD_STATUS.UNKNOWN_ERROR,
-                        "Submit succeeded but Load Failed. Status: '" + status + "'",
+                        "Submit action succeeded but subsequent Load Failed. Status: '" + status + "'",
                         req,
                         res,
                         _session,
@@ -428,17 +428,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         }, function(status) {                   //< onLoadFinished
             // Report Load Finished, only if callbacks were not "aborted"
             if (!abortCallback) {
-                if (status === "success") {
-                    res.success(_session.getId());
-                } else {
-                    _errors.handleFailedCommandEH(
-                        _errors.FAILED_CMD_STATUS.UNKNOWN_ERROR,
-                        "Click succeeded but Load Failed. Status: '" + status + "'",
-                        req,
-                        res,
-                        _session,
-                        "WebElementReqHand");
-                }
+                res.success(_session.getId());
             }
         }, function(errMsg) {
             // Report Load Error, only if callbacks were not "aborted"
