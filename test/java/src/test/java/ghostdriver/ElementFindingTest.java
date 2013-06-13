@@ -50,34 +50,62 @@ import static org.junit.Assert.assertTrue;
 public class ElementFindingTest extends BaseTestWithServer {
     @Test
     public void findChildElement() {
-        WebDriver d = getDriver();
+        server.setGetHandler(new HttpRequestCallback() {
+            @Override
+            public void call(HttpServletRequest req, HttpServletResponse res) throws IOException {
+                res.getOutputStream().println("<div id=\"y-masthead\">" +
+                        "<input type=\"text\" name=\"t\" />" +
+                        "<input type=\"hidden\" name=\"h\" value=\"v\" />" +
+                        "</div>");
+            }
+        });
 
-        d.get("http://www.yahoo.com");
+        WebDriver d = getDriver();
+        d.get(server.getBaseUrl());
+
         WebElement parent = d.findElement(By.id("y-masthead"));
 
-        WebElement child = parent.findElement(By.name("p"));
+        assertNotNull(parent.findElement(By.name("t")));
     }
 
     @Test
     public void findChildElements() {
-        WebDriver d = getDriver();
+        server.setGetHandler(new HttpRequestCallback() {
+            @Override
+            public void call(HttpServletRequest req, HttpServletResponse res) throws IOException {
+                res.getOutputStream().println("<div id=\"y-masthead\">" +
+                        "<input type=\"text\" name=\"t\" />" +
+                        "<input type=\"hidden\" name=\"h\" value=\"v\" />" +
+                        "</div>");
+            }
+        });
 
-        d.get("http://www.yahoo.com");
+        WebDriver d = getDriver();
+        d.get(server.getBaseUrl());
+
         WebElement parent = d.findElement(By.id("y-masthead"));
 
         List<WebElement> children = parent.findElements(By.tagName("input"));
-
-        assertEquals(5, children.size());
+        assertEquals(2, children.size());
     }
 
     @Test
     public void findMultipleElements() {
+        server.setGetHandler(new HttpRequestCallback() {
+            @Override
+            public void call(HttpServletRequest req, HttpServletResponse res) throws IOException {
+                res.getOutputStream().println("<div id=\"y-masthead\">" +
+                        "<input type=\"text\" name=\"t\" />" +
+                        "<input type=\"hidden\" name=\"h\" value=\"v\" />" +
+                        "<input type=\"button\" name=\"b\" value=\"button\" />" +
+                        "</div>");
+            }
+        });
+
         WebDriver d = getDriver();
+        d.get(server.getBaseUrl());
 
-        d.get("http://www.google.com");
-        List<WebElement> els = d.findElements(By.tagName("input"));
-
-        assertTrue(els.size() >= 6 && els.size() <= 8);
+        assertEquals(3, d.findElements(By.tagName("input")).size());
     }
 
     @Test
@@ -154,24 +182,36 @@ public class ElementFindingTest extends BaseTestWithServer {
                     "}, 750)\\\"" +
                 " id='add'>add</a>\"";
         ((JavascriptExecutor)d).executeScript(injectLink);
-        d.manage().timeouts().implicitlyWait(0, TimeUnit.SECONDS);
         WebElement add = d.findElement(By.id("add"));
+
+        // DO NOT WAIT when looking for an element
+        d.manage().timeouts().implicitlyWait(0, TimeUnit.SECONDS);
+
+        // Add element
         add.click();
+        // Check element is not there yet
         try {
             d.findElement(By.id("testing1"));
             throw new RuntimeException("expected NoSuchElementException");
-        } catch (NoSuchElementException nse) {
-        }
+        } catch (NoSuchElementException nse) { /* nothing to do */ }
+
+        // DO WAIT 1 SECOND before giving up while looking for an element
         d.manage().timeouts().implicitlyWait(1, TimeUnit.SECONDS);
+        // Add element
         add.click();
-        d.findElement(By.id("testing2"));
+        // Check element is there
+        assertNotNull(d.findElement(By.id("testing2")));
+
+        // DO WAIT 0.5 SECONDS before giving up while looking for an element
         d.manage().timeouts().implicitlyWait(500, TimeUnit.MILLISECONDS);
+        // Add element
         add.click();
+
+        // Check element is not there yet
         try {
             d.findElement(By.id("testing3"));
             throw new RuntimeException("expected NoSuchElementException");
-        } catch (NoSuchElementException nse) {
-        }
+        } catch (NoSuchElementException nse) { /* nothing to do */ }
     }
 
     @Test
@@ -187,17 +227,21 @@ public class ElementFindingTest extends BaseTestWithServer {
                     "}, 750)\\\" " +
                 " id='add'>add</a>\"";
         ((JavascriptExecutor)d).executeScript(injectLink);
-        d.manage().timeouts().implicitlyWait(0, TimeUnit.SECONDS);
         WebElement add = d.findElement(By.id("add"));
+
+        // DO NOT WAIT while looking for an element
+        d.manage().timeouts().implicitlyWait(0, TimeUnit.SECONDS);
+        // Add element
         add.click();
-        List<WebElement> spans = d.findElements(By.id("testing1"));
-        assertEquals(0, spans.size());
-        ((JavascriptExecutor)d).executeScript(injectLink);
-        add = d.findElement(By.id("add"));
+        // Check element is not there yet
+        assertEquals(0, d.findElements(By.id("testing1")).size());
+
+        // DO WAIT 1 SEC when looking for an element
         d.manage().timeouts().implicitlyWait(1, TimeUnit.SECONDS);
+        // Add element
         add.click();
-        spans = d.findElements(By.tagName("span"));
-        assertEquals(1, spans.size());
+        // Check element is there
+        assertEquals(2, d.findElements(By.tagName("span")).size());
     }
 
     @Test
