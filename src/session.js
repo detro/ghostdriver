@@ -235,7 +235,7 @@ ghostdriver.Session = function(desiredCapabilities) {
                 setTimeout(checkLoadingFinished, 100);
             };
             checkLoadingFinished();
-        }, _getImplicitTimeout());
+        }, 10);     //< 10ms
     },
 
     _oneShotCallbackFactory = function(page, callbackName) {
