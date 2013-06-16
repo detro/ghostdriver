@@ -99,10 +99,11 @@ ghostdriver.WebElementLocator = function(session) {
         _log.debug("_locateElement", "Locator: "+JSON.stringify(locator));
         _log.debug("_locateElement", "Find Element Result: "+JSON.stringify(findElementRes));
 
-        // If found
-        if (findElementRes !== null &&
-            typeof(findElementRes) === "object" &&
-            typeof(findElementRes.status) !== "undefined") {
+        // To check if element was found, the following must happen:
+        // 1. "findElementRes" result object must be valid
+        // 2. property "status" is found and is {Number}
+        if (findElementRes !== null && typeof(findElementRes) === "object" &&
+            findElementRes.hasOwnProperty("status") && typeof(findElementRes.status) === "number") {
             // If the atom succeeds, but returns a null value, the element was not found.
             if (findElementRes.status === 0 && findElementRes.value === null) {
                 findElementRes.status = _errors.FAILED_CMD_STATUS_CODES[
@@ -132,14 +133,13 @@ ghostdriver.WebElementLocator = function(session) {
         _log.debug("_locateElements", "Locator: "+JSON.stringify(locator));
         _log.debug("_locateElements", "Find Element(s) Result: "+JSON.stringify(findElementsRes));
 
-        // If something was found
-        if (findElementsRes !== null &&
-            typeof(findElementsRes) === "object" &&
-            findElementsRes.hasOwnProperty("status") &&
-            typeof(findElementsRes.status) === "number" &&
-            findElementsRes.hasOwnProperty("value") &&
-            findElementsRes.value !== null &&
-            typeof(findElementsRes.value) === "object") {
+        // To check if something was found, the following must happen:
+        // 1. "findElementsRes" result object must be valid
+        // 2. property "status" is found and is {Number}
+        // 3. property "value" is found and is and {Object}
+        if (findElementsRes !== null && typeof(findElementsRes) === "object" &&
+            findElementsRes.hasOwnProperty("status") && typeof(findElementsRes.status) === "number" &&
+            findElementsRes.hasOwnProperty("value") && findElementsRes.value !== null && typeof(findElementsRes.value) === "object") {
             return findElementsRes;
         }
 
