@@ -364,49 +364,38 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
             abortCallback = false;
 
         currWindow.execFuncAndWaitForLoad(function() {
-            // do the submit
-            submitRes = currWindow.evaluate(require("./webdriver_atoms.js").get("submit"), _getJSON());
+                // do the submit
+                submitRes = currWindow.evaluate(require("./webdriver_atoms.js").get("submit"), _getJSON());
 
-            // If Submit was NOT positive, status will be set to something else than '0'
-            submitRes = JSON.parse(submitRes);
-            if (submitRes && submitRes.status !== 0) {
-                abortCallback = true;           //< handling the error here
-                res.respondBasedOnResult(_session, req, submitRes);
-            }
-        }, function(status) {                   //< onLoadFinished
-            // Report about the Load, only if it was not already handled
-            if (!abortCallback) {
-                if (status === "success") {
+                // If Submit was NOT positive, status will be set to something else than '0'
+                submitRes = JSON.parse(submitRes);
+                if (submitRes && submitRes.status !== 0) {
+                    abortCallback = true;           //< handling the error here
+                    res.respondBasedOnResult(_session, req, submitRes);
+                }
+            },
+            function(status) {                   //< onLoadFinished
+                // Report about the Load, only if it was not already handled
+                if (!abortCallback) {
                     res.success(_session.getId());
-                } else {
+                }
+            },
+            function(errMsg) {
+                var errCode = errMsg === "timeout"
+                    ? _errors.FAILED_CMD_STATUS.TIMEOUT
+                    : _errors.FAILED_CMD_STATUS.UNKNOWN_ERROR;
+
+                // Report Submit Error, only if callbacks were not "aborted"
+                if (!abortCallback) {
                     _errors.handleFailedCommandEH(
-                        _errors.FAILED_CMD_STATUS.UNKNOWN_ERROR,
-                        "Submit action succeeded but subsequent Load Failed. Status: '" + status + "'",
+                        errCode,
+                        "Submit failed: " + errMsg,
                         req,
                         res,
                         _session,
                         "WebElementReqHand");
                 }
-            }
-        }, function(errMsg) {
-            if (errMsg === "timeout") {         //< onTimeout
-                _errors.handleFailedCommandEH(
-                    _errors.FAILED_CMD_STATUS.TIMEOUT,
-                    "Submit timed-out",
-                    req,
-                    res,
-                    _session,
-                    "WebElementReqHand");
-            } else {                            //< onError (generic)
-                _errors.handleFailedCommandEH(
-                    _errors.FAILED_CMD_STATUS.UNKNOWN_ERROR,
-                    "Submit failed: " + arguments[0],
-                    req,
-                    res,
-                    _session,
-                    "WebElementReqHand");
-            }
-        });
+            });
     },
 
     _postClickCommand = function(req, res) {
