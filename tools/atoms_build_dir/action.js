@@ -40,7 +40,7 @@ goog.require('webdriver.atoms.element');
  * Focuses on the given element if it is not already the active element.
  *
  * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to focus on.
- * @return {string} A stringified {@link bot.response.ResponseObject}.
+ * @return {(string|{status: bot.ErrorCode.<number>, value: *})} A stringified {@link bot.response.ResponseObject}.
  * @see bot.action.focusOnElement
  */
 phantomjs.atoms.inject.action.focusOnElement = function(element) {
@@ -52,7 +52,7 @@ phantomjs.atoms.inject.action.focusOnElement = function(element) {
  *
  * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to move to.
  * @param {!{x:number,y:number}} opt_coords Mouse position relative to the element (optional).
- * @return {string} A stringified {@link bot.response.ResponseObject}.
+ * @return {(string|{status: bot.ErrorCode.<number>, value: *})} A stringified {@link bot.response.ResponseObject}.
  */
 phantomjs.atoms.inject.action.moveMouse = function(element, opt_coords) {
     return bot.inject.executeScript(bot.action.moveMouse, [element, opt_coords], true);
@@ -63,7 +63,7 @@ phantomjs.atoms.inject.action.moveMouse = function(element, opt_coords) {
  *
  * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to right-click.
  * @param {!{x:number,y:number}} opt_coords Mouse position relative to the element (optional).
- * @return {string} A stringified {@link bot.response.ResponseObject}.
+ * @return {(string|{status: bot.ErrorCode.<number>, value: *})} A stringified {@link bot.response.ResponseObject}.
  */
 phantomjs.atoms.inject.action.rightClick = function(element, opt_coords) {
     return bot.inject.executeScript(bot.action.rightClick, [element, opt_coords], true);
@@ -72,9 +72,9 @@ phantomjs.atoms.inject.action.rightClick = function(element, opt_coords) {
 /**
  * Double-clicks on the given {@code element} with a virtual mouse.
  *
- * @param {!{bot.inject.ELEMENT_KEY:string} element The element to double-click.
+ * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to double-click.
  * @param {!{x:number,y:number}} opt_coords Mouse position relative to the element (optional).
- * @return {string} A stringified {@link bot.response.ResponseObject}.
+ * @return {(string|{status: bot.ErrorCode.<number>, value: *})} A stringified {@link bot.response.ResponseObject}.
  */
 phantomjs.atoms.inject.action.doubleClick = function(element, opt_coords) {
     return bot.inject.executeScript(bot.action.doubleClick, [element, opt_coords], true);
@@ -83,11 +83,11 @@ phantomjs.atoms.inject.action.doubleClick = function(element, opt_coords) {
 /**
  * Scrolls the mouse wheel on the given {@code element} with a virtual mouse.
  *
- * @param {!{bot.inject.ELEMENT_KEY:string} element The element to scroll the mouse wheel on.
+ * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to scroll the mouse wheel on.
  * @param {number} ticks Number of ticks to scroll the mouse wheel;
  *   a positive number scrolls down and a negative scrolls up.
  * @param {!{x:number,y:number}} opt_coords Mouse position relative to the element (optional).
- * @return {string} A stringified {@link bot.response.ResponseObject}.
+ * @return {(string|{status: bot.ErrorCode.<number>, value: *})} A stringified {@link bot.response.ResponseObject}.
  */
 phantomjs.atoms.inject.action.scrollMouse = function(element, ticks, opt_coords) {
     return bot.inject.executeScript(bot.action.scrollMouse, [element, ticks, opt_coords], true);
@@ -96,11 +96,11 @@ phantomjs.atoms.inject.action.scrollMouse = function(element, ticks, opt_coords)
 /**
  * Drags the given {@code element} by (dx, dy) with a virtual mouse.
  *
- * @param {!{bot.inject.ELEMENT_KEY:string} element The element to drag.
+ * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to drag.
  * @param {number} dx Increment in x coordinate.
  * @param {number} dy Increment in y coordinate.
  * @param {!{x:number,y:number}} opt_coords Drag start position relative to the element.
- * @return {string} A stringified {@link bot.response.ResponseObject}.
+ * @return {(string|{status: bot.ErrorCode.<number>, value: *})} A stringified {@link bot.response.ResponseObject}.
  */
 phantomjs.atoms.inject.action.drag = function(element, dx, dy, opt_coords) {
     return bot.inject.executeScript(bot.action.drag, [element, dx, dy, opt_coords], true);
@@ -110,10 +110,10 @@ phantomjs.atoms.inject.action.drag = function(element, dx, dy, opt_coords) {
  * Scrolls the given {@code element} in to the current viewport. Aims to do the
  * minimum scrolling necessary, but prefers too much scrolling to too little.
  *
- * @param {!{bot.inject.ELEMENT_KEY:string} element The element to scroll into view.
+ * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to scroll into view.
  * @param {!{x:number,y:number}} opt_coords Offset relative to the top-left
  *     corner of the element, to ensure is scrolled in to view.
- * @return {string} A stringified {@link bot.response.ResponseObject};
+ * @return {(string|{status: bot.ErrorCode.<number>, value: *})} A stringified {@link bot.response.ResponseObject};
  *     whether the element is in view after scrolling.
  */
 phantomjs.atoms.inject.action.scrollIntoView = function(element, opt_coords) {
@@ -123,9 +123,9 @@ phantomjs.atoms.inject.action.scrollIntoView = function(element, opt_coords) {
 /**
  * Taps on the given {@code element} with a virtual touch screen.
  *
- * @param {!{bot.inject.ELEMENT_KEY:string} element The element to tap.
+ * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to tap.
  * @param {!{x:number,y:number}} opt_coords Finger position relative to the target.
- * @return {string} A stringified {@link bot.response.ResponseObject}.
+ * @return {(string|{status: bot.ErrorCode.<number>, value: *})} A stringified {@link bot.response.ResponseObject}.
  */
 phantomjs.atoms.inject.action.tap = function(element, opt_coords) {
     return bot.inject.executeScript(bot.action.tap, [element, opt_coords], true);
@@ -134,11 +134,11 @@ phantomjs.atoms.inject.action.tap = function(element, opt_coords) {
 /**
  * Swipes the given {@code element} by (dx, dy) with a virtual touch screen.
  *
- * @param {!{bot.inject.ELEMENT_KEY:string} element The element to swipe.
+ * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to swipe.
  * @param {number} dx Increment in x coordinate.
  * @param {number} dy Increment in y coordinate.
  * @param {!{x:number,y:number}} opt_coords Swipe start position relative to the element.
- * @return {string} A stringified {@link bot.response.ResponseObject}.
+ * @return {(string|{status: bot.ErrorCode.<number>, value: *})} A stringified {@link bot.response.ResponseObject}.
  */
 phantomjs.atoms.inject.action.swipe = function(element, dx, dy, opt_coords) {
     return bot.inject.executeScript(bot.action.swipe, [element, dx, dy, opt_coords], true);
@@ -151,10 +151,10 @@ phantomjs.atoms.inject.action.swipe = function(element, dx, dy, opt_coords) {
  * the fingers move towards (for positive distances) or away from (for negative
  * distances); and if not provided, defaults to the center of the element.
  *
- * @param {!{bot.inject.ELEMENT_KEY:string} element The element to pinch.
+ * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to pinch.
  * @param {number} distance The distance by which to pinch the element.
  * @param {!{x:number,y:number}} opt_coords Position relative to the element at the center of the pinch.
- * @return {string} A stringified {@link bot.response.ResponseObject}.
+ * @return {(string|{status: bot.ErrorCode.<number>, value: *})} A stringified {@link bot.response.ResponseObject}.
  */
 phantomjs.atoms.inject.action.pinch = function(element, distance, opt_coords) {
     return bot.inject.executeScript(bot.action.pinch, [element, distance, opt_coords], true);
@@ -166,10 +166,10 @@ phantomjs.atoms.inject.action.pinch = function(element, distance, opt_coords) {
  * moves them counter-clockwise. The optional coordinate is the point to
  * rotate around; and if not provided, defaults to the center of the element.
  *
- * @param {!{bot.inject.ELEMENT_KEY:string} element The element to rotate.
+ * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to rotate.
  * @param {number} angle The angle by which to rotate the element.
  * @param {!{x:number,y:number}} opt_coords Position relative to the element at the center of the rotation.
- * @return {string} A stringified {@link bot.response.ResponseObject}.
+ * @return {(string|{status: bot.ErrorCode.<number>, value: *})} A stringified {@link bot.response.ResponseObject}.
  */
 phantomjs.atoms.inject.action.rotate = function(element, angle, opt_coords) {
     return bot.inject.executeScript(bot.action.rotate, [element, angle, opt_coords], true);
