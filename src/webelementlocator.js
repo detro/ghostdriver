@@ -187,6 +187,8 @@ ghostdriver.WebElementLocator = function(session) {
             stopSearchByTime,
             request = {};
 
+        _log.debug("_handleLocateCommand", "Element(s) Search Start Time: " + searchStartTime);
+
         // If a "locatorMethod" was not provided, default to "locateElement"
         if(typeof(locatorMethod) !== "function") {
             locatorMethod = this.locateElement;
@@ -201,7 +203,7 @@ ghostdriver.WebElementLocator = function(session) {
         // Try to find the element
         elementOrElements = locatorMethod(request, rootElement);
 
-        _log.debug("_handleLocateCommand", "Element or Elements: "+JSON.stringify(elementOrElements));
+        _log.debug("_handleLocateCommand", "Element(s): " + JSON.stringify(elementOrElements));
         _log.debug("_handleLocateCommand", "Root Element: " + (typeof(rootElement) !== "undefined" ? JSON.stringify(rootElement) : "BODY"));
 
         if (elementOrElements &&
@@ -212,6 +214,9 @@ ghostdriver.WebElementLocator = function(session) {
             // return if elements found OR we passed the "stopSearchByTime"
             stopSearchByTime = searchStartTime + _session.getImplicitTimeout();
             if (elementOrElements.value.length !== 0 || new Date().getTime() > stopSearchByTime) {
+
+                _log.debug("_handleLocateCommand", "Element(s) Found. Search Stop Time: " + stopSearchByTime);
+
                 res.success(_session.getId(), elementOrElements.value);
                 return;
             }
@@ -220,6 +225,9 @@ ghostdriver.WebElementLocator = function(session) {
         // retry if we haven't passed "stopSearchByTime"
         stopSearchByTime = searchStartTime + _session.getImplicitTimeout();
         if (stopSearchByTime >= new Date().getTime()) {
+
+            _log.debug("_handleLocateCommand", "Element(s) NOT Found: RETRY. Search Stop Time: " + stopSearchByTime);
+
             // Recursive call in 50ms
             setTimeout(function(){
                 _handleLocateCommand(req, res, locatorMethod, rootElement, searchStartTime);
@@ -229,6 +237,9 @@ ghostdriver.WebElementLocator = function(session) {
 
         // Error handler. We got a valid response, but it was an error response.
         if (elementOrElements) {
+
+            _log.error("_handleLocateCommand", "Element(s) NOT Found: GAVE UP. Search Stop Time: " + stopSearchByTime);
+
             _errors.handleFailedCommandEH(
                 _errors.FAILED_CMD_STATUS_CODES_NAMES[elementOrElements.status],
                 elementOrElements.value.message,
