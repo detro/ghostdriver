@@ -220,11 +220,11 @@ public class ElementFindingTest extends BaseTestWithServer {
 
         d.get("about:blank");
         String injectLink = "document.body.innerHTML = \"<a onclick=\\\"setTimeout(function(){" +
-                    "var e=document.createElement('span');" +
-                    "e.innerText='test';" +
-                    "e.id='testing'+document.body.childNodes.length;" +
-                    "document.body.appendChild(e);" +
-                    "}, 750)\\\" " +
+                    "   var e=document.createElement('span');" +
+                    "   e.innerText='test';" +
+                    "   e.id='testing'+document.body.childNodes.length;" +
+                    "   document.body.appendChild(e);" +
+                    "}, 750);\\\" " +
                 " id='add'>add</a>\"";
         ((JavascriptExecutor)d).executeScript(injectLink);
         WebElement add = d.findElement(By.id("add"));
@@ -237,7 +237,7 @@ public class ElementFindingTest extends BaseTestWithServer {
         assertEquals(0, d.findElements(By.id("testing1")).size());
 
         // DO WAIT 1 SEC when looking for an element
-        d.manage().timeouts().implicitlyWait(1, TimeUnit.SECONDS);
+        d.manage().timeouts().implicitlyWait(2, TimeUnit.SECONDS);
         // Add element
         add.click();
         // Check element is there
