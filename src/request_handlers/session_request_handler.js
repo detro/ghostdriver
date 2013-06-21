@@ -490,6 +490,9 @@ ghostdriver.SessionReqHand = function(session) {
         }
 
         if (typeof(postObj["type"]) !== "undefined" && typeof(postObj["ms"]) !== "undefined") {
+
+            _log.debug("_postTimeout", JSON.stringify(postObj));
+
             // Set the right timeout on the Session
             switch(postObj["type"]) {
                 case _session.timeoutNames.SCRIPT:

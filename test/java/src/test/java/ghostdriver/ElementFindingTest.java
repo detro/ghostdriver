@@ -236,12 +236,12 @@ public class ElementFindingTest extends BaseTestWithServer {
         // Check element is not there yet
         assertEquals(0, d.findElements(By.id("testing1")).size());
 
-        // DO WAIT 1 SEC when looking for an element
-        d.manage().timeouts().implicitlyWait(2, TimeUnit.SECONDS);
+        // DO WAIT 3 SEC when looking for an element
+        d.manage().timeouts().implicitlyWait(3, TimeUnit.SECONDS);
         // Add element
         add.click();
         // Check element is there
-        assertEquals(2, d.findElements(By.tagName("span")).size());
+        assert(d.findElements(By.tagName("span")).size() >= 1 && d.findElements(By.tagName("span")).size() <= 2);
     }
 
     @Test
