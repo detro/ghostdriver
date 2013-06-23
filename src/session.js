@@ -104,18 +104,28 @@ ghostdriver.Session = function(desiredCapabilities) {
     _id = require("./third_party/uuid.js").v1(),
     _inputs = ghostdriver.Inputs(),
     _capsPageSettingsPref = "phantomjs.page.settings.",
+    _capsPageCustomHeadersPref = "phantomjs.page.customHeaders.",
     _pageSettings = {},
+    _pageCustomHeaders = {},
     _log = ghostdriver.logger.create("Session [" + _id + "]"),
-    k, settingKey;
+    k, settingKey, headerKey;
 
-    // Searching for `phantomjs.settings.*` in the Desired Capabilities and merging with the Negotiated Capabilities
-    // Possible values: @see https://github.com/ariya/phantomjs/wiki/API-Reference#wiki-webpage-settings.
+    // Searching for `phantomjs.settings.* and phantomjs.customHeaders.*` in the Desired Capabilities and merging with the Negotiated Capabilities
+    // Possible values for settings: @see https://github.com/ariya/phantomjs/wiki/API-Reference#wiki-webpage-settings.
+    // Possible values for customHeaders: @see https://github.com/ariya/phantomjs/wiki/API-Reference-WebPage#wiki-webpage-customHeaders.
     for (k in desiredCapabilities) {
         if (k.indexOf(_capsPageSettingsPref) === 0) {
             settingKey = k.substring(_capsPageSettingsPref.length);
             if (settingKey.length > 0) {
                 _negotiatedCapabilities[k] = desiredCapabilities[k];
                 _pageSettings[settingKey] = desiredCapabilities[k];
+            }
+        }
+        if (k.indexOf(_capsPageCustomHeadersPref) === 0) {
+            headerKey = k.substring(_capsPageCustomHeadersPref.length);
+            if (headerKey.length > 0) {
+                _negotiatedCapabilities[k] = desiredCapabilities[k];
+                _pageCustomHeaders[headerKey] = desiredCapabilities[k];
             }
         }
     }
@@ -303,10 +313,13 @@ ghostdriver.Session = function(desiredCapabilities) {
                 page.settings[k] = _pageSettings[k];
             }
         }
+        // 7. Applying Page custom headers received via capabilities
+        page.customHeaders = _pageCustomHeaders;
 
         page.onConsoleMessage = function(msg) { _log.debug("page.onConsoleMessage", msg); };
 
-        _log.debug("_decorateNewWindow", "page.settings: " + JSON.stringify(page.settings));
+        _log.info("_decorateNewWindow", "page.settings: " + JSON.stringify(page.settings));
+        _log.info("page.customHeaders: ", JSON.stringify(page.customHeaders));
 
         return page;
     },
