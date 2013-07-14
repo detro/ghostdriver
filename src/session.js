@@ -154,13 +154,6 @@ ghostdriver.Session = function(desiredCapabilities) {
             execTypeOpt = "apply";
         }
 
-        // Our callbacks assume that the only thing affecting the page state
-        // is the function we execute. Therefore we need to kill any
-        // pre-existing activity (such as part of the page being loaded in
-        // the background), otherwise it's events might interleave with the
-        // events from the current function.
-        this.stop();
-
         // Register Callbacks to grab any async event we are interested in
         this.setOneShotCallback("onLoadFinished", function (status) {
             _log.debug("_execFuncAndWaitForLoadDecorator", "onLoadFinished: " + status);
