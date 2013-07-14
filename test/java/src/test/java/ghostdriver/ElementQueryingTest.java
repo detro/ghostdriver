@@ -30,6 +30,7 @@ package ghostdriver;
 import ghostdriver.server.HttpRequestCallback;
 import org.junit.Test;
 import org.openqa.selenium.*;
+import org.openqa.selenium.interactions.internal.Coordinates;
 import org.openqa.selenium.internal.Locatable;
 
 import javax.servlet.http.HttpServletRequest;
@@ -80,7 +81,7 @@ public class ElementQueryingTest extends BaseTestWithServer {
         d.get("https://developer.mozilla.org/en/CSS/Attribute_selectors");
         WebElement aboutGoogleLink = d.findElement(By.partialLinkText("About MDN"));
         Point locationBeforeScroll = aboutGoogleLink.getLocation();
-        Point locationAfterScroll = ((Locatable) aboutGoogleLink).getLocationOnScreenOnceScrolledIntoView();
+        Point locationAfterScroll = ((Locatable) aboutGoogleLink).getCoordinates().inViewPort();
 
         assertTrue(locationBeforeScroll.x >= locationAfterScroll.x);
         assertTrue(locationBeforeScroll.y >= locationAfterScroll.y);
