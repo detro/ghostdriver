@@ -120,6 +120,7 @@ public abstract class BaseTest {
 
         // Start appropriate Driver
         if (isUrl(driver)) {
+            sCaps.setBrowserName("phantomjs");
             mDriver = new RemoteWebDriver(new URL(driver), sCaps);
         } else if (driver.equals(DRIVER_FIREFOX)) {
             mDriver = new FirefoxDriver(sCaps);
