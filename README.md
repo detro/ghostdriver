@@ -1,4 +1,4 @@
-[![Stories in Ready](http://badge.waffle.io/detro/ghostdriver.png)](http://waffle.io/detro/ghostdriver)  
+[![Stories in Ready](http://badge.waffle.io/detro/ghostdriver.png)](http://waffle.io/detro/ghostdriver)
 # Ghost Driver
 
 Ghost Driver is a pure JavaScript implementation of the
@@ -17,21 +17,19 @@ For more info, please take a look at the [changelog](https://github.com/detro/gh
 
 The project was created and is lead by [Ivan De Marino](https://github.com/detro).
 
-## Requirements (for users)
+## Setup
 
-* PhantomJS `">= 1.8.0`": latest stable GhostDriver will always be part of latest stable PhantomJS
+* Download latest stable PhantomJS from [here](http://phantomjs.org/download.html)
 * Selenium version `">= 2.28.0`"
 
-## Requirements (for developers): checkout and compile Ivan De Marino's PhantomJS `ghostdriver-dev` branch:
+**THAT'S IT!!** Because of latest stable GhostDriver being embedded in PhantomJS,
+you shouldn't need anything else to get started.
 
-1. Prepare your machine for building PhantomJS as documented [here](http://phantomjs.org/build.html), then...
-2. Add `detro` remote to local PhantomJS repo: `git remote add detro https://github.com/detro/phantomjs.git`
-3. Checkout the `ghostdriver-dev` branch: `git fetch detro && git checkout -b detro-ghostdriver-dev remotes/detro/ghostdriver-dev`
-4. Build: `./build.sh`
-5. Go make some coffee (this might take a while...)
-6. `phantomjs --webdriver=8080` to **launch PhantomJS in Remote WebDriver mode**
+## Register GhostDriver with a Selenium Grid hub
 
-**NOTE:** Type `phantomjs -h` for more options.
+1. Launch the grid server, which listens on 4444 by default: `java -jar /path/to/selenium-server-standalone-<SELENIUM VERSION>.jar -role hub`
+2. Register with the hub: `phantomjs --webdriver=8080 --webdriver-selenium-grid-hub=http://127.0.0.1:4444`
+3. Now you can use your normal webdriver client with `http://127.0.0.1:4444` and just request `browserName: phantomjs`
 
 ## (Java) Bindings
 
@@ -40,37 +38,6 @@ This project provides WebDriver bindings for Java under the name _PhantomJSDrive
 
 Bindings for other languages (C#, Python, Ruby, ...) are developed and maintained
 under the same name within the [Selenium project](http://docs.seleniumhq.org/docs/) itself.
-
-## How to use it
-
-Launching PhantomJS in Remote WebDriver mode it's simple:
-```bash
-$ phantomjs --webdriver=PORT
-```
-Once started, you can use any `RemoteWebDriver` implementation to send commands to it. I advice to take a look to the
-`/test` directory for examples.
-
-### Run the tests
-
-Here I show how to clone this repo and kick start the (Java) tests. You need
-[Java SDK](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
-to run them (I tested it with Java 7, but should work with Java 6 too).
-
-1. `git clone https://github.com/detro/ghostdriver.git`
-2. Configure `phantomjs_exec_path` inside `ghostdriver/test/config.ini` to point at the build of PhantomJS you just did
-3. `cd ghostdriver/test/java; ./gradlew test`
-
-### Run GhostDriver yourself and launch tests against that instance
-
-1. `phantomjs --webdriver=PORT`
-2. Configure `driver` inside `ghostdriver/test/config.ini` to point at the URL `http://localhost:PORT`
-3. `cd ghostdriver/test/java; ./gradlew test`
-
-### Register GhostDriver with a Selenium Grid hub
-
-1. Launch the grid server, which listens on 4444 by default: `java -jar /path/to/selenium-server-standalone-2.25.0.jar -role hub`
-2. Register with the hub: `phantomjs --webdriver=8080 --webdriver-selenium-grid-hub=http://127.0.0.1:4444`
-3. Now you can use your normal webdriver client with `http://127.0.0.1:4444` and just request `browserName: phantomjs`
 
 ### Include Java Bindings in your Maven project
 
@@ -96,28 +63,61 @@ dependencies {
 }
 ```
 
-## Project Directory Structure
+### Alternative: how to use it via `RemoteWebDriver`
 
-Here follows the output of the `tree` command, trimmed of files and "build directories":
+Launching PhantomJS in Remote WebDriver mode it's simple:
+```bash
+$ phantomjs --webdriver=PORT
+```
+Once started, you can use any `RemoteWebDriver` implementation to send commands to it. I advice to take a look to the
+`/test` directory for examples.
+
+## Want to help? Read on!
+
+### Run validation the tests
+
+Here I show how to clone this repo and kick start the (Java) tests. You need
+[Java SDK](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
+to run them (I tested it with Java 7, but should work with Java 6 too).
+
+1. `git clone https://github.com/detro/ghostdriver.git`
+2. Configure `phantomjs_exec_path` inside `ghostdriver/test/config.ini` to point at the build of PhantomJS you just did
+3. `cd ghostdriver/test/java; ./gradlew test`
+
+#### Alternative: Run GhostDriver yourself and launch tests against that instance
+
+1. `phantomjs --webdriver=PORT`
+2. Configure `driver` inside `ghostdriver/test/config.ini` to point at the URL `http://localhost:PORT`
+3. `cd ghostdriver/test/java; ./gradlew test`
+
+### Project Directory Structure
+
+Here follows the output of the `tree -hd -L 3` command, trimmed of files and "build directories":
 
 ```bash
 .
-bb�b� binding
-bB B  bb�b� java
-bB B      bb�b� jars            <--- JARs containing Binding, related Source and related JavaDoc
-bB B      bb�b� src             <--- Java Binding Source
-|
-bb�b� src                     <--- GhostDriver JavaScript core source
-bB B  bb�b� request_handlers    <--- JavaScript "classes/functions" that handle HTTP Requests
-bB B  bb�b� third_party         <--- Third party/utility code
-bB B      bb�b� webdriver-atoms <--- WebDriver Atoms, automatically imported from the Selenium project
-|
-bb�b� test
-bB B  bb�b� java
-bB B  bB B  bb�b� src             <--- Java Tests
-bB B  bb�b� python              <--- Python Tests
-|
-bb�b� tools                   <--- Tools (import/export)
+├── [ 102]  binding
+│   └── [ 510]  java
+│       ├── [ 204]  build
+│       ├── [ 136]  gradle
+│       ├── [ 884]  jars            <--- JARs containing Binding, related Source and related JavaDoc
+│       └── [ 102]  src             <--- Java Binding Source
+├── [ 442]  src                     <--- GhostDriver JavaScript core source
+│   ├── [ 306]  request_handlers    <--- JavaScript "classes/functions" that handle HTTP Requests
+│   └── [ 204]  third_party         <--- Third party/utility code
+│       └── [2.0K]  webdriver-atoms <--- WebDriver Atoms, automatically imported from the Selenium project
+├── [ 204]  test
+│   ├── [ 476]  java                <--- Java Tests
+│   │   ├── [ 136]  gradle
+│   │   ├── [ 136]  out
+│   │   └── [ 102]  src
+│   ├── [ 238]  python              <--- Python Tests
+│   │   └── [ 102]  utils
+│   └── [ 340]  testcase-issue_240
+└── [ 238]  tools                   <--- Tools (import/export)
+    └── [ 136]  atoms_build_dir
+
+20 directories
 ```
 
 ### WebDriver Atoms
@@ -174,16 +174,7 @@ part or in one of the files we declared as dependency) that we want to build.
 
 If you reached this stage in understanding the Atoms, you are ready to go further by yourself.
 
-## Presentation and Slides (old)
-
-* _April 2012_ - Presented GhostDriver at [Selenium Conference 2012](http://www.seleniumconf.org/speakers/#IDM):
-[slides](http://cdn.ivandemarino.me/slides/speed_up_selenium_with_phantomjs/index.html)
-and [video](http://blog.ivandemarino.me/2012/05/01/Me-the-Selenium-Conference-2012).
-* _March 2013_ - Updates about GhostDriver at [Selenium Camp 2013](http://seleniumcamp.com/materials/ghost-driver/):
-[slides](https://speakerdeck.com/detronizator/getting-started-with-ghostdriver)
-and [personal blog post](http://blog.ivandemarino.me/2013/03/03/Me-Selenium-Camp-2013).
-
-## Contributions and/or Bug Report
+### Contributions and/or Bug Report
 
 You can contribute by testing GhostDriver, reporting bugs and issues, or submitting Pull Requests.
 Any **help is welcome**, but bear in mind the following base principles:
