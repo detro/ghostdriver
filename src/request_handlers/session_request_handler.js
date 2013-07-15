@@ -457,7 +457,7 @@ ghostdriver.SessionReqHand = function(session) {
 
             // Load URL and wait for load to finish (or timeout)
             currWindow.execFuncAndWaitForLoad(function() {
-                    currWindow.open(postObj.url);
+                    currWindow.open(postObj.url.trim());
                 },
                 _createOnSuccessHandler(res),               //< success
                 function(errMsg) {                          //< failure/timeout

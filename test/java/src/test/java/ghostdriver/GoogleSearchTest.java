@@ -41,7 +41,7 @@ public class GoogleSearchTest extends BaseTest {
         WebDriver d = getDriver();
 
         // Load Google.com
-        d.get("http://www.google.com");
+        d.get(" http://www.google.com");
         // Locate the Search field on the Google page
         WebElement element = d.findElement(By.name("q"));
         // Type Cheese
