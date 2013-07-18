@@ -79,7 +79,7 @@ ghostdriver.SessionManagerReqHand = function() {
 
             // Redirect to the newly created Session
             redirectToHost = req.headers["Host"] || req.headers["host"];
-            res.statusCode = 303; //< "303 See Other"
+            res.statusCode = 302; //< "302 Found"
             res.setHeader("Location", "http://" + redirectToHost + "/wd/hub/session/"+newSession.getId());
             res.closeGracefully();
             return;
