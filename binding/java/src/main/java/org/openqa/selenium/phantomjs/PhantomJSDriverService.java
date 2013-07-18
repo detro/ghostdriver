@@ -39,6 +39,7 @@ import org.openqa.selenium.remote.service.DriverService;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -221,6 +222,7 @@ public class PhantomJSDriverService extends DriverService {
      * @return The driver executable as a {@link File} object
      * @throws IllegalStateException If the executable not found or cannot be executed
      */
+    @SuppressWarnings("deprecation")
     protected static File findPhantomJS(Capabilities desiredCapabilities, String docsLink,
                                         String downloadLink) {
         String phantomjspath = null;
@@ -301,7 +303,20 @@ public class PhantomJSDriverService extends DriverService {
         if (desiredCapabilities != null) {
             Object cap = desiredCapabilities.getCapability(capabilityName);
             if (cap != null) {
-                return (String[]) cap;
+                if (cap instanceof String[]) {
+                    return (String[]) cap;
+                } else if (cap instanceof Collection) {
+                    try {
+                        @SuppressWarnings("unchecked")
+                        Collection<String> capCollection = (Collection<String>)cap;
+                        return capCollection.toArray(new String[capCollection.size()]);
+                    } catch (Exception e) {
+                        // If casting fails, log an error and assume no CLI arguments are provided
+                        LOG.warning(String.format(
+                                "Unable to set Capability '%s' as it was neither a String[] or a Collection<String>",
+                                capabilityName));
+                    }
+                }
             }
         }
         return new String[]{};  // nothing found: return an empty array of arguments

@@ -42,6 +42,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Properties;
 
 /**
@@ -100,11 +101,16 @@ public abstract class BaseTest {
         }
 
         // Disable "web-security", enable all possible "ssl-protocols" and "ignore-ssl-errors" for PhantomJSDriver
-        sCaps.setCapability(PhantomJSDriverService.PHANTOMJS_CLI_ARGS, new String[] {
-            "--web-security=false",
-            "--ssl-protocol=any",
-            "--ignore-ssl-errors=true"
-        });
+//        sCaps.setCapability(PhantomJSDriverService.PHANTOMJS_CLI_ARGS, new String[] {
+//            "--web-security=false",
+//            "--ssl-protocol=any",
+//            "--ignore-ssl-errors=true"
+//        });
+        ArrayList<String> cliArgsCap = new ArrayList<>();
+        cliArgsCap.add("--web-security=false");
+        cliArgsCap.add("--ssl-protocol=any");
+        cliArgsCap.add("--ignore-ssl-errors=true");
+        sCaps.setCapability(PhantomJSDriverService.PHANTOMJS_CLI_ARGS, cliArgsCap);
 
         // Control LogLevel for GhostDriver, via CLI arguments
         sCaps.setCapability(PhantomJSDriverService.PHANTOMJS_GHOSTDRIVER_CLI_ARGS, new String[] {

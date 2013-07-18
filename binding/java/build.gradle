@@ -12,6 +12,11 @@ repositories {
     mavenCentral()
 }
 
+compileJava {
+    options.compilerArgs.add("-Xlint:unchecked")
+    options.compilerArgs.add("-Xlint:deprecation")
+}
+
 project.archivesBaseName    = project.name
 project.version             = "1.0.4-dev"
 
