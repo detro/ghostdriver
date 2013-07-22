@@ -27,26 +27,20 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package ghostdriver;
 
+import com.google.common.base.Predicate;
 import ghostdriver.server.HttpRequestCallback;
 import org.junit.Test;
-import org.openqa.selenium.By;
-import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.NoSuchElementException;
-import org.openqa.selenium.NoSuchFrameException;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
+import javax.annotation.Nullable;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class FrameSwitchingTest extends BaseTestWithServer {
 
@@ -380,5 +374,53 @@ public class FrameSwitchingTest extends BaseTestWithServer {
 
         WebElement el = d.findElement(By.tagName("iframe"));
         d.switchTo().frame(el);
+    }
+
+    @Test(expected = TimeoutException.class)
+    public void shouldTimeoutWhileChangingIframeSource() {
+        final String iFrameId = "iframeId";
+
+        // Define HTTP response for test
+        server.setGetHandler(new HttpRequestCallback() {
+            @Override
+            public void call(HttpServletRequest req, HttpServletResponse res) throws IOException {
+                String pathInfo = req.getPathInfo();
+                ServletOutputStream out = res.getOutputStream();
+
+                if (pathInfo.endsWith("iframe_content.html")) {
+                    // nested frame 1
+                    out.println("iframe content");
+                } else {
+                    // main page
+                    out.println("<html>\n" +
+                            "<body>\n" +
+                            "  <iframe id='"+iFrameId+"'></iframe>\n" +
+                            "  <script>\n" +
+                            "  setTimeout(function() {\n" +
+                            "    document.getElementById('"+iFrameId+"').src='iframe_content.html';\n" +
+                            "  }, 2000);\n" +
+                            "  </script>\n" +
+                            "</body>\n" +
+                            "</html>");
+                }
+            }
+        });
+
+        // Launch Driver against the above defined server
+        WebDriver d = getDriver();
+        d.get(server.getBaseUrl());
+
+        // Switch to iframe
+        d.switchTo().frame(iFrameId);
+        assertEquals(0, d.findElements(By.id(iFrameId)).size());
+        assertFalse(d.getPageSource().toLowerCase().contains("iframe content"));
+
+        new WebDriverWait(d, 5).until(new Predicate<WebDriver>() {
+            @Override
+            public boolean apply(@Nullable WebDriver driver) {
+                assertEquals(0, driver.findElements(By.id(iFrameId)).size());
+                return (Boolean) ((JavascriptExecutor) driver).executeScript("return false;");
+            }
+        });
     }
 }
