@@ -29,6 +29,7 @@ package ghostdriver;
 
 import com.google.common.base.Predicate;
 import ghostdriver.server.HttpRequestCallback;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -422,5 +423,52 @@ public class FrameSwitchingTest extends BaseTestWithServer {
                 return (Boolean) ((JavascriptExecutor) driver).executeScript("return false;");
             }
         });
+    }
+
+    @Ignore // Ignored because you need to kickstart Python SimpleHTTPServer before it can run
+    @Test
+    public void shouldSwitchToTheRightFrame_issue226() {
+        // NOTE: before starting this test,
+        // run `python -m SimpleHTTPServer` from within `test/testcase-issue_226`.
+        // This will launch a minimal webserver to serve the pages for this test.
+        WebDriver d = getDriver();
+
+        // Load "outside.html" and check it's the right one
+        d.get("http://localhost:8000/outside.html");
+        assertTrue(d.getPageSource().contains("Editing testDotAtEndDoesNotDelete"));
+        assertEquals(2, d.findElements(By.tagName("iframe")).size());
+
+        // Find the iframe with class "gwt-RichTextArea"
+        WebElement iframeRichTextArea = d.findElement(By.className("gwt-RichTextArea"));
+
+        // Switch to the iframe via WebElement and check it's the right one
+        d.switchTo().frame(iframeRichTextArea);
+        assertEquals(0, d.findElements(By.tagName("title")).size());
+        assertFalse(d.getPageSource().contains("Editing testDotAtEndDoesNotDelete"));
+        assertEquals(0, d.findElements(By.tagName("iframe")).size());
+
+        // Switch back to the main frame and check it's the right one
+        d.switchTo().defaultContent();
+        assertEquals(2, d.findElements(By.tagName("iframe")).size());
+
+        // Switch again to the iframe, this time via it's "frame number" (i.e. 0 to n)
+        d.switchTo().frame(0);
+        assertEquals(0, d.findElements(By.tagName("title")).size());
+        assertFalse(d.getPageSource().contains("Editing testDotAtEndDoesNotDelete"));
+        assertEquals(0, d.findElements(By.tagName("iframe")).size());
+
+        // Switch back to the main frame and check it's the right one
+        d.switchTo().defaultContent();
+        assertEquals(2, d.findElements(By.tagName("iframe")).size());
+
+        // Switch to the second frame via it's "frame number"
+        d.switchTo().frame(1);
+        assertEquals(1, d.findElements(By.tagName("title")).size());
+        assertEquals(0, d.findElements(By.tagName("iframe")).size());
+        assertTrue(d.getPageSource().contains("WYSIWYG Editor Input Template"));
+
+        // Switch again to the main frame
+        d.switchTo().defaultContent();
+        assertEquals(2, d.findElements(By.tagName("iframe")).size());
     }
 }
