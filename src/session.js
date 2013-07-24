@@ -243,11 +243,7 @@ ghostdriver.Session = function(desiredCapabilities) {
     },
 
     _setOneShotCallbackDecorator = function(callbackName, handlerFunc) {
-        if (callbackName === "onError") {
-            this["onError"] = handlerFunc;
-        } else {
-            this[callbackName + _const.ONE_SHOT_POSTFIX] = handlerFunc;
-        }
+        this[callbackName + _const.ONE_SHOT_POSTFIX] = handlerFunc;
     },
 
     _resetOneShotCallbacksDecorator = function() {
@@ -256,7 +252,6 @@ ghostdriver.Session = function(desiredCapabilities) {
         this["onLoadStarted" + _const.ONE_SHOT_POSTFIX] = null;
         this["onLoadFinished" + _const.ONE_SHOT_POSTFIX] = null;
         this["onUrlChanged" + _const.ONE_SHOT_POSTFIX] = null;
-        this["onError"] = phantom.defaultErrorHandler;
     },
 
     // Add any new page to the "_windows" container of this session
@@ -308,6 +303,11 @@ ghostdriver.Session = function(desiredCapabilities) {
         }
         // 7. Applying Page custom headers received via capabilities
         page.customHeaders = _pageCustomHeaders;
+        // 8. Log Page internal errors
+        page["onError"] = function(errorMsg, errorStack) {
+            _log.error("Page at '"+page.url+"'", "Console Error (msg): " + errorMsg);
+            _log.error("Page at '"+page.url+"'", "Console Error (stack): " + JSON.stringify(errorStack, null, "  "));
+        };
 
         page.onConsoleMessage = function(msg) { _log.debug("page.onConsoleMessage", msg); };
 
