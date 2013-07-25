@@ -9,9 +9,9 @@ It's a Remote WebDriver that uses PhantomJS as back-end.
 GhostDriver is designed to be integral part of PhantomJS itself, but it's developed in isolation and progress is tracked
 by this Repository.
 
-* Current _GhostDriver_ stable version is `"1.0.3"`
-* Current _PhantomJS-integrated_ version is `"1.0.3"`: contained in PhantomJS `"1.9.x"`
-* Current _PhantomJSDriver_ (Java binding) stable version is `"1.0.3"`
+* Current _GhostDriver_ stable version is `"1.0.4"`
+* Current _PhantomJS-integrated_ version is `"1.0.4"`: contained in PhantomJS `"1.9.x"`
+* Current _PhantomJSDriver_ (Java binding) stable version is `"1.0.4"`
 
 For more info, please take a look at the [changelog](https://github.com/detro/ghostdriver/blob/master/CHANGELOG.md).
 
@@ -20,7 +20,7 @@ The project was created and is lead by [Ivan De Marino](https://github.com/detro
 ## Setup
 
 * Download latest stable PhantomJS from [here](http://phantomjs.org/download.html)
-* Selenium version `">= 2.28.0`"
+* Selenium version `">= 2.33.0`"
 
 **THAT'S IT!!** Because of latest stable GhostDriver being embedded in PhantomJS,
 you shouldn't need anything else to get started.
@@ -58,7 +58,7 @@ Just add the following to your `build.gradle`:
 ```gradle
 dependencies {
     ...
-    testCompile "com.github.detro.ghostdriver:phantomjsdriver:1.0.3"
+    testCompile "com.github.detro.ghostdriver:phantomjsdriver:1.0.4"
     ...
 }
 ```

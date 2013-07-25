@@ -18,7 +18,7 @@ compileJava {
 }
 
 project.archivesBaseName    = project.name
-project.version             = "1.0.4-dev"
+project.version             = "1.0.4"
 
 ext.projectLongName         = "PhantomJS Driver (GhostDriver)"
 ext.projectArtefactDir      = "jars/"

@@ -1,5 +1,33 @@
 # CHANGELOG
 
+## v1.0.4 (2013-07-25) ([issues](https://github.com/detro/ghostdriver/issues?labels=1.0.4&state=closed))
+
+### JavaScript Driver (Core)
+* ENHANCEMENT: Completely refactored the way events that initiate PAGE_LOAD events are handled
+* FIX #18: Now GhostDriver works when enabling `--remote-debugger-port=PORT` in PhantomJS
+* FIX #180: Avoid crashes when JS execution invokes `window.close()`
+* ENHANCEMENT #202: Ignore page load failures initiated by Click action (like other Drivers)
+* ENHANCEMENT #208: Added the ability to shutdown logging (i.e. Log Level `OFF` or `NONE`)
+* ENHANCEMENT #210: Ensuring we don't switch windows via empty string
+* FIX #213: `mouseButtonDown` was broken
+* FIX #215: Improve URL parsing to ensure we don't take `/status` as a URL instead of part of the protocol
+* FIX #216: Fixed issue where sometimes a failed click would cause a `Parse error`
+* ENHANCEMENT #228: Allow the setting of `page.customheaders` via Capabilities
+* FIX #240: Stopping all ongoing HTTP requests before starting to "wait for page load" was not a good idea
+* ENHANCEMENT #242: Trim URL before trying to load it
+* FIX #247: Implement changes to "HTTP POST /session" as per new WireProtocol specs
+
+### Binding
+* ENHANCEMENT/FIX #179: Suppor for `.withLog(logfile)` option when using `PhantomJSDriverService`
+* ENHANCEMENT #228: Support in the Java Bindings to set `page.customheaders` via Capabilities
+* FIX 246: Avoid Cast Exception in Binding when passing `phantomjs.cli.args` through Selenium Server or Grid
+
+### PhantomJS (code in PhantomJS master repo)
+* FIX #204: PhantomJS `webserver` module should not assume UPPERCASE or lowercase for HTTP headers, as per [RFC 2616](http://www.ietf.org/rfc/rfc2616.txt) - [see also](https://github.com/ariya/phantomjs/issues/11421)
+
+### Test
+* Many more Java test to prove or disprove issues that have been submitted
+
 ## v1.0.3 (2013-03-18) ([issues](https://github.com/detro/ghostdriver/issues?labels=1.0.3&state=closed))
 
 ### JavaScript Driver (Core)
@@ -19,6 +47,7 @@
 
 ### PhantomJS (code in PhantomJS master repo)
 * ENHANCEMENT: Added properties `page.loading` and `page.loadingProgress` to help track Page Loading
+
 
 ## v1.0.2 (2012-12-20) ([issues](https://github.com/detro/ghostdriver/issues?labels=1.0.2&state=closed))
 

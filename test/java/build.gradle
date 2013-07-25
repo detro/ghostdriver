@@ -23,7 +23,7 @@ dependencies {
     testCompile "com.google.code.findbugs:jsr305:$jsr305Version"
     testCompile "junit:junit-dep:$junitVersion"
     testCompile "org.mortbay.jetty:jetty:$jettyVersion"
-    testCompile files("../../binding/java/jars/phantomjsdriver-1.0.4-dev.jar")
+    testCompile files("../../binding/java/jars/phantomjsdriver-1.0.4.jar")
 }
 
 tasks.withType(JavaExec) {
