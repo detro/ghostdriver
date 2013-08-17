@@ -106,7 +106,7 @@ public abstract class BaseTest {
 //            "--ssl-protocol=any",
 //            "--ignore-ssl-errors=true"
 //        });
-        ArrayList<String> cliArgsCap = new ArrayList<>();
+        ArrayList<String> cliArgsCap = new ArrayList<String>();
         cliArgsCap.add("--web-security=false");
         cliArgsCap.add("--ssl-protocol=any");
         cliArgsCap.add("--ignore-ssl-errors=true");
