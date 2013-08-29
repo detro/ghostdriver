@@ -693,8 +693,8 @@ ghostdriver.SessionReqHand = function(session) {
         // normalize click
         clickType = clickType || "click";
 
-        // The protocol allows language bindings to send an empty string
-        if (req.post.length > 0) {
+        // The protocol allows language bindings to send an empty string (or no data at all)
+        if (req.post && req.post.length > 0) {
             postObj = JSON.parse(req.post);
         }
 
