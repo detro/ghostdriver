@@ -477,6 +477,15 @@ ghostdriver.Session = function(desiredCapabilities) {
         _setTimeout(_const.TIMEOUT_NAMES.PAGE_LOAD, ms);
     },
 
+    _executePhantomJS = function(page, script, args) {
+        try {
+            var code = new Function(script);
+            return code.apply(page, args);
+        } catch (e) {
+            return e;
+        }
+    },
+
     _aboutToDelete = function() {
         var k;
 
@@ -519,6 +528,7 @@ ghostdriver.Session = function(desiredCapabilities) {
         getAsyncScriptTimeout : _getAsyncScriptTimeout,
         getImplicitTimeout : _getImplicitTimeout,
         getPageLoadTimeout : _getPageLoadTimeout,
+        executePhantomJS : _executePhantomJS,
         timeoutNames : _const.TIMEOUT_NAMES,
         isLoading : _isLoading
     };

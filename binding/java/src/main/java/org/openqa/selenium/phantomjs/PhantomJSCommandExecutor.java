@@ -59,7 +59,7 @@ class PhantomJSCommandExecutor extends HttpCommandExecutor {
      * @param service The PhantomJSDriverService to send commands to.
      */
     public PhantomJSCommandExecutor(PhantomJSDriverService service) {
-        super(service.getUrl());
+        super(PhantomJSDriver.getCustomCommands(), service.getUrl());
         this.service = service;
     }
 
