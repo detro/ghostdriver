@@ -38,13 +38,95 @@ var COMPILED = false;
  *
  * @const
  */
-var goog = goog || {}; // Identifies this file as the Closure base.
+var goog = goog || {};
 
 
 /**
  * Reference to the global context.  In most cases this will be 'window'.
  */
 goog.global = this;
+
+
+/**
+ * A hook for overriding the define values in uncompiled mode.
+ *
+ * In uncompiled mode, {@code CLOSURE_DEFINES} may be defined before loading
+ * base.js.  If a key is defined in {@code CLOSURE_DEFINES}, {@code goog.define}
+ * will use the value instead of the default value.  This allows flags to be
+ * overwritten without compilation (this is normally accomplished with the
+ * compiler's "define" flag).
+ *
+ * Example:
+ * <pre>
+ *   var CLOSURE_DEFINES = {'goog.DEBUG', false};
+ * </pre>
+ *
+ * @type {Object.<string, (string|number|boolean)>|undefined}
+ */
+goog.global.CLOSURE_DEFINES;
+
+
+/**
+ * Builds an object structure for the provided namespace path,
+ * ensuring that names that already exist are not overwritten. For
+ * example:
+ * "a.b.c" -> a = {};a.b={};a.b.c={};
+ * Used by goog.provide and goog.exportSymbol.
+ * @param {string} name name of the object that this file defines.
+ * @param {*=} opt_object the object to expose at the end of the path.
+ * @param {Object=} opt_objectToExportTo The object to add the path to; default
+ *     is |goog.global|.
+ * @private
+ */
+goog.exportPath_ = function(name, opt_object, opt_objectToExportTo) {
+  var parts = name.split('.');
+  var cur = opt_objectToExportTo || goog.global;
+
+  // Internet Explorer exhibits strange behavior when throwing errors from
+  // methods externed in this manner.  See the testExportSymbolExceptions in
+  // base_test.html for an example.
+  if (!(parts[0] in cur) && cur.execScript) {
+    cur.execScript('var ' + parts[0]);
+  }
+
+  // Certain browsers cannot parse code in the form for((a in b); c;);
+  // This pattern is produced by the JSCompiler when it collapses the
+  // statement above into the conditional loop below. To prevent this from
+  // happening, use a for-loop and reserve the init logic as below.
+
+  // Parentheses added to eliminate strict JS warning in Firefox.
+  for (var part; parts.length && (part = parts.shift());) {
+    if (!parts.length && opt_object !== undefined) {
+      // last part and we have an object; use it
+      cur[part] = opt_object;
+    } else if (cur[part]) {
+      cur = cur[part];
+    } else {
+      cur = cur[part] = {};
+    }
+  }
+};
+
+
+/**
+ * Defines a named value. In uncompiled mode, the value is retreived from
+ * CLOSURE_DEFINES if the object is defined and has the property specified,
+ * and otherwise used the defined defaultValue. When compiled, the default
+ * can be overridden using compiler command-line options.
+ *
+ * @param {string} name The distinguished name to provide.
+ * @param {string|number|boolean} defaultValue
+ */
+goog.define = function(name, defaultValue) {
+  var value = defaultValue;
+  if (!COMPILED) {
+    if (goog.global.CLOSURE_DEFINES && Object.prototype.hasOwnProperty.call(
+        goog.global.CLOSURE_DEFINES, name)) {
+      value = goog.global.CLOSURE_DEFINES[name];
+    }
+  }
+  goog.exportPath_(name, value);
+};
 
 
 /**
@@ -77,7 +159,21 @@ goog.DEBUG = true;
  * this rule: the Hebrew language. For legacy reasons the old code (iw) should
  * be used instead of the new code (he), see http://wiki/Main/IIISynonyms.
  */
-goog.LOCALE = 'en';  // default to en
+goog.define('goog.LOCALE', 'en');  // default to en
+
+
+/**
+ * @define {boolean} Whether this code is running on trusted sites.
+ *
+ * On untrusted sites, several native functions can be defined or overridden by
+ * external libraries like Prototype, Datejs, and JQuery and setting this flag
+ * to false forces closure to use its own implementations when possible.
+ *
+ * If your javascript can be loaded by a third party site and you are wary about
+ * relying on non-standard implementations, specify
+ * "--define goog.TRUSTED_SITE=false" to the JSCompiler.
+ */
+goog.define('goog.TRUSTED_SITE', true);
 
 
 /**
@@ -117,6 +213,11 @@ goog.provide = function(name) {
 /**
  * Marks that the current file should only be used for testing, and never for
  * live code in production.
+ *
+ * In the case of unit tests, the message may optionally be an exact
+ * namespace for the test (e.g. 'goog.stringTest'). The linter will then
+ * ignore the extra provide (if not explicitly defined in the code).
+ *
  * @param {string=} opt_message Optional message to add to the error that's
  *     raised when used in production code.
  */
@@ -152,48 +253,6 @@ if (!COMPILED) {
    */
   goog.implicitNamespaces_ = {};
 }
-
-
-/**
- * Builds an object structure for the provided namespace path,
- * ensuring that names that already exist are not overwritten. For
- * example:
- * "a.b.c" -> a = {};a.b={};a.b.c={};
- * Used by goog.provide and goog.exportSymbol.
- * @param {string} name name of the object that this file defines.
- * @param {*=} opt_object the object to expose at the end of the path.
- * @param {Object=} opt_objectToExportTo The object to add the path to; default
- *     is |goog.global|.
- * @private
- */
-goog.exportPath_ = function(name, opt_object, opt_objectToExportTo) {
-  var parts = name.split('.');
-  var cur = opt_objectToExportTo || goog.global;
-
-  // Internet Explorer exhibits strange behavior when throwing errors from
-  // methods externed in this manner.  See the testExportSymbolExceptions in
-  // base_test.html for an example.
-  if (!(parts[0] in cur) && cur.execScript) {
-    cur.execScript('var ' + parts[0]);
-  }
-
-  // Certain browsers cannot parse code in the form for((a in b); c;);
-  // This pattern is produced by the JSCompiler when it collapses the
-  // statement above into the conditional loop below. To prevent this from
-  // happening, use a for-loop and reserve the init logic as below.
-
-  // Parentheses added to eliminate strict JS warning in Firefox.
-  for (var part; parts.length && (part = parts.shift());) {
-    if (!parts.length && goog.isDef(opt_object)) {
-      // last part and we have an object; use it
-      cur[part] = opt_object;
-    } else if (cur[part]) {
-      cur = cur[part];
-    } else {
-      cur = cur[part] = {};
-    }
-  }
-};
 
 
 /**
@@ -245,7 +304,7 @@ goog.globalize = function(obj, opt_global) {
  *                         this file requires.
  */
 goog.addDependency = function(relPath, provides, requires) {
-  if (!COMPILED) {
+  if (goog.DEPENDENCIES_ENABLED) {
     var provide, require;
     var path = relPath.replace(/\\/g, '/');
     var deps = goog.dependencies_;
@@ -296,7 +355,7 @@ goog.addDependency = function(relPath, provides, requires) {
  * provided (and depend on the fact that some outside tool correctly ordered
  * the script).
  */
-goog.ENABLE_DEBUG_LOADER = true;
+goog.define('goog.ENABLE_DEBUG_LOADER', true);
 
 
 /**
@@ -448,7 +507,14 @@ goog.addSingletonGetter = function(ctor) {
 goog.instantiatedSingletons_ = [];
 
 
-if (!COMPILED && goog.ENABLE_DEBUG_LOADER) {
+/**
+ * True if goog.dependencies_ is available.
+ * @const {boolean}
+ */
+goog.DEPENDENCIES_ENABLED = !COMPILED && goog.ENABLE_DEBUG_LOADER;
+
+
+if (goog.DEPENDENCIES_ENABLED) {
   /**
    * Object used to keep track of urls that have already been added. This
    * record allows the prevention of circular dependencies.
@@ -933,8 +999,7 @@ goog.removeUid = function(obj) {
  * @type {string}
  * @private
  */
-goog.UID_PROPERTY_ = 'closure_uid_' +
-    Math.floor(Math.random() * 2147483648).toString(36);
+goog.UID_PROPERTY_ = 'closure_uid_' + ((Math.random() * 1e9) >>> 0);
 
 
 /**
@@ -1061,13 +1126,14 @@ goog.bindJs_ = function(fn, selfObj, var_args) {
  * <pre>var barMethBound = bind(myFunction, myObj, 'arg1', 'arg2');
  * barMethBound('arg3', 'arg4');</pre>
  *
- * @param {Function} fn A function to partially apply.
- * @param {Object|undefined} selfObj Specifies the object which |this| should
+ * @param {?function(this:T, ...)} fn A function to partially apply.
+ * @param {T} selfObj Specifies the object which |this| should
  *     point to when the function is run.
  * @param {...*} var_args Additional arguments that are partially
  *     applied to the function.
  * @return {!Function} A partially-applied form of the function bind() was
  *     invoked as a method of.
+ * @template T
  * @suppress {deprecated} See above.
  */
 goog.bind = function(fn, selfObj, var_args) {
@@ -1138,7 +1204,7 @@ goog.mixin = function(target, source) {
  * @return {number} An integer value representing the number of milliseconds
  *     between midnight, January 1, 1970 and the current time.
  */
-goog.now = Date.now || (function() {
+goog.now = (goog.TRUSTED_SITE && Date.now) || (function() {
   // Unary plus operator converts its operand to a number which in the case of
   // a date is done by calling getTime().
   return +new Date();
@@ -1488,6 +1554,15 @@ goog.inherits = function(childCtor, parentCtor) {
  */
 goog.base = function(me, opt_methodName, var_args) {
   var caller = arguments.callee.caller;
+
+  if (goog.DEBUG) {
+    if (!caller) {
+      throw Error('arguments.caller not defined.  goog.base() expects not ' +
+                  'to be running in strict mode. See ' +
+                  'http://www.ecma-international.org/ecma-262/5.1/#sec-C');
+    }
+  }
+
   if (caller.superClass_) {
     // This is a constructor. Call the superclass constructor.
     return caller.superClass_.constructor.apply(
@@ -1690,12 +1765,10 @@ wgxpath.BinaryExpr.prototype.evaluate = function(ctx) {
 /**
  * @override
  */
-wgxpath.BinaryExpr.prototype.toString = function(opt_indent) {
-  var indent = opt_indent || '';
-  var text = indent + 'binary expression: ' + this.op_ + '\n';
-  indent += wgxpath.Expr.INDENT;
-  text += this.left_.toString(indent) + '\n';
-  text += this.right_.toString(indent);
+wgxpath.BinaryExpr.prototype.toString = function() {
+  var text = 'Binary Expression: ' + this.op_;
+  text += wgxpath.Expr.indent(this.left_);
+  text += wgxpath.Expr.indent(this.right_);
   return text;
 };
 
@@ -1784,9 +1857,9 @@ wgxpath.BinaryExpr.createOp_ = function(opString, precedence, dataType,
     throw new Error('Binary operator already created: ' + opString);
   }
   // The upcast and then downcast for the JSCompiler.
-  var op = (/** @type {!Object} */ new wgxpath.BinaryExpr.Op_(
+  var op = /** @type {!Object} */ (new wgxpath.BinaryExpr.Op_(
       opString, precedence, dataType, evaluate));
-  op = (/** @type {!wgxpath.BinaryExpr.Op} */ op);
+  op = /** @type {!wgxpath.BinaryExpr.Op} */ (op);
   wgxpath.BinaryExpr.stringToOpMap_[op.toString()] = op;
   return op;
 };
@@ -2026,12 +2099,14 @@ wgxpath.Expr = function(dataType) {
 
 
 /**
- * A default indentation for pretty printing.
+ * Indentation method for pretty printing.
  *
- * @const
- * @type {string}
+ * @param {*} obj The object to return a string representation for.
+ * @return {string} The string prepended with newline and two spaces.
  */
-wgxpath.Expr.INDENT = '  ';
+wgxpath.Expr.indent = function(obj) {
+  return '\n  ' + obj.toString().split('\n').join('\n  ');
+};
 
 
 /**
@@ -2044,10 +2119,7 @@ wgxpath.Expr.prototype.evaluate = goog.abstractMethod;
 
 
 /**
- * Returns the string representation of the expression for debugging.
- *
- * @param {string=} opt_indent An optional indentation.
- * @return {string} The string representation.
+ * @override
  */
 wgxpath.Expr.prototype.toString = goog.abstractMethod;
 
@@ -2229,12 +2301,10 @@ wgxpath.FilterExpr.prototype.evaluate = function(ctx) {
 /**
  * @override
  */
-wgxpath.FilterExpr.prototype.toString = function(opt_indent) {
-  var indent = opt_indent || '';
-  var text = indent + 'Filter: ' + '\n';
-  indent += wgxpath.Expr.INDENT;
-  text += this.primary_.toString(indent);
-  text += this.predicates_.toString(indent);
+wgxpath.FilterExpr.prototype.toString = function() {
+  var text = 'Filter:';
+  text += wgxpath.Expr.indent(this.primary_);
+  text += wgxpath.Expr.indent(this.predicates_);
   return text;
 };
 // Copyright 2012 Google Inc. All Rights Reserved.
@@ -2323,16 +2393,13 @@ wgxpath.FunctionCall.prototype.evaluate = function(ctx) {
 /**
  * @override
  */
-wgxpath.FunctionCall.prototype.toString = function(opt_indent) {
-  var indent = opt_indent || '';
-  var text = indent + 'Function: ' + this.func_ + '\n';
-  indent += wgxpath.Expr.INDENT;
+wgxpath.FunctionCall.prototype.toString = function() {
+  var text = 'Function: ' + this.func_;
   if (this.args_.length) {
-    text += indent + 'Arguments:';
-    indent += wgxpath.Expr.INDENT;
-    text = goog.array.reduce(this.args_, function(prev, curr) {
-      return prev + '\n' + curr.toString(indent);
-    }, text);
+    var args = goog.array.reduce(this.args_, function(prev, curr) {
+      return prev + wgxpath.Expr.indent(curr);
+    }, 'Arguments:');
+    text += wgxpath.Expr.indent(args);
   }
   return text;
 };
@@ -2467,7 +2534,7 @@ wgxpath.FunctionCall.createFunc_ = function(name, dataType,
   var func = new wgxpath.FunctionCall.Func_(name, dataType,
       needContextPosition, needContextNodeWithoutArgs, needContextNodeWithArgs,
       evaluate, minArgs, opt_maxArgs, opt_nodesetsRequired);
-  func = (/** @type {!wgxpath.FunctionCall.Func} */ func);
+  func = /** @type {!wgxpath.FunctionCall.Func} */ (func);
   wgxpath.FunctionCall.nameToFuncMap_[name] = func;
   return func;
 };
@@ -2948,14 +3015,11 @@ wgxpath.KindTest.prototype.getName = function() {
 
 /**
  * @override
- * @param {string=} opt_indent Optional indentation.
- * @return {string} The string representation.
  */
-wgxpath.KindTest.prototype.toString = function(opt_indent) {
-  var indent = opt_indent || '';
-  var text = indent + 'kindtest: ' + this.typeName_;
+wgxpath.KindTest.prototype.toString = function() {
+  var text = 'Kind Test: ' + this.typeName_;
   if (!goog.isNull(this.literal_)) {
-    text += '\n' + this.literal_.toString(indent + wgxpath.Expr.INDENT);
+    text += wgxpath.Expr.indent(this.literal_);
   }
   return text;
 };
@@ -3123,9 +3187,8 @@ wgxpath.Literal.prototype.evaluate = function(context) {
 /**
  * @override
  */
-wgxpath.Literal.prototype.toString = function(opt_indent) {
-  var indent = opt_indent || '';
-  return indent + 'literal: ' + this.text_;
+wgxpath.Literal.prototype.toString = function() {
+  return 'Literal: ' + this.text_;
 };
 // Copyright 2012 Google Inc. All Rights Reserved.
 
@@ -3143,27 +3206,37 @@ goog.require('goog.dom.NodeType');
  * Constructs a NameTest based on the xpath grammar:
  * http://www.w3.org/TR/xpath/#NT-NameTest
  *
+ * <p>If no namespace is provided, the default HTML namespace is used.
+ *
  * @param {string} name Name to be tested.
+ * @param {string=} opt_namespaceUri Namespace URI; defaults to HTML namespace.
  * @constructor
  * @implements {wgxpath.NodeTest}
  */
-wgxpath.NameTest = function(name) {
+wgxpath.NameTest = function(name, opt_namespaceUri) {
   /**
    * @type {string}
    * @private
    */
   this.name_ = name.toLowerCase();
+
+  /**
+   * @type {string}
+   * @private
+   */
+  this.namespaceUri_ = opt_namespaceUri ? opt_namespaceUri.toLowerCase() :
+      wgxpath.NameTest.HTML_NAMESPACE_URI_;
 };
 
 
 /**
- * The default namespace for XHTML nodes.
+ * The default namespace URI for XHTML nodes.
  *
  * @const
  * @type {string}
  * @private
  */
-wgxpath.NameTest.HTML_NAMESPACE_ = 'http://www.w3.org/1999/xhtml';
+wgxpath.NameTest.HTML_NAMESPACE_URI_ = 'http://www.w3.org/1999/xhtml';
 
 
 /**
@@ -3171,14 +3244,16 @@ wgxpath.NameTest.HTML_NAMESPACE_ = 'http://www.w3.org/1999/xhtml';
  */
 wgxpath.NameTest.prototype.matches = function(node) {
   var type = node.nodeType;
-  if (type == goog.dom.NodeType.ELEMENT ||
-      type == goog.dom.NodeType.ATTRIBUTE) {
-    if (this.name_ == '*' || this.name_ == node.nodeName.toLowerCase()) {
-      return true;
-    } else {
-      var namespace = node.namespaceURI || wgxpath.NameTest.HTML_NAMESPACE_;
-      return this.name_ == namespace + ':*';
-    }
+  if (type != goog.dom.NodeType.ELEMENT &&
+      type != goog.dom.NodeType.ATTRIBUTE) {
+    return false;
+  }
+  if (this.name_ != '*' && this.name_ != node.nodeName.toLowerCase()) {
+    return false;
+  } else {
+    var namespaceUri = node.namespaceURI ? node.namespaceURI.toLowerCase() :
+        wgxpath.NameTest.HTML_NAMESPACE_URI_;
+    return this.namespaceUri_ == namespaceUri;
   }
 };
 
@@ -3192,13 +3267,22 @@ wgxpath.NameTest.prototype.getName = function() {
 
 
 /**
- * @override
- * @param {string=} opt_indent Optional indentation.
- * @return {string} The string representation.
+ * Returns the namespace URI to be matched.
+ *
+ * @return {string} Namespace URI.
  */
-wgxpath.NameTest.prototype.toString = function(opt_indent) {
-  var indent = opt_indent || '';
-  return indent + 'nametest: ' + this.name_;
+wgxpath.NameTest.prototype.getNamespaceUri = function() {
+  return this.namespaceUri_;
+};
+
+
+/**
+ * @override
+ */
+wgxpath.NameTest.prototype.toString = function() {
+  var prefix = this.namespaceUri_ == wgxpath.NameTest.HTML_NAMESPACE_URI_ ?
+      '' : this.namespaceUri_ + ':';
+  return 'Name Test: ' + prefix + this.name_;
 };
 // Copyright 2012 Google Inc. All Rights Reserved.
 
@@ -3898,11 +3982,6 @@ wgxpath.NodeSet.Iterator.prototype.next = function() {
  * Deletes the last node that was returned from this iterator.
  */
 wgxpath.NodeSet.Iterator.prototype.remove = function() {
-  /* TODO: to implement delDescendent(node) we shouldn't have to iterate over
-   * the entire array, only the things whose index comes after node.
-   * If the nodeset is already sorted we know all the descendents lie in a
-   * continguous block starting at nodecould start the iterator at node.
-   */
   var nodeset = this.nodeset_;
   var entry = this.lastReturned_;
   if (!entry) {
@@ -3965,10 +4044,7 @@ wgxpath.NodeTest.prototype.getName = goog.abstractMethod;
 
 
 /**
- * Returns the string representation of the NodeTest for debugging.
- *
- * @param {string=} opt_indent Optional indentation.
- * @return {string} The string representation.
+ * @override
  */
 wgxpath.NodeTest.prototype.toString = goog.abstractMethod;
 // Copyright 2012 Google Inc. All Rights Reserved.
@@ -4014,9 +4090,8 @@ wgxpath.Number.prototype.evaluate = function(ctx) {
 /**
  * @override
  */
-wgxpath.Number.prototype.toString = function(opt_indent) {
-  var indent = opt_indent || '';
-  return indent + 'number: ' + this.value_;
+wgxpath.Number.prototype.toString = function() {
+  return 'Number: ' + this.value_;
 };
 // Copyright 2012 Google Inc. All Rights Reserved.
 
@@ -4046,14 +4121,19 @@ goog.require('wgxpath.UnionExpr');
  *
  * @constructor
  * @param {!wgxpath.Lexer} lexer The lexer.
+ * @param {function(string): ?string} nsResolver Namespace resolver.
  */
-wgxpath.Parser = function(lexer) {
+wgxpath.Parser = function(lexer, nsResolver) {
 
   /**
-   * @private
-   * @type {!wgxpath.Lexer}
+   * @private {!wgxpath.Lexer}
    */
   this.lexer_ = lexer;
+
+  /**
+   * @private {function(string): ?string}
+   */
+  this.nsResolver_ = nsResolver;
 };
 
 
@@ -4252,13 +4332,21 @@ wgxpath.Parser.prototype.parseLiteral_ = function() {
  * @return {!wgxpath.NameTest} The NameTest constructed.
  */
 wgxpath.Parser.prototype.parseNameTest_ = function() {
-  // Has namespace
-  if (this.lexer_.peek() != '*' && this.lexer_.peek(1) == ':' &&
-      this.lexer_.peek(2) == '*') {
-    return new wgxpath.NameTest(this.lexer_.next() + this.lexer_.next() +
-        this.lexer_.next());
+  var name = this.lexer_.next();
+
+  // Check whether there's a namespace prefix.
+  var colonIndex = name.indexOf(':');
+  if (colonIndex == -1) {
+    return new wgxpath.NameTest(name);
+  } else {
+    var namespacePrefix = name.substring(0, colonIndex);
+    var namespaceUri = this.nsResolver_(namespacePrefix);
+    if (!namespaceUri) {
+      throw Error('Namespace prefix not declared: ' + namespacePrefix);
+    }
+    name = name.substr(colonIndex + 1);
+    return new wgxpath.NameTest(name, namespaceUri);
   }
-  return new wgxpath.NameTest(this.lexer_.next());
 };
 
 
@@ -4329,8 +4417,6 @@ wgxpath.Parser.prototype.parsePathExpr_ = function() {
  * @return {!wgxpath.Step} The parsed expression.
  */
 wgxpath.Parser.prototype.parseStep_ = function(op) {
-  // TODO (evanrthomas) : Let parseStep see op instead of passing it
-  //     as a parameter
   var test, step, token, predicates;
   if (op != '/' && op != '//') {
     throw Error('Step op should be "/" or "//"');
@@ -4543,13 +4629,10 @@ wgxpath.PathExpr.RootHelperExpr.prototype.evaluate = function(ctx) {
 
 
 /**
- * Returns the string representation of the RootHelperExpr for debugging.
- *
- * @param {string=} opt_indent An optional indentation.
- * @return {string} The string representation.
+ * @override
  */
-wgxpath.PathExpr.RootHelperExpr.prototype.toString = function(opt_indent) {
-  return opt_indent + 'RootHelperExpr';
+wgxpath.PathExpr.RootHelperExpr.prototype.toString = function() {
+  return 'Root Helper Expression';
 };
 
 
@@ -4580,13 +4663,10 @@ wgxpath.PathExpr.ContextHelperExpr.prototype.evaluate = function(ctx) {
 
 
 /**
- * Returns the string representation of the ContextHelperExpr for debugging.
- *
- * @param {string=} opt_indent An optional indentation.
- * @return {string} The string representation.
+ * @override
  */
-wgxpath.PathExpr.ContextHelperExpr.prototype.toString = function(opt_indent) {
-  return opt_indent + 'ContextHelperExpr';
+wgxpath.PathExpr.ContextHelperExpr.prototype.toString = function() {
+  return 'Context Helper Expression';
 };
 
 
@@ -4608,7 +4688,7 @@ wgxpath.PathExpr.isValidOp = function(token) {
 wgxpath.PathExpr.prototype.evaluate = function(ctx) {
   var nodeset = this.filter_.evaluate(ctx);
   if (!(nodeset instanceof wgxpath.NodeSet)) {
-    throw Error('FilterExpr must evaluate to nodeset.');
+    throw Error('Filter expression must evaluate to nodeset.');
   }
   var steps = this.steps_;
   for (var i = 0, l0 = steps.length; i < l0 && nodeset.getLength(); i++) {
@@ -4654,17 +4734,14 @@ wgxpath.PathExpr.prototype.evaluate = function(ctx) {
 /**
  * @override
  */
-wgxpath.PathExpr.prototype.toString = function(opt_indent) {
-  var indent = opt_indent || '';
-  var text = indent + 'PathExpr:' + '\n';
-  indent += wgxpath.Expr.INDENT;
-  text += this.filter_.toString(indent);
+wgxpath.PathExpr.prototype.toString = function() {
+  var text = 'Path Expression:';
+  text += wgxpath.Expr.indent(this.filter_);
   if (this.steps_.length) {
-    text += indent + 'Steps:' + '\n';
-    indent += wgxpath.Expr.INDENT;
-    goog.array.forEach(this.steps_, function(step) {
-      text += step.toString(indent);
-    });
+    var steps = goog.array.reduce(this.steps_, function(prev, curr) {
+      return prev + wgxpath.Expr.indent(curr);
+    }, 'Steps:');
+    text += wgxpath.Expr.indent(steps);
   }
   return text;
 };
@@ -4793,21 +4870,26 @@ wgxpath.Predicates.prototype.getLength = function() {
 
 
 /**
- * Returns a string represendation of this set of predicates for debugging.
+ * Returns the set of predicates.
  *
- * @param {string=} opt_indent An optional indentation.
- * @return {string} The string representation.
+ * @return {!Array.<!wgxpath.Expr>} The predicates.
  */
-wgxpath.Predicates.prototype.toString = function(opt_indent) {
-  var indent = opt_indent || '';
-  var header = indent + 'Predicates:';
-  indent += wgxpath.Expr.INDENT;
+wgxpath.Predicates.prototype.getPredicates = function() {
+  return this.predicates_;
+};
+
+
+/**
+ * @override
+ */
+wgxpath.Predicates.prototype.toString = function() {
   return goog.array.reduce(this.predicates_, function(prev, curr) {
-    return prev + '\n' + indent + curr.toString(indent);
-  }, header);
+    return prev + wgxpath.Expr.indent(curr);
+  }, 'Predicates:');
 };
 goog.provide('wgxpath.Step');
 
+goog.require('goog.array');
 goog.require('goog.dom.NodeType');
 goog.require('wgxpath.DataType');
 goog.require('wgxpath.Expr');
@@ -4961,7 +5043,7 @@ wgxpath.Step.prototype.doesIncludeDescendants = function() {
  * @return {!wgxpath.Step.Axis} The axis.
  */
 wgxpath.Step.prototype.getAxis = function() {
-  return (/** @type {!wgxpath.Step.Axis} */ this.axis_);
+  return /** @type {!wgxpath.Step.Axis} */ (this.axis_);
 };
 
 
@@ -4978,21 +5060,19 @@ wgxpath.Step.prototype.getTest = function() {
 /**
  * @override
  */
-wgxpath.Step.prototype.toString = function(opt_indent) {
-  var indent = opt_indent || '';
-  var text = indent + 'Step: ' + '\n';
-  indent += wgxpath.Expr.INDENT;
-  text += indent + 'Operator: ' + (this.descendants_ ? '//' : '/') + '\n';
+wgxpath.Step.prototype.toString = function() {
+  var text = 'Step:';
+  text += wgxpath.Expr.indent('Operator: ' + (this.descendants_ ? '//' : '/'));
   if (this.axis_.name_) {
-    text += indent + 'Axis: ' + this.axis_ + '\n';
+    text += wgxpath.Expr.indent('Axis: ' + this.axis_);
   }
-  text += this.test_.toString(indent);
-  if (this.predicates_.length) {
-    text += indent + 'Predicates: ' + '\n';
-    for (var i = 0; i < this.predicates_.length; i++) {
-      var tail = i < this.predicates_.length - 1 ? ', ' : '';
-      text += this.predicates_[i].toString(indent) + tail;
-    }
+  text += wgxpath.Expr.indent(this.test_);
+  if (this.predicates_.getLength()) {
+    var predicates = goog.array.reduce(this.predicates_.getPredicates(),
+        function(prev, curr) {
+          return prev + wgxpath.Expr.indent(curr);
+        }, 'Predicates:');
+    text += wgxpath.Expr.indent(predicates);
   }
   return text;
 };
@@ -5085,9 +5165,9 @@ wgxpath.Step.createAxis_ =
     throw Error('Axis already created: ' + name);
   }
   // The upcast and then downcast for the JSCompiler.
-  var axis = (/** @type {!Object} */ new wgxpath.Step.Axis_(
+  var axis = /** @type {!Object} */ (new wgxpath.Step.Axis_(
       name, func, reverse, !!opt_supportsQuickAttr));
-  axis = (/** @type {!wgxpath.Step.Axis} */ axis);
+  axis = /** @type {!wgxpath.Step.Axis} */ (axis);
   wgxpath.Step.nameToAxisMap_[name] = axis;
   return axis;
 };
@@ -5285,7 +5365,6 @@ wgxpath.Step.Axis = {
       }, false)
 };
 // This file was autogenerated by calcdeps.py
-goog.addDependency("../../../wicked-good-xpath/test_js_deps.js", [], []);
 goog.addDependency("../../../wicked-good-xpath/functionCall.js", ['wgxpath.FunctionCall'], ['goog.array', 'goog.dom', 'goog.dom.NodeType', 'goog.string', 'wgxpath.Expr', 'wgxpath.Node', 'wgxpath.NodeSet', 'wgxpath.userAgent']);
 goog.addDependency("../../../wicked-good-xpath/unaryExpr.js", ['wgxpath.UnaryExpr'], ['wgxpath.DataType', 'wgxpath.Expr']);
 goog.addDependency("../../../wicked-good-xpath/nodeset.js", ['wgxpath.NodeSet'], ['goog.dom', 'wgxpath.Node']);
@@ -5295,6 +5374,9 @@ goog.addDependency("../../../wicked-good-xpath/node.js", ['wgxpath.Node'], ['goo
 goog.addDependency("../../../wicked-good-xpath/step.js", ['wgxpath.Step'], ['goog.dom.NodeType', 'wgxpath.DataType', 'wgxpath.Expr', 'wgxpath.KindTest', 'wgxpath.Node', 'wgxpath.Predicates', 'wgxpath.userAgent']);
 goog.addDependency("../../../wicked-good-xpath/parser.js", ['wgxpath.Parser'], ['wgxpath.BinaryExpr', 'wgxpath.FilterExpr', 'wgxpath.FunctionCall', 'wgxpath.KindTest', 'wgxpath.Literal', 'wgxpath.NameTest', 'wgxpath.Number', 'wgxpath.PathExpr', 'wgxpath.Predicates', 'wgxpath.Step', 'wgxpath.UnaryExpr', 'wgxpath.UnionExpr']);
 goog.addDependency("../../../wicked-good-xpath/ieAttrWrapper.js", ['wgxpath.IEAttrWrapper'], ['goog.dom.NodeType', 'wgxpath.userAgent']);
+goog.addDependency("../../../wicked-good-xpath/test_deps.js", [], []);
+goog.addDependency("../../../wicked-good-xpath/wgxpath.install_latest.js", [], []);
+goog.addDependency("../../../wicked-good-xpath/wgxpath.install_jscompiler.js", [], []);
 goog.addDependency("../../../wicked-good-xpath/expr.js", ['wgxpath.Expr'], ['wgxpath.NodeSet']);
 goog.addDependency("../../../wicked-good-xpath/number.js", ['wgxpath.Number'], ['wgxpath.Expr']);
 goog.addDependency("../../../wicked-good-xpath/kindTest.js", ['wgxpath.KindTest'], ['goog.dom.NodeType', 'wgxpath.NodeTest']);
@@ -5307,10 +5389,11 @@ goog.addDependency("../../../wicked-good-xpath/binaryExpr.js", ['wgxpath.BinaryE
 goog.addDependency("../../../wicked-good-xpath/export.js", [], ['wgxpath']);
 goog.addDependency("../../../wicked-good-xpath/dataType.js", ['wgxpath.DataType'], []);
 goog.addDependency("../../../wicked-good-xpath/filterExpr.js", ['wgxpath.FilterExpr'], ['wgxpath.Expr']);
+goog.addDependency("../../../wicked-good-xpath/wgxpath.install.js", [], []);
 goog.addDependency("../../../wicked-good-xpath/nodeTest.js", ['wgxpath.NodeTest'], []);
 goog.addDependency("../../../wicked-good-xpath/context.js", ['wgxpath.Context'], []);
 goog.addDependency("../../../wicked-good-xpath/predicates.js", ['wgxpath.Predicates'], ['goog.array', 'wgxpath.Context', 'wgxpath.Expr']);
-goog.addDependency("../../../wicked-good-xpath/test/test_js_deps.js", [], []);
+goog.addDependency("../../../wicked-good-xpath/test/test_deps.js", [], []);
 goog.addDependency("../../../wicked-good-xpath/test/test.js", ['wgxpath.test'], ['goog.dom', 'goog.dom.NodeType', 'goog.userAgent']);
 // Copyright 2012 Google Inc. All Rights Reserved.
 
@@ -5359,12 +5442,8 @@ wgxpath.UnaryExpr.prototype.evaluate = function(ctx) {
 /**
  * @override
  */
-wgxpath.UnaryExpr.prototype.toString = function(opt_indent) {
-  var indent = opt_indent || '';
-  var text = indent + 'UnaryExpr: -' + '\n';
-  indent += wgxpath.Expr.INDENT;
-  text += this.expr_.toString(indent);
-  return text;
+wgxpath.UnaryExpr.prototype.toString = function() {
+  return 'Unary Expression: -' + wgxpath.Expr.indent(this.expr_);
 };
 // Copyright 2012 Google Inc. All Rights Reserved.
 
@@ -5414,7 +5493,7 @@ wgxpath.UnionExpr.prototype.evaluate = function(ctx) {
   goog.array.forEach(this.paths_, function(p) {
     var result = p.evaluate(ctx);
     if (!(result instanceof wgxpath.NodeSet)) {
-      throw Error('PathExpr must evaluate to NodeSet.');
+      throw Error('Path expression must evaluate to NodeSet.');
     }
     nodeset = wgxpath.NodeSet.merge(nodeset, result);
   });
@@ -5425,14 +5504,10 @@ wgxpath.UnionExpr.prototype.evaluate = function(ctx) {
 /**
  * @override
  */
-wgxpath.UnionExpr.prototype.toString = function(opt_indent) {
-  var indent = opt_indent || '';
-  var text = indent + 'UnionExpr:' + '\n';
-  indent += wgxpath.Expr.INDENT;
-  goog.array.forEach(this.paths_, function(p) {
-    text += p.toString(indent) + '\n';
-  });
-  return text.substring(0, text.length); // Remove trailing newline.
+wgxpath.UnionExpr.prototype.toString = function() {
+  return goog.array.reduce(this.paths_, function(prev, curr) {
+    return prev + wgxpath.Expr.indent(curr);
+  }, 'Union Expression:');
 };
 // Copyright 2012 Google Inc. All Rights Reserved.
 
@@ -5450,7 +5525,7 @@ goog.require('goog.userAgent');
  * @const
  */
 wgxpath.userAgent.IE_DOC_PRE_9 = goog.userAgent.IE &&
-    !goog.userAgent.isDocumentMode(9);
+    !goog.userAgent.isDocumentModeOrHigher(9);
 
 
 /**
@@ -5458,7 +5533,7 @@ wgxpath.userAgent.IE_DOC_PRE_9 = goog.userAgent.IE &&
  * @const
  */
 wgxpath.userAgent.IE_DOC_PRE_8 = goog.userAgent.IE &&
-    !goog.userAgent.isDocumentMode(8);
+    !goog.userAgent.isDocumentModeOrHigher(8);
 /*  JavaScript-XPath 0.1.11
  *  (c) 2007 Cybozu Labs, Inc.
  *
@@ -5514,19 +5589,28 @@ wgxpath.XPathResultType_ = {
  * @constructor
  * @extends {XPathExpression}
  * @param {string} expr The expression string.
+ * @param {?(XPathNSResolver|function(string): ?string)} nsResolver
+ *     XPath namespace resolver.
  * @private
  */
-wgxpath.XPathExpression_ = function(expr) {
+wgxpath.XPathExpression_ = function(expr, nsResolver) {
   if (!expr.length) {
     throw Error('Empty XPath expression.');
   }
-
   var lexer = wgxpath.Lexer.tokenize(expr);
-
   if (lexer.empty()) {
     throw Error('Invalid XPath expression.');
   }
-  var gexpr = new wgxpath.Parser(lexer).parseExpr();
+
+  // nsResolver may either be an XPathNSResolver, which has a lookupNamespaceURI
+  // function, a custom function, or null. Standardize it to a function.
+  if (!nsResolver) {
+    nsResolver = function(string) {return null;};
+  } else if (!goog.isFunction(nsResolver)) {
+    nsResolver = goog.bind(nsResolver.lookupNamespaceURI, nsResolver);
+  }
+
+  var gexpr = new wgxpath.Parser(lexer, nsResolver).parseExpr();
   if (!lexer.empty()) {
     throw Error('Bad token: ' + lexer.next());
   }
@@ -5565,7 +5649,7 @@ wgxpath.XPathResult_ = function(value, type) {
       type != wgxpath.XPathResultType_.NUMBER_TYPE &&
       type != wgxpath.XPathResultType_.BOOLEAN_TYPE &&
       !(value instanceof wgxpath.NodeSet)) {
-    throw Error('document.evaluate called with wrong result type.');
+    throw Error('value could not be converted to the specified type');
   }
   this['resultType'] = type;
   var nodes;
@@ -5609,14 +5693,14 @@ wgxpath.XPathResult_ = function(value, type) {
   this['iterateNext'] = function() {
     if (type != wgxpath.XPathResultType_.UNORDERED_NODE_ITERATOR_TYPE &&
         type != wgxpath.XPathResultType_.ORDERED_NODE_ITERATOR_TYPE) {
-      throw Error('iterateNext called with wrong result type.');
+      throw Error('iterateNext called with wrong result type');
     }
     return (index >= nodes.length) ? null : nodes[index++];
   };
   this['snapshotItem'] = function(i) {
     if (type != wgxpath.XPathResultType_.UNORDERED_NODE_SNAPSHOT_TYPE &&
         type != wgxpath.XPathResultType_.ORDERED_NODE_SNAPSHOT_TYPE) {
-      throw Error('snapshotItem called with wrong result type.');
+      throw Error('snapshotItem called with wrong result type');
     }
     return (i >= nodes.length || i < 0) ? null : nodes[i];
   };
@@ -5651,11 +5735,12 @@ wgxpath.install = function(opt_win) {
   // Installation is a noop if native XPath is available.
   if (!doc['evaluate']) {
     win['XPathResult'] = wgxpath.XPathResult_;
-    doc['evaluate'] = function(expr, context, nsresolver, type, result) {
-      return new wgxpath.XPathExpression_(expr).evaluate(context, type);
+    doc['evaluate'] = function(expr, context, nsResolver, type, result) {
+      return new wgxpath.XPathExpression_(expr, nsResolver).
+          evaluate(context, type);
     };
-    doc['createExpression'] = function(expr) {
-      return new wgxpath.XPathExpression_(expr);
+    doc['createExpression'] = function(expr, nsResolver) {
+      return new wgxpath.XPathExpression_(expr, nsResolver);
     };
   }
 };
@@ -5788,11 +5873,10 @@ bot.action.focusOnElement = function(element) {
  *                           bot.Keyboard.Key.SHIFT, 'cd']);
  *
  * @param {!Element} element The element receiving the event.
- * @param {(string|!bot.Keyboard.Key|
- *          !Array.<(string|!bot.Keyboard.Key)>)} values Value or values to
- *     type on the element.
+ * @param {(string|!bot.Keyboard.Key|!Array.<(string|!bot.Keyboard.Key)>)}
+ *    values Value or values to type on the element.
  * @param {bot.Keyboard=} opt_keyboard Keyboard to use; if not provided,
- *     constructs one.
+ *    constructs one.
  * @param {boolean=} opt_persistModifiers Whether modifier keys should remain
  *     pressed when this function ends.
  * @throws {bot.Error} If the element cannot be interacted with.
@@ -5983,29 +6067,36 @@ bot.action.scrollMouse = function(element, ticks, opt_coords, opt_mouse) {
  * @param {!Element} element The element to drag.
  * @param {number} dx Increment in x coordinate.
  * @param {number} dy Increment in y coordinate.
+ * @param {number=} opt_steps The number of steps that should occur as part of
+ *     the drag, default is 2.
  * @param {goog.math.Coordinate=} opt_coords Drag start position relative to the
  *   element.
  * @param {bot.Mouse=} opt_mouse Mouse to use; if not provided, constructs one.
  * @throws {bot.Error} If the element cannot be interacted with.
  */
-bot.action.drag = function(element, dx, dy, opt_coords, opt_mouse) {
+bot.action.drag = function(element, dx, dy, opt_steps, opt_coords, opt_mouse) {
   var coords = bot.action.prepareToInteractWith_(element, opt_coords);
+  var initRect = bot.dom.getClientRect(element);
   var mouse = opt_mouse || new bot.Mouse();
   mouse.move(element, coords);
   mouse.pressButton(bot.Mouse.Button.LEFT);
-
-  // Fire two mousemoves (middle and destination) to trigger a drag action.
-  var initPos = goog.style.getClientPosition(element);
-  var midXY = new goog.math.Coordinate(coords.x + Math.floor(dx / 2),
-                                       coords.y + Math.floor(dy / 2));
-  mouse.move(element, midXY);
-
-  var midPos = goog.style.getClientPosition(element);
-  var finalXY = new goog.math.Coordinate(initPos.x + coords.x + dx - midPos.x,
-                                         initPos.y + coords.y + dy - midPos.y);
-  mouse.move(element, finalXY);
-
+  var steps = goog.isDef(opt_steps) ? opt_steps : 2;
+  if (steps < 1) {
+    throw new bot.Error(bot.ErrorCode.UNKNOWN_ERROR,
+                        'There must be at least one step as part of a drag.');
+  }
+  for (var i = 1; i <= steps; i++) {
+    moveTo(Math.floor(i * dx / steps), Math.floor(i * dy / steps));
+  }
   mouse.releaseButton();
+
+  function moveTo(x, y) {
+    var currRect = bot.dom.getClientRect(element);
+    var newPos = new goog.math.Coordinate(
+        coords.x + initRect.left + x - currRect.left,
+        coords.y + initRect.top + y - currRect.top);
+    mouse.move(element, newPos);
+  }
 };
 
 
@@ -6034,30 +6125,38 @@ bot.action.tap = function(element, opt_coords, opt_touchscreen) {
  * @param {!Element} element The element to swipe.
  * @param {number} dx Increment in x coordinate.
  * @param {number} dy Increment in y coordinate.
+ * @param {number=} opt_steps The number of steps that should occurs as part of
+ *     the swipe, default is 2.
  * @param {goog.math.Coordinate=} opt_coords Swipe start position relative to
  *   the element.
  * @param {bot.Touchscreen=} opt_touchscreen Touchscreen to use; if not
  *    provided, constructs one.
  * @throws {bot.Error} If the element cannot be interacted with.
  */
-bot.action.swipe = function(element, dx, dy, opt_coords, opt_touchscreen) {
+bot.action.swipe = function(element, dx, dy, opt_steps, opt_coords,
+    opt_touchscreen) {
   var coords = bot.action.prepareToInteractWith_(element, opt_coords);
   var touchscreen = opt_touchscreen || new bot.Touchscreen();
+  var initRect = bot.dom.getClientRect(element);
   touchscreen.move(element, coords);
   touchscreen.press();
-
-  // Fire two touchmoves (middle and destination) to trigger a drag action.
-  var initPos = goog.style.getClientPosition(element);
-  var midXY = new goog.math.Coordinate(coords.x + Math.floor(dx / 2),
-                                       coords.y + Math.floor(dy / 2));
-  touchscreen.move(element, midXY);
-
-  var midPos = goog.style.getClientPosition(element);
-  var finalXY = new goog.math.Coordinate(initPos.x + coords.x + dx - midPos.x,
-                                         initPos.y + coords.y + dy - midPos.y);
-  touchscreen.move(element, finalXY);
-
+  var steps = goog.isDef(opt_steps) ? opt_steps : 2;
+  if (steps < 1) {
+    throw new bot.Error(bot.ErrorCode.UNKNOWN_ERROR,
+                        'There must be at least one step as part of a swipe.');
+  }
+  for (var i = 1; i <= steps; i++) {
+    moveTo(Math.floor(i * dx / steps), Math.floor(i * dy / steps));
+  }
   touchscreen.release();
+
+  function moveTo(x, y) {
+    var currRect = bot.dom.getClientRect(element);
+    var newPos = new goog.math.Coordinate(
+        coords.x + initRect.left + x - currRect.left,
+        coords.y + initRect.top + y - currRect.top);
+    touchscreen.move(element, newPos);
+  }
 };
 
 
@@ -6168,14 +6267,16 @@ bot.action.multiTouchAction_ = function(element, transformStart, transformHalf,
   touchScreen.move(element, start1, start2);
   touchScreen.press(/*Two Finger Press*/ true);
 
-  var initPos = goog.style.getClientPosition(element);
+  var initRect = bot.dom.getClientRect(element);
   transformHalf(offsetVec);
   var mid1 = goog.math.Vec2.sum(center, offsetVec);
   var mid2 = goog.math.Vec2.difference(center, offsetVec);
   touchScreen.move(element, mid1, mid2);
 
+  var midRect = bot.dom.getClientRect(element);
   var movedVec = goog.math.Vec2.difference(
-      goog.style.getClientPosition(element), initPos);
+      new goog.math.Vec2(midRect.left, midRect.top),
+      new goog.math.Vec2(initRect.left, initRect.top));
   transformHalf(offsetVec);
   var end1 = goog.math.Vec2.sum(center, offsetVec).subtract(movedVec);
   var end2 = goog.math.Vec2.difference(center, offsetVec).subtract(movedVec);
@@ -6295,10 +6396,10 @@ bot.action.LegacyDevice_.findAncestorForm = function(element) {
  * @return {boolean} Whether the element is in view after scrolling.
  */
 bot.action.scrollIntoView = function(element, opt_coords) {
-  if (!bot.dom.isScrolledIntoView(element, opt_coords) && !bot.dom.isInParentOverflow(element, opt_coords)) {
+  if (!bot.dom.isScrolledIntoView(element, opt_coords)) {
     // Some elements may not have a scrollIntoView function - for example,
     // elements under an SVG element. Call those only if they exist.
-    if (typeof element.scrollIntoView == 'function') {
+    if (element.scrollIntoView) {
       element.scrollIntoView();
     }
     // In Opera 10, scrollIntoView only scrolls the element into the viewport of
@@ -6324,9 +6425,10 @@ bot.action.scrollIntoView = function(element, opt_coords) {
     // It's possible that the element has been scrolled in to view, but the
     // coords passed aren't in view; if this is the case, scroll those
     // coordinates into view.
-    var elementCoordsInViewport = goog.style.getClientPosition(element);
-    var desiredPointInViewport =
-        goog.math.Coordinate.sum(elementCoordsInViewport, opt_coords);
+    var elementRect = bot.dom.getClientRect(element);
+    var desiredPointInViewport = goog.math.Coordinate.sum(
+        new goog.math.Coordinate(elementRect.left, elementRect.top),
+        opt_coords);
     try {
       bot.dom.getInViewLocation(
           desiredPointInViewport,
@@ -6367,7 +6469,6 @@ goog.provide('bot');
  * Frameworks using the atoms keep track of which window or frame is currently
  * being used for command execution. Note that "window" may not always be
  * defined (for example in firefox extensions)
- *
  * @private {!Window}
  */
 bot.window_;
@@ -6765,6 +6866,7 @@ bot.color.toRgbaStyle_ = function(rgba) {
  */
 
 goog.provide('bot.Device');
+goog.provide('bot.Device.EventEmitter');
 
 goog.require('bot');
 goog.require('bot.dom');
@@ -6782,10 +6884,11 @@ goog.require('goog.userAgent.product');
  * A Device class that provides common functionality for input devices.
  * @param {bot.Device.ModifiersState=} opt_modifiersState state of modifier
  * keys. The state is shared, not copied from this parameter.
+ * @param {bot.Device.EventEmitter=} opt_eventEmitter An object that should be used to fire events.
  *
  * @constructor
  */
-bot.Device = function(opt_modifiersState) {
+bot.Device = function(opt_modifiersState, opt_eventEmitter) {
   /**
    * Element being interacted with.
    * @private {!Element}
@@ -6806,10 +6909,12 @@ bot.Device = function(opt_modifiersState) {
 
   /**
    * State of modifier keys for this device.
-   * @type {bot.Device.ModifiersState}
-   * @protected
+   * @protected {bot.Device.ModifiersState}
    */
   this.modifiersState = opt_modifiersState || new bot.Device.ModifiersState();
+
+  /** @protected {!bot.Device.EventEmitter} */
+  this.eventEmitter = opt_eventEmitter || new bot.Device.EventEmitter();
 };
 
 
@@ -6851,7 +6956,7 @@ bot.Device.prototype.setElement = function(element) {
  * @protected
  */
 bot.Device.prototype.fireHtmlEvent = function(type) {
-  return bot.events.fire(this.element_, type);
+  return this.eventEmitter.fireHtmlEvent(this.element_, type);
 };
 
 
@@ -6865,7 +6970,7 @@ bot.Device.prototype.fireHtmlEvent = function(type) {
  * @protected
  */
 bot.Device.prototype.fireKeyboardEvent = function(type, args) {
-  return bot.events.fire(this.element_, type, args);
+  return this.eventEmitter.fireKeyboardEvent(this.element_, type, args);
 };
 
 
@@ -6881,11 +6986,12 @@ bot.Device.prototype.fireKeyboardEvent = function(type, args) {
  * @param {boolean=} opt_force Whether the event should be fired even if the
  *     element is not interactable, such as the case of a mousemove or
  *     mouseover event that immediately follows a mouseout.
+ * @param {?number=} opt_pointerId The pointerId associated with the event.
  * @return {boolean} Whether the event fired successfully; false if cancelled.
  * @protected
  */
 bot.Device.prototype.fireMouseEvent = function(type, coord, button,
-    opt_related, opt_wheelDelta, opt_force) {
+    opt_related, opt_wheelDelta, opt_force, opt_pointerId)  {
   if (!opt_force && !bot.dom.isInteractable(this.element_)) {
     return false;
   }
@@ -6909,9 +7015,19 @@ bot.Device.prototype.fireMouseEvent = function(type, coord, button,
     relatedTarget: opt_related || null
   };
 
-  var target = this.select_ ?
-      this.getTargetOfOptionMouseEvent_(type) : this.element_;
-  return target ? bot.events.fire(target, type, args) : true;
+  var pointerId = opt_pointerId || bot.Device.MOUSE_MS_POINTER_ID;
+
+  var target = this.element_;
+  // On click and mousedown events, captured pointers are ignored and the
+  // event always fires on the original element.
+  if (type != bot.events.EventType.CLICK &&
+      type != bot.events.EventType.MOUSEDOWN &&
+      pointerId in bot.Device.pointerElementMap_) {
+    target = bot.Device.pointerElementMap_[pointerId];
+  } else if (this.select_) {
+    target = this.getTargetOfOptionMouseEvent_(type);
+  }
+  return target ? this.eventEmitter.fireMouseEvent(target, type, args) : true;
 };
 
 
@@ -6968,7 +7084,7 @@ bot.Device.prototype.fireTouchEvent = function(type, id, coord, opt_id2,
     addTouch(opt_id2, opt_coord2);
   }
 
-  return bot.events.fire(this.element_, type, args);
+  return this.eventEmitter.fireTouchEvent(this.element_, type, args);
 };
 
 
@@ -7025,7 +7141,28 @@ bot.Device.prototype.fireMSPointerEvent = function(type, coord, button,
 
   var target = this.select_ ?
       this.getTargetOfOptionMouseEvent_(type) : this.element_;
-  return target ? bot.events.fire(target, type, args) : true;
+  if (bot.Device.pointerElementMap_[pointerId]) {
+    target = bot.Device.pointerElementMap_[pointerId];
+  }
+  var owner = goog.dom.getWindow(goog.dom.getOwnerDocument(this.element_));
+  var originalMsSetPointerCapture;
+  if (owner && type == bot.events.EventType.MSPOINTERDOWN) {
+    // Overwrite msSetPointerCapture on the Element's msSetPointerCapture
+    // because synthetic pointer events cause an access denied exception.
+    // The prototype is modified because the pointer event will bubble up and
+    // we do not know which element will handle the pointer event.
+    originalMsSetPointerCapture =
+        owner['Element'].prototype.msSetPointerCapture;
+    owner['Element'].prototype.msSetPointerCapture = function(id) {
+      bot.Device.pointerElementMap_[id] = this;
+    };
+  }
+  var result = target ? this.eventEmitter.fireMSPointerEvent(target, type, args) : true;
+  if (originalMsSetPointerCapture) {
+    owner['Element'].prototype.msSetPointerCapture =
+        originalMsSetPointerCapture;
+  }
+  return result;
 };
 
 
@@ -7089,9 +7226,10 @@ bot.Device.prototype.getTargetOfOptionMouseEvent_ = function(type) {
  *
  * @param {!goog.math.Coordinate} coord The coordinate where event will fire.
  * @param {number} button The mouse button value for the event.
+ * @param {?number=} opt_pointerId The pointer id associated with the click.
  * @protected
  */
-bot.Device.prototype.clickElement = function(coord, button) {
+bot.Device.prototype.clickElement = function(coord, button, opt_pointerId) {
   if (!bot.dom.isInteractable(this.element_)) {
     return;
   }
@@ -7115,17 +7253,12 @@ bot.Device.prototype.clickElement = function(coord, button) {
     }
   }
 
-  var selectable = bot.dom.isSelectable(this.element_);
-  var wasSelected = selectable && bot.dom.isSelected(this.element_);
-
   // When an element is toggled as the result of a click, the toggling and the
-  // change event happens before the click event. However, on radio buttons and
-  // checkboxes, the click handler can prevent the toggle from happening, so
-  // for those we need to fire a click before toggling to see if the click was
-  // cancelled. For option elements, we toggle unconditionally before the click.
-  if (this.select_) {
-    this.toggleOption_(wasSelected);
-  }
+  // change event happens before the click event on some browsers. However, on
+  // radio buttons and checkboxes, the click handler can prevent the toggle from
+  // happening, so we must fire the click first to see if it is cancelled.
+  var isRadioOrCheckbox = !this.select_ && bot.dom.isSelectable(this.element_);
+  var wasChecked = isRadioOrCheckbox && bot.dom.isSelected(this.element_);
 
   // NOTE(user): Clicking on a form submit button is a little broken:
   // (1) When clicking a form submit button in IE, firing a click event or
@@ -7144,15 +7277,15 @@ bot.Device.prototype.clickElement = function(coord, button) {
   }
 
   var performDefault = this.fireMouseEvent(
-      bot.events.EventType.CLICK, coord, button);
+      bot.events.EventType.CLICK, coord, button, null, 0, false, opt_pointerId);
   if (!performDefault) {
     return;
   }
 
   if (targetLink && bot.Device.shouldFollowHref_(targetLink)) {
     bot.Device.followHref_(targetLink);
-  } else if (selectable && !this.select_) {
-    this.toggleRadioButtonOrCheckbox_(wasSelected);
+  } else if (isRadioOrCheckbox) {
+    this.toggleRadioButtonOrCheckbox_(wasChecked);
   }
 };
 
@@ -7183,13 +7316,13 @@ bot.Device.prototype.focusOnElement = function() {
     // the atoms actions will often be in the wrong order on IE. Firing a blur
     // out of order sometimes causes IE to throw an "Unspecified error", so we
     // wrap it in a try-catch and catch and ignore the error in this case.
-    try {
-      if (activeElement.tagName.toLowerCase() !== 'body') {
+    if (!bot.dom.isElement(activeElement, goog.dom.TagName.BODY)) {
+      try {
         activeElement.blur();
-      }
-    } catch (e) {
-      if (!(goog.userAgent.IE && e.message == 'Unspecified error.')) {
-        throw e;
+      } catch (e) {
+        if (!(goog.userAgent.IE && e.message == 'Unspecified error.')) {
+          throw e;
+        }
       }
     }
 
@@ -7225,7 +7358,6 @@ bot.Device.prototype.focusOnElement = function() {
 /**
  * Whether links must be manually followed when clicking (because firing click
  * events doesn't follow them).
- *
  * @private {boolean}
  * @const
  */
@@ -7321,14 +7453,19 @@ bot.Device.followHref_ = function(anchorElement) {
 
 
 /**
- * Toggles the selected state of an option element. This is a noop if the option
- * is selected and belongs to a single-select, because it can't be toggled off.
+ * Toggles the selected state of the current element if it is an option. This
+ * is a noop if the element is not an option, or if it is selected and belongs
+ * to a single-select, because it can't be toggled off.
  *
- * @param {boolean} wasSelected Whether the element was originally selected.
- * @private
+ * @protected
  */
-bot.Device.prototype.toggleOption_ = function(wasSelected) {
+bot.Device.prototype.maybeToggleOption = function() {
+  // If this is not an <option> or not interactable, exit.
+  if (!this.select_ || !bot.dom.isInteractable(this.element_)) {
+    return;
+  }
   var select = /** @type {!Element} */ (this.select_);
+  var wasSelected = bot.dom.isSelected(this.element_);
   // Cannot toggle off options in single-selects.
   if (wasSelected && !select.multiple) {
     return;
@@ -7344,22 +7481,22 @@ bot.Device.prototype.toggleOption_ = function(wasSelected) {
 
 
 /**
- * Toggles the selected state of a radio button or checkbox. This is a noop if
- * it is a radio button that is selected, because it can't be toggled off.
+ * Toggles the checked state of a radio button or checkbox. This is a noop if
+ * it is a radio button that is checked, because it can't be toggled off.
  *
- * @param {boolean} wasSelected Whether the element was originally selected.
+ * @param {boolean} wasChecked Whether the element was originally checked.
  * @private
  */
-bot.Device.prototype.toggleRadioButtonOrCheckbox_ = function(wasSelected) {
+bot.Device.prototype.toggleRadioButtonOrCheckbox_ = function(wasChecked) {
   // Gecko and WebKit toggle the element as a result of a click.
   if (goog.userAgent.GECKO || goog.userAgent.WEBKIT) {
     return;
   }
   // Cannot toggle off radio buttons.
-  if (wasSelected && this.element_.type.toLowerCase() == 'radio') {
+  if (wasChecked && this.element_.type.toLowerCase() == 'radio') {
     return;
   }
-  this.element_.checked = !wasSelected;
+  this.element_.checked = !wasChecked;
   // Only Opera versions < 11 do not fire the change event themselves.
   if (goog.userAgent.OPERA && !bot.userAgent.isEngineVersion(11)) {
     bot.events.fire(this.element_, bot.events.EventType.CHANGE);
@@ -7374,7 +7511,7 @@ bot.Device.prototype.toggleRadioButtonOrCheckbox_ = function(wasSelected) {
  * @protected
  */
 bot.Device.findAncestorForm = function(node) {
-  return (/** @type {Element} */ goog.dom.getAncestor(
+  return /** @type {Element} */ (goog.dom.getAncestor(
       node, bot.Device.isForm_, /*includeNode=*/true));
 };
 
@@ -7414,7 +7551,7 @@ bot.Device.prototype.submitForm = function(form) {
     if (!bot.dom.isElement(form.submit)) {
       form.submit();
     } else if (!goog.userAgent.IE || bot.userAgent.isEngineVersion(8)) {
-      /** @type {!Object} */ (form.constructor.prototype).submit.call(form);
+      /** @type {Function} */ (form.constructor.prototype['submit']).call(form);
     } else {
       var idMasks = bot.locators.findElements({'id': 'submit'}, form);
       var nameMasks = bot.locators.findElements({'name': 'submit'}, form);
@@ -7576,6 +7713,119 @@ bot.Device.ModifiersState.prototype.isAltPressed = function() {
 bot.Device.ModifiersState.prototype.isMetaPressed = function() {
   return this.isPressed(bot.Device.Modifier.META);
 };
+
+
+/**
+ * The pointer id used for MSPointer events initiated through a mouse device.
+ * @type {number}
+ * @const
+ */
+bot.Device.MOUSE_MS_POINTER_ID = 1;
+
+
+/**
+ * A map of pointer id to Elements.
+ * @private {!Object.<number, !Element>}
+ */
+bot.Device.pointerElementMap_ = {};
+
+
+/**
+ * Gets the element associated with a pointer id.
+ * @param {number} pointerId The pointer Id.
+ * @return {?Element} The element associated with the pointer id.
+ * @protected
+ */
+bot.Device.getPointerElement = function(pointerId) {
+  return bot.Device.pointerElementMap_[pointerId];
+};
+
+
+/**
+ * Clear the pointer map.
+ * @protected
+ */
+bot.Device.clearPointerMap = function() {
+  bot.Device.pointerElementMap_ = {};
+};
+
+
+/**
+ * Fires events, a driver can replace it with a custom implementation
+ *
+ * @constructor
+ */
+bot.Device.EventEmitter = function() {
+};
+
+
+/**
+ * Fires an HTML event given the state of the device.
+ *
+ * @param {!Element} target The element on which to fire the event.
+ * @param {bot.events.EventType} type HTML Event type.
+ * @return {boolean} Whether the event fired successfully; false if cancelled.
+ * @protected
+ */
+bot.Device.EventEmitter.prototype.fireHtmlEvent = function(target, type) {
+  return bot.events.fire(target, type);
+};
+
+
+/**
+ * Fires a keyboard event given the state of the device and the given arguments.
+ *
+ * @param {!Element} target The element on which to fire the event.
+ * @param {bot.events.EventType} type Keyboard event type.
+ * @param {bot.events.KeyboardArgs} args Keyboard event arguments.
+ * @return {boolean} Whether the event fired successfully; false if cancelled.
+ * @protected
+ */
+bot.Device.EventEmitter.prototype.fireKeyboardEvent = function(target, type, args) {
+  return bot.events.fire(target, type, args);
+};
+
+
+/**
+ * Fires a mouse event given the state of the device and the given arguments.
+ *
+ * @param {!Element} target The element on which to fire the event.
+ * @param {bot.events.EventType} type Mouse event type.
+ * @param {bot.events.MouseArgs} args Mouse event arguments.
+ * @return {boolean} Whether the event fired successfully; false if cancelled.
+ * @protected
+ */
+bot.Device.EventEmitter.prototype.fireMouseEvent = function(target, type, args) {
+  return bot.events.fire(target, type, args);
+};
+
+
+/**
+ * Fires a mouse event given the state of the device and the given arguments.
+ *
+ * @param {!Element} target The element on which to fire the event.
+ * @param {bot.events.EventType} type Touch event type.
+ * @param {bot.events.TouchArgs} args Touch event arguments.
+ * @return {boolean} Whether the event fired successfully; false if cancelled.
+ * @protected
+ */
+bot.Device.EventEmitter.prototype.fireTouchEvent = function(target, type, args) {
+  return bot.events.fire(target, type, args);
+};
+
+
+/**
+ * Fires an MSPointer event given the state of the device and the given arguments.
+ *
+ * @param {!Element} target The element on which to fire the event.
+ * @param {bot.events.EventType} type MSPointer event type.
+ * @param {bot.events.MSPointerArgs} args MSPointer event arguments.
+ * @return {boolean} Whether the event fired successfully; false if cancelled.
+ * @protected
+ */
+bot.Device.EventEmitter.prototype.fireMSPointerEvent = function(target, type, args) {
+  return bot.events.fire(target, type, args);
+};
 // Copyright 2012 Software Freedom Conservancy
 // Copyright 2010 WebDriver committers
 //
@@ -7601,7 +7851,6 @@ goog.require('bot');
 goog.require('bot.color');
 goog.require('bot.locators.xpath');
 goog.require('bot.userAgent');
-goog.require('bot.window');
 goog.require('goog.array');
 goog.require('goog.dom');
 goog.require('goog.dom.NodeType');
@@ -7621,8 +7870,16 @@ goog.require('goog.userAgent');
  * @return {Element} The active element, if any.
  */
 bot.dom.getActiveElement = function(nodeOrWindow) {
-  return goog.dom.getActiveElement(
+  var active = goog.dom.getActiveElement(
       goog.dom.getOwnerDocument(nodeOrWindow));
+  // IE has the habit of returning an empty object from
+  // goog.dom.getActiveElement instead of null.
+  if (goog.userAgent.IE &&
+      active &&
+      typeof active.prototype === 'undefined') {
+    return null;
+  }
+  return active;
 };
 
 
@@ -7718,8 +7975,8 @@ bot.dom.isSelected = function(element) {
 /**
  * List of the focusable fields, according to
  * http://www.w3.org/TR/html401/interact/scripts.html#adef-onfocus
- * @const
  * @private {!Array.<!goog.dom.TagName>}
+ * @const
  */
 bot.dom.FOCUSABLE_FORM_FIELDS_ = [
   goog.dom.TagName.A,
@@ -7772,8 +8029,8 @@ bot.dom.getProperty = function(element, propertyName) {
  * Helper for {@link bot.dom.standardizeStyleAttribute_}.
  * If the style attribute ends with a semicolon this will include an empty
  * string at the end of the array
- * @const
  * @private {!RegExp}
+ * @const
  */
 bot.dom.SPLIT_STYLE_ATTRIBUTE_ON_SEMICOLONS_REGEXP_ =
     new RegExp('[;]+' +
@@ -7870,8 +8127,8 @@ bot.dom.getAttribute = function(element, attributeName) {
 /**
  * List of elements that support the "disabled" attribute, as defined by the
  * HTML 4.01 specification.
- * @const
  * @private {!Array.<goog.dom.TagName>}
+ * @const
  * @see http://www.w3.org/TR/html401/interact/forms.html#h-17.12.1
  */
 bot.dom.DISABLED_ATTRIBUTE_SUPPORTED_ = [
@@ -7906,14 +8163,14 @@ bot.dom.isEnabled = function(el) {
       el.parentNode.nodeType == goog.dom.NodeType.ELEMENT &&
       goog.dom.TagName.OPTGROUP == tagName ||
       goog.dom.TagName.OPTION == tagName) {
-    return bot.dom.isEnabled((/**@type{!Element}*/el.parentNode));
+    return bot.dom.isEnabled(/**@type{!Element}*/ (el.parentNode));
   }
 
   // Is there an ancestor of the current element that is a disabled fieldset
   // and whose child is also an ancestor-or-self of the current element but is
   // not the first legend child of the fieldset. If so then the element is
   // disabled.
-  if (goog.dom.getAncestor(el, function (e) {
+  return !goog.dom.getAncestor(el, function(e) {
     var parent = e.parentNode;
 
     if (parent &&
@@ -7933,18 +8190,14 @@ bot.dom.isEnabled = function(el) {
       }
     }
     return false;
-  }, true)) {
-    return false;
-  }
-
-  return true;
+  }, true);
 };
 
 
 /**
  * List of input types that create text fields.
+ * @private {!Array.<string>}
  * @const
- * @private {!Array.<String>}
  * @see http://www.whatwg.org/specs/web-apps/current-work/multipage/the-input-element.html#attr-input-type
  */
 bot.dom.TEXTUAL_INPUT_TYPES_ = [
@@ -7959,7 +8212,7 @@ bot.dom.TEXTUAL_INPUT_TYPES_ = [
 
 
 /**
- * TODO(gdennis): Add support for designMode elements.
+ * TODO(user): Add support for designMode elements.
  *
  * @param {!Element} element The element to check.
  * @return {boolean} Whether the element accepts user-typed text.
@@ -8013,7 +8266,7 @@ bot.dom.isContentEditable = function(element) {
 
 
 /**
- * TODO(gdennis): Merge isTextual into this function and move to bot.dom.
+ * TODO(user): Merge isTextual into this function and move to bot.dom.
  * For Puppet, requires adding support to getVisibleText for grabbing
  * text from all textual elements.
  *
@@ -8044,7 +8297,7 @@ bot.dom.getParentElement = function(node) {
          elem.nodeType != goog.dom.NodeType.DOCUMENT_FRAGMENT) {
     elem = elem.parentNode;
   }
-  return (/** @type {Element} */ bot.dom.isElement(elem) ? elem : null);
+  return /** @type {Element} */ (bot.dom.isElement(elem) ? elem : null);
 };
 
 
@@ -8116,70 +8369,6 @@ bot.dom.getCascadedStyle_ = function(elem, styleName) {
 
 
 /**
- * Would a user see scroll bars on the BODY element? In the case where the BODY
- * has "overflow: hidden", and HTML has "overflow: auto" or "overflow: scroll"
- * set, there's a scroll bar, so it's as if the BODY has "overflow: auto" set.
- * In all other cases where BODY has "overflow: hidden", there are no
- * scrollbars. http://www.w3.org/TR/CSS21/visufx.html#overflow
- *
- * @param {!Element} bodyElement The element, which must be a BODY element.
- * @return {boolean} Whether scrollbars would be visible to a user.
- * @private
- */
-bot.dom.isBodyScrollBarShown_ = function(bodyElement) {
-  if (!bot.dom.isElement(bodyElement, goog.dom.TagName.BODY)) {
-    // bail
-    }
-
-  var bodyOverflow = bot.dom.getEffectiveStyle(bodyElement, 'overflow');
-  if (bodyOverflow != 'hidden') {
-    return true;
-  }
-
-  var html = bot.dom.getParentElement(bodyElement);
-  if (!html || !bot.dom.isElement(html, goog.dom.TagName.HTML)) {
-    return true; // Seems like a reasonable default.
-  }
-
-  var viewportOverflow = bot.dom.getEffectiveStyle(html, 'overflow');
-  return viewportOverflow == 'auto' || viewportOverflow == 'scroll';
-};
-
-
-/**
- * @param {!Element} element The element to use.
- * @return {!goog.math.Size} The dimensions of the element.
- */
-bot.dom.getElementSize = function(element) {
-  if (goog.isFunction(element['getBBox']) && !bot.dom.isElement(element, goog.dom.TagName.SVG)) {
-    try {
-      var bb = element['getBBox']();
-      if (bb) {
-        // Opera will return an undefined bounding box for SVG elements.
-        // Which makes sense, but isn't useful.
-        return bb;
-      }
-    } catch (e) {
-      // Firefox will always throw for certain SVG elements,
-      // even if the function exists.
-    }
-  }
-
-  // If the element is the BODY, then get the visible size.
-  if (bot.dom.isElement(element, goog.dom.TagName.BODY)) {
-    var doc = goog.dom.getOwnerDocument(element);
-    var win = goog.dom.getWindow(doc) || undefined;
-    if (!bot.dom.isBodyScrollBarShown_(element)) {
-      return goog.dom.getViewportSize(win);
-    }
-    return bot.window.getInteractableSize(win);
-  }
-
-  return goog.style.getSize(element);
-};
-
-
-/**
  * Determines whether an element is what a user would call "shown". This means
  * that the element is shown in the viewport of the browser, and only has
  * height and width greater than 0px, and that its visibility is not "hidden"
@@ -8207,42 +8396,13 @@ bot.dom.isShown = function(elem, opt_ignoreOpacity) {
     return !!select && bot.dom.isShown(select, /*ignoreOpacity=*/true);
   }
 
-  // Map is shown iff image that uses it is shown.
-  if (bot.dom.isElement(elem, goog.dom.TagName.MAP)) {
-    if (!elem.name) {
-      return false;
-    }
-    var mapDoc = goog.dom.getOwnerDocument(elem);
-    var mapImage;
-    // TODO(gdennis): Avoid brute-force search once a cross-browser xpath
-    // locator is available.
-    if (mapDoc['evaluate']) {
-      // The "//*" XPath syntax can confuse the closure compiler, so we use
-      // the "/descendant::*" syntax instead.
-      // TODO(jleyba): Try to find a reproducible case for the compiler bug.
-      // TODO(jleyba): Restrict to applet, img, input:image, and object nodes.
-      var imageXpath = '/descendant::*[@usemap = "#' + elem.name + '"]';
-
-      // TODO(gdennis): Break dependency of bot.locators on bot.dom,
-      // so bot.locators.findElement can be called here instead.
-      mapImage = bot.locators.xpath.single(imageXpath, mapDoc);
-    } else {
-      mapImage = goog.dom.findNode(mapDoc, function(n) {
-        return bot.dom.isElement(n) &&
-               bot.dom.getAttribute(
-                   /** @type {!Element} */ (n), 'usemap') == '#' + elem.name;
-      });
-    }
-    return !!mapImage && bot.dom.isShown((/** @type {!Element} */ mapImage),
-        opt_ignoreOpacity);
-  }
-
-  // Area is shown iff enclosing map is shown.
-  if (bot.dom.isElement(elem, goog.dom.TagName.AREA)) {
-    var map = /**@type {Element}*/ (goog.dom.getAncestor(elem, function(e) {
-      return bot.dom.isElement(e, goog.dom.TagName.MAP);
-    }));
-    return !!map && bot.dom.isShown(map, opt_ignoreOpacity);
+  // Image map elements are shown if image that uses it is shown, and
+  // the area of the element is positive.
+  var imageMap = bot.dom.maybeFindImageMap_(elem);
+  if (imageMap) {
+    return !!imageMap.image &&
+           imageMap.rect.width > 0 && imageMap.rect.height > 0 &&
+           bot.dom.isShown(imageMap.image, opt_ignoreOpacity);
   }
 
   // Any hidden input is not shown.
@@ -8279,60 +8439,55 @@ bot.dom.isShown = function(elem, opt_ignoreOpacity) {
     return false;
   }
 
+  // Any element with the hidden attribute or has an ancestor with the hidden
+  // attribute is not shown
+  function isHidden(e) {
+    //IE does not support hidden attribute yet
+    if (goog.userAgent.IE) {
+      return true;
+    }
+    if (e.hasAttribute) {
+      if (e.hasAttribute('hidden')){
+        return false;
+      }
+    } else {
+      return true;
+    }
+    var parent = bot.dom.getParentElement(e);
+    return !parent || isHidden(parent);
+  }
+
+  if (!isHidden(elem)) {
+    return false;
+  }
+
   // Any element without positive size dimensions is not shown.
   function positiveSize(e) {
-    var size = bot.dom.getElementSize(e);
-    if (size.height > 0 && size.width > 0) {
+    var rect = bot.dom.getClientRect(e);
+    if (rect.height > 0 && rect.width > 0) {
       return true;
     }
     // A vertical or horizontal SVG Path element will report zero width or
     // height but is "shown" if it has a positive stroke-width.
-    if (bot.dom.isElement(e, 'PATH') && (size.height > 0 || size.width > 0)) {
+    if (bot.dom.isElement(e, 'PATH') && (rect.height > 0 || rect.width > 0)) {
       var strokeWidth = bot.dom.getEffectiveStyle(e, 'stroke-width');
       return !!strokeWidth && (parseInt(strokeWidth, 10) > 0);
     }
     // Zero-sized elements should still be considered to have positive size
-    // if they have a child element or text node with positive size.
-    return goog.array.some(e.childNodes, function(n) {
-      return (n.nodeType == goog.dom.NodeType.TEXT &&
-              bot.dom.getEffectiveStyle(e, 'overflow') != 'hidden') ||
-              (bot.dom.isElement(n) && positiveSize(n));
-    });
+    // if they have a child element or text node with positive size, unless
+    // the element has an 'overflow' style of 'hidden'.
+    return bot.dom.getEffectiveStyle(e, 'overflow') != 'hidden' &&
+        goog.array.some(e.childNodes, function(n) {
+          return n.nodeType == goog.dom.NodeType.TEXT ||
+                 (bot.dom.isElement(n) && positiveSize(n));
+        });
   }
   if (!positiveSize(elem)) {
     return false;
   }
 
-  // Elements should be hidden if their parent has a fixed size AND has the
-  // style overflow:hidden AND the element's location is not within the fixed
-  // size of the parent
-  function isOverflowHiding(e, block) {
-    var parent;
-    if (block == null) {
-      parent = goog.dom.getParentElement(e);
-    } else {
-      parent = goog.dom.getParentElement(block);
-    }
-
-    if (parent && (bot.dom.getEffectiveStyle(parent, 'overflow-x') == 'hidden' ||
-        bot.dom.getEffectiveStyle(parent, 'overflow-y') == 'hidden')) {
-      var sizeOfParent = bot.dom.getElementSize(parent);
-      var locOfParent = goog.style.getClientPosition(parent);
-      var locOfElement = goog.style.getClientPosition(e);
-      if (locOfParent.x + sizeOfParent.width <= locOfElement.x &&
-          bot.dom.getEffectiveStyle(parent, 'overflow-x') == 'hidden') {
-        return false;
-      }
-      if (locOfParent.y + sizeOfParent.height <= locOfElement.y &&
-          bot.dom.getEffectiveStyle(parent, 'overflow-y') == 'hidden') {
-        return false;
-      }
-      return true;
-    }
-    return !parent || isOverflowHiding(e, parent);
-  }
-
-  if (!isOverflowHiding(elem, null)) {
+  // Elements that are hidden by overflow are not shown.
+  if (bot.dom.getOverflowState(elem) == bot.dom.OverflowState.HIDDEN) {
     return false;
   }
 
@@ -8344,14 +8499,14 @@ bot.dom.isShown = function(elem, opt_ignoreOpacity) {
                     bot.dom.getEffectiveStyle(e, 'transform');
 
     // Not all browsers know what a transform is so if we have a returned value
-    // lets carry on checking up the tree just in case. If we ask for the 
+    // lets carry on checking up the tree just in case. If we ask for the
     // transform matrix and look at the details there it will return the centre
     // of the element
     if (transform && transform !== "none") {
       var locOfElement = goog.style.getClientPosition(e);
-      var sizeOfElement = bot.dom.getElementSize(e);
-      if ((locOfElement.x + (sizeOfElement.width)) >= 0 && 
-          (locOfElement.y + (sizeOfElement.height)) >= 0){
+      var rect = bot.dom.getClientRect(e);
+      if ((locOfElement.x + (rect.width)) >= 0 &&
+          (locOfElement.y + (rect.height)) >= 0){
         return true;
       } else {
         return false;
@@ -8364,19 +8519,281 @@ bot.dom.isShown = function(elem, opt_ignoreOpacity) {
   return isTransformHiding(elem);
 };
 
+
 /**
-* Checks whether the element is currently scrolled into the parent's overflow
-* region, such that the offset given, relative to the top-left corner of the
-* element, is currently in the overflow region.
-*
-* @param {!Element} element The element to check.
-* @param {!goog.math.Coordinate=} opt_coords Coordinate in the element,
-*     relative to the top-left corner of the element, to check. If none are
-*     specified, checks that the center of the element is in in the overflow.
-* @return {boolean} Whether the coordinates specified, relative to the element,
-*     are scrolled in the parent overflow.
-*/
-bot.dom.isInParentOverflow = function (element, opt_coords) {
+ * The kind of overflow area in which an element may be located. NONE if it does
+ * not overflow any ancestor element; HIDDEN if it overflows and cannot be
+ * scrolled into view; SCROLL if it overflows but can be scrolled into view.
+ *
+ * @enum {string}
+ */
+bot.dom.OverflowState = {
+  NONE: 'none',
+  HIDDEN: 'hidden',
+  SCROLL: 'scroll'
+};
+
+
+/**
+ * Returns the overflow state of the given element.
+ *
+ * @param {!Element} elem Element.
+ * @return {bot.dom.OverflowState} Overflow state of the element.
+ */
+bot.dom.getOverflowState = function(elem) {
+  var elemRect = bot.dom.getClientRect(elem);
+  var ownerDoc = goog.dom.getOwnerDocument(elem);
+  var htmlElem = ownerDoc.documentElement;
+  var bodyElem = ownerDoc.body
+      || htmlElem; // SVG case
+  var htmlOverflowStyle = bot.dom.getEffectiveStyle(htmlElem, 'overflow');
+
+  // Return the x and y overflow styles for the given element.
+  function getOverflowStyles(e) {
+    // When the <html> element has an overflow style of 'visible', it assumes
+    // the overflow style of the body, and the body is really overflow:visible.
+    var overflowElem = e;
+    if (htmlOverflowStyle == 'visible') {
+      if (e == htmlElem) {
+        overflowElem = bodyElem;
+      } else if (e == bodyElem) {
+        return {x: 'visible', y: 'visible'};
+      }
+    }
+    var overflow = {
+      x: bot.dom.getEffectiveStyle(overflowElem, 'overflow-x'),
+      y: bot.dom.getEffectiveStyle(overflowElem, 'overflow-y')
+    };
+    // The <html> element is really only ever 'auto' or 'hidden'. CSS cannot
+    // force a scrollbar (so no genuine 'scroll' style) and it cannot force the
+    // viewport to expand to the content (so no genuine 'visible' style).
+    if (e == htmlElem) {
+      overflow.x = overflow.x == 'hidden' ? 'hidden' : 'auto';
+      overflow.y = overflow.y == 'hidden' ? 'hidden' : 'auto';
+    }
+    return overflow;
+  }
+
+  // Return the closest ancestor that the given element may overflow.
+  function getOverflowParent(e) {
+    var position = bot.dom.getEffectiveStyle(e, 'position');
+    if (position == 'fixed') {
+      // Fixed-position element may only overflow the viewport.
+      return htmlElem;
+    } else {
+      var parent = bot.dom.getParentElement(e);
+      while (parent && !canBeOverflowed(parent)) {
+        parent = bot.dom.getParentElement(parent);
+      }
+      return parent;
+    }
+
+    function canBeOverflowed(container) {
+      // The HTML element can always be overflowed.
+      if (container == htmlElem) {
+        return true;
+      }
+      // An element cannot overflow an element with an inline display style.
+      var containerDisplay = /** @type {string} */ (
+          bot.dom.getEffectiveStyle(container, 'display'));
+      if (goog.string.startsWith(containerDisplay, 'inline')) {
+        return false;
+      }
+      // An absolute-positioned element cannot overflow a static-positioned one.
+      if (position == 'absolute' &&
+          bot.dom.getEffectiveStyle(container, 'position') == 'static') {
+        return false;
+      }
+      return true;
+    }
+  }
+
+  // Check if the element overflows any ancestor element.
+  for (var container = getOverflowParent(elem);
+       !!container;
+       container = getOverflowParent(container)) {
+    var containerRect = bot.dom.getClientRect(container);
+    var containerOverflow = getOverflowStyles(container);
+
+    // Check "overflow": if an element is to the right or below a container
+    var overflowsX = elemRect.left >= containerRect.left + containerRect.width;
+    var overflowsY = elemRect.top >= containerRect.top + containerRect.height;
+    if ((overflowsX && containerOverflow.x == 'hidden') ||
+        (overflowsY && containerOverflow.y == 'hidden')) {
+      // The element is definitely hidden by overflow.
+      return bot.dom.OverflowState.HIDDEN;
+    } else if ((overflowsX && containerOverflow.x != 'visible') ||
+               (overflowsY && containerOverflow.y != 'visible')) {
+      // If the element can be scrolled into view of the parent, it has a scroll
+      // state; unless the parent itself is entirely hidden by overflow, in
+      // which it is also hidden by overflow.
+      var containerState = bot.dom.getOverflowState(container);
+      return containerState == bot.dom.OverflowState.HIDDEN ?
+          bot.dom.OverflowState.HIDDEN : bot.dom.OverflowState.SCROLL;
+    }
+  }
+
+  // Does not overflow any ancestor.
+  return bot.dom.OverflowState.NONE;
+};
+
+
+/**
+ * Gets the client rectangle of the DOM element. It often returns the same value
+ * as Element.getBoundingClientRect, but is "fixed" for various scenarios:
+ * 1. Like goog.style.getClientPosition, it adjusts for the inset border in IE.
+ * 2. Gets a rect for <map>'s and <area>'s relative to the image using them.
+ * 3. Gets a rect for SVG elements representing their true bounding box.
+ *
+ * @param {!Element} elem The element to use.
+ * @return {!goog.math.Rect} The interaction box of the element.
+ */
+bot.dom.getClientRect = function(elem) {
+  var imageMap = bot.dom.maybeFindImageMap_(elem);
+  if (imageMap) {
+    return imageMap.rect;
+  } else if (goog.isFunction(elem['getBBox'])) {
+    // Special case for SVG elements.
+    try {
+      var svgRect = elem['getBBox']();
+      return new goog.math.Rect(
+          svgRect.x, svgRect.y, svgRect.width, svgRect.height);
+    } catch (err) {
+      if (goog.userAgent.GECKO &&
+          (err.name === "NS_ERROR_FAILURE" ||
+           goog.string.contains(err.message,
+               'Component returned failure code: 0x80004005'))) {
+        // Working around https://bugzilla.mozilla.org/show_bug.cgi?id=612118
+        return new goog.math.Rect(0, 0, 0, 0);
+      } else {
+        throw err;
+      }
+    }
+  } else if (bot.dom.isElement(elem, goog.dom.TagName.HTML)) {
+    // Define the client rect of the <html> element to be the viewport.
+    var doc = goog.dom.getOwnerDocument(elem);
+    var viewportSize = goog.dom.getViewportSize(goog.dom.getWindow(doc));
+    return new goog.math.Rect(0, 0, viewportSize.width, viewportSize.height);
+  } else {
+    // getClientPosition accounts for inset borders on IE.
+    var pos = goog.style.getClientPosition(elem);
+    var offsetWidth = elem.offsetWidth;
+    var offsetHeight = elem.offsetHeight;
+    // Have to duplicate some code from Closure here, because it doesn't
+    // make goog.style.getSizeWithDisplay_ or getBoundingRect_ public.
+    if (goog.userAgent.WEBKIT && !offsetWidth && !offsetHeight &&
+        elem.getBoundingClientRect) {
+      // Fall back to calling getBoundingClientRect when offsetWidth or
+      // offsetHeight are undefined or are zero in WebKit browsers. This
+      // ensures we return the right size for <div>'s with display:inline.
+      var clientRect = elem.getBoundingClientRect();
+      offsetWidth = clientRect.right - clientRect.left;
+      offsetHeight = clientRect.bottom - clientRect.top;
+    }
+    return new goog.math.Rect(pos.x, pos.y, offsetWidth, offsetHeight);
+  }
+};
+
+
+/**
+ * If given a <map> or <area> element, finds the corresponding image and client
+ * rectangle of the element; otherwise returns null. The return value is an
+ * object with 'image' and 'rect' properties. When no image uses the given
+ * element, the returned rectangle is present but has zero size.
+ *
+ * @param {!Element} elem Element to test.
+ * @return {?{image: Element, rect: !goog.math.Rect}} Image and rectangle.
+ * @private
+ */
+bot.dom.maybeFindImageMap_ = function(elem) {
+  // If not a <map> or <area>, return null indicating so.
+  var isMap = bot.dom.isElement(elem, goog.dom.TagName.MAP);
+  if (!isMap && !bot.dom.isElement(elem, goog.dom.TagName.AREA)) {
+    return null;
+  }
+
+  // Get the <map> associated with this element, or null if none.
+  var map = isMap ? elem :
+      (bot.dom.isElement(elem.parentNode, goog.dom.TagName.MAP) ?
+          elem.parentNode : null);
+
+  var image = null, rect = null;
+  if (map && map.name) {
+    var mapDoc = goog.dom.getOwnerDocument(map);
+
+    // The "//*" XPath syntax can confuse the closure compiler, so we use
+    // the "/descendant::*" syntax instead.
+    // TODO(user): Try to find a reproducible case for the compiler bug.
+    // TODO(user): Restrict to applet, img, input:image, and object nodes.
+    var imageXpath = '/descendant::*[@usemap = "#' + map.name + '"]';
+
+    // TODO(user): Break dependency of bot.locators on bot.dom,
+    // so bot.locators.findElement can be called here instead.
+    image = bot.locators.xpath.single(imageXpath, mapDoc);
+
+    if (image) {
+      rect = bot.dom.getClientRect(image);
+      if (!isMap && elem.shape.toLowerCase() != 'default') {
+        // Shift and crop the relative area rectangle to the map.
+        var relRect = bot.dom.getAreaRelativeRect_(elem);
+        var relX = Math.min(Math.max(relRect.left, 0), rect.width);
+        var relY = Math.min(Math.max(relRect.top, 0), rect.height);
+        var w = Math.min(relRect.width, rect.width - relX);
+        var h = Math.min(relRect.height, rect.height - relY);
+        rect = new goog.math.Rect(relX + rect.left, relY + rect.top, w, h);
+      }
+    }
+  }
+
+  return {image: image, rect: rect || new goog.math.Rect(0, 0, 0, 0)};
+};
+
+
+/**
+ * Returns the bounding box around an <area> element relative to its enclosing
+ * <map>. Does not apply to <area> elements with shape=='default'.
+ *
+ * @param {!Element} area Area element.
+ * @return {!goog.math.Rect} Bounding box of the area element.
+ * @private
+ */
+bot.dom.getAreaRelativeRect_ = function(area) {
+  var shape = area.shape.toLowerCase();
+  var coords = area.coords.split(',');
+  if (shape == 'rect' && coords.length == 4) {
+    var x = coords[0], y = coords[1];
+    return new goog.math.Rect(x, y, coords[2] - x, coords[3] - y);
+  } else if (shape == 'circle' && coords.length == 3) {
+    var centerX = coords[0], centerY = coords[1], radius = coords[2];
+    return new goog.math.Rect(centerX - radius, centerY - radius,
+                              2 * radius, 2 * radius);
+  } else if (shape == 'poly' && coords.length > 2) {
+    var minX = coords[0], minY = coords[1], maxX = minX, maxY = minY;
+    for (var i = 2; i + 1 < coords.length; i += 2) {
+      minX = Math.min(minX, coords[i]);
+      maxX = Math.max(maxX, coords[i]);
+      minY = Math.min(minY, coords[i + 1]);
+      maxY = Math.max(maxY, coords[i + 1]);
+    }
+    return new goog.math.Rect(minX, minY, maxX - minX, maxY - minY);
+  }
+  return new goog.math.Rect(0, 0, 0, 0);
+};
+
+
+/**
+ * Checks whether the element is currently scrolled into the parent's overflow
+ * region, such that the offset given, relative to the top-left corner of the
+ * element, is currently in the overflow region.
+ *
+ * @param {!Element} element The element to check.
+ * @param {!goog.math.Coordinate=} opt_coords Coordinate in the element,
+ *     relative to the top-left corner of the element, to check. If none are
+ *     specified, checks that the center of the element is in in the overflow.
+ * @return {boolean} Whether the coordinates specified, relative to the element,
+ *     are scrolled in the parent overflow.
+ */
+bot.dom.isInParentOverflow = function(element, opt_coords) {
   var parent = goog.style.getOffsetParent(element);
   var parentNode = goog.userAgent.GECKO || goog.userAgent.IE ||
       goog.userAgent.OPERA ? bot.dom.getParentElement(element) : parent;
@@ -8392,36 +8809,35 @@ bot.dom.isInParentOverflow = function (element, opt_coords) {
 
   if (parent && (bot.dom.getEffectiveStyle(parent, 'overflow') == 'scroll' ||
                  bot.dom.getEffectiveStyle(parent, 'overflow') == 'auto')) {
-    var sizeOfParent = bot.dom.getElementSize(parent);
-    var locOfParent = goog.style.getClientPosition(parent);
-    var locOfElement = goog.style.getClientPosition(element);
+    var parentRect = bot.dom.getClientRect(parent);
+    var elementRect = bot.dom.getClientRect(element);
     var offsetX, offsetY;
     if (opt_coords) {
       offsetX = opt_coords.x;
       offsetY = opt_coords.y;
     } else {
-      var sizeOfElement = bot.dom.getElementSize(element);
-      offsetX = sizeOfElement.width / 2;
-      offsetY = sizeOfElement.height / 2;
+      offsetX = elementRect.width / 2;
+      offsetY = elementRect.height / 2;
     }
-    var elementPointX = locOfElement.x + offsetX;
-    var elementPointY = locOfElement.y + offsetY;
-    if (elementPointX >= locOfParent.x + sizeOfParent.width) {
+    var elementPointX = elementRect.left + offsetX;
+    var elementPointY = elementRect.top + offsetY;
+    if (elementPointX >= parentRect.left + parentRect.width) {
       return true;
     }
-    if (elementPointX <= locOfParent.x) {
+    if (elementPointX <= parentRect.left) {
       return true;
     }
-    if (elementPointY >= locOfParent.y + sizeOfParent.height) {
+    if (elementPointY >= parentRect.top + parentRect.height) {
       return true;
     }
-    if (elementPointY <= locOfParent.y) {
+    if (elementPointY <= parentRect.top) {
       return true;
     }
     return bot.dom.isInParentOverflow(parent);
   }
   return false;
 };
+
 
 /**
  * Trims leading and trailing whitespace from strings, leaving non-breaking
@@ -8462,10 +8878,10 @@ bot.dom.getVisibleText = function(elem) {
  */
 bot.dom.appendVisibleTextLinesFromElement_ = function(elem, lines) {
   function currLine() {
-    return (/** @type {string|undefined} */ goog.array.peek(lines)) || '';
+    return /** @type {string|undefined} */ (goog.array.peek(lines)) || '';
   }
 
-  // TODO(gdennis): Add case here for textual form elements.
+  // TODO(user): Add case here for textual form elements.
   if (bot.dom.isElement(elem, goog.dom.TagName.BR)) {
     lines.push('');
   } else {
@@ -8509,11 +8925,11 @@ bot.dom.appendVisibleTextLinesFromElement_ = function(elem, lines) {
 
     goog.array.forEach(elem.childNodes, function(node) {
       if (node.nodeType == goog.dom.NodeType.TEXT && shown) {
-        var textNode = (/** @type {!Text} */ node);
+        var textNode = /** @type {!Text} */ (node);
         bot.dom.appendVisibleTextLinesFromTextNode_(textNode, lines,
             whitespace, textTransform);
       } else if (bot.dom.isElement(node)) {
-        var castElem = (/** @type {!Element} */ node);
+        var castElem = /** @type {!Element} */ (node);
         bot.dom.appendVisibleTextLinesFromElement_(castElem, lines);
       }
     });
@@ -8882,7 +9298,7 @@ bot.dom.getLocationInView = function(elem, opt_elemRegion) {
   var rect = elem.getClientRects ? elem.getClientRects()[0] : null;
   var elemClientPos = rect ?
       new goog.math.Coordinate(rect.left, rect.top) :
-      goog.style.getClientPosition(elem);
+      bot.dom.getClientRect(elem);
   return new goog.math.Coordinate(elemClientPos.x + elemRegion.left,
                                   elemClientPos.y + elemRegion.top);
 };
@@ -9036,6 +9452,7 @@ bot.Error = function(code, opt_message) {
     // explicitly include it.
     return str.toUpperCase().replace(/^[\s\xa0]+/g, '');
   });
+
   var l = name.length - 'Error'.length;
   if (l < 0 || name.indexOf('Error', l) != l) {
     name += 'Error';
@@ -9197,9 +9614,8 @@ bot.events.SUPPORTS_TOUCH_EVENTS = !(goog.userAgent.IE &&
 
 /**
  * Whether the browser supports a native touch api.
- *
- * @const
  * @private {boolean}
+ * @const
  */
 bot.events.BROKEN_TOUCH_API_ = (function() {
   if (goog.userAgent.product.ANDROID) {
@@ -9356,7 +9772,7 @@ bot.events.EventFactory_ = function(type, bubbles, cancelable) {
 /**
  * Creates an event.
  *
- * @param {!Element} target Target element of the event.
+ * @param {!Element|!Window} target Target element of the event.
  * @param {bot.events.EventArgs=} opt_args Event arguments.
  * @return {!Event} Newly created event.
  */
@@ -9413,7 +9829,7 @@ bot.events.MouseEventFactory_.prototype.create = function(target, opt_args) {
         'Browser does not support a mouse pixel scroll event.');
   }
 
-  var args = (/** @type {!bot.events.MouseArgs} */ opt_args);
+  var args = /** @type {!bot.events.MouseArgs} */ (opt_args);
   var doc = goog.dom.getOwnerDocument(target);
   var event;
 
@@ -9507,7 +9923,7 @@ bot.events.MouseEventFactory_.prototype.create = function(target, opt_args) {
     if (goog.userAgent.IE &&
         event.pageX === 0 && event.pageY === 0 && Object.defineProperty) {
       var scrollElem = goog.dom.getDomHelper(target).getDocumentScrollElement();
-      var clientElem = goog.style.getClientViewportElement(target);
+      var clientElem = goog.style.getClientViewportElement(doc);
       var pageX = args.clientX + scrollElem.scrollLeft - clientElem.clientLeft;
       var pageY = args.clientY + scrollElem.scrollTop - clientElem.clientTop;
 
@@ -9549,7 +9965,7 @@ goog.inherits(bot.events.KeyboardEventFactory_, bot.events.EventFactory_);
  * @override
  */
 bot.events.KeyboardEventFactory_.prototype.create = function(target, opt_args) {
-  var args = (/** @type {!bot.events.KeyboardArgs} */ opt_args);
+  var args = /** @type {!bot.events.KeyboardArgs} */ (opt_args);
   var doc = goog.dom.getOwnerDocument(target);
   var event;
 
@@ -9612,7 +10028,7 @@ bot.events.TouchEventFactory_.prototype.create = function(target, opt_args) {
         'Browser does not support firing touch events.');
   }
 
-  var args = (/** @type {!bot.events.TouchArgs} */ opt_args);
+  var args = /** @type {!bot.events.TouchArgs} */ (opt_args);
   var doc = goog.dom.getOwnerDocument(target);
   var view = goog.dom.getWindow(doc);
 
@@ -9721,7 +10137,7 @@ bot.events.MSGestureEventFactory_.prototype.create = function(target,
         'Browser does not support MSGesture events.');
   }
 
-  var args = (/** @type {!bot.events.MSGestureArgs} */ opt_args);
+  var args = /** @type {!bot.events.MSGestureArgs} */ (opt_args);
   var doc = goog.dom.getOwnerDocument(target);
   var view = goog.dom.getWindow(doc);
   var event = doc.createEvent('MSGestureEvent');
@@ -9768,7 +10184,7 @@ bot.events.MSPointerEventFactory_.prototype.create = function(target,
         'Browser does not support MSPointer events.');
   }
 
-  var args = (/** @type {!bot.events.MSPointerArgs} */ opt_args);
+  var args = /** @type {!bot.events.MSPointerArgs} */ (opt_args);
   var doc = goog.dom.getOwnerDocument(target);
   var view = goog.dom.getWindow(doc);
   var event = doc.createEvent('MSPointerEvent');
@@ -9791,7 +10207,8 @@ bot.events.MSPointerEventFactory_.prototype.create = function(target,
  * The types of events this modules supports firing.
  *
  * <p>To see which events bubble and are cancelable, see:
- * http://en.wikipedia.org/wiki/DOM_events
+ * http://en.wikipedia.org/wiki/DOM_events and
+ * http://www.w3.org/Submission/pointer-events/#pointer-event-types
  *
  * @enum {!Object}
  */
@@ -9801,7 +10218,9 @@ bot.events.EventType = {
   FOCUS: new bot.events.EventFactory_('focus', false, false),
   FOCUSIN: new bot.events.EventFactory_('focusin', true, false),
   FOCUSOUT: new bot.events.EventFactory_('focusout', true, false),
-  INPUT: new bot.events.EventFactory_('input', false, false),
+  INPUT: new bot.events.EventFactory_('input', true, false),
+  ORIENTATIONCHANGE: new bot.events.EventFactory_(
+      'orientationchange', false, false),
   PROPERTYCHANGE: new bot.events.EventFactory_('propertychange', false, false),
   SELECT: new bot.events.EventFactory_('select', true, false),
   SUBMIT: new bot.events.EventFactory_('submit', true, true),
@@ -9846,6 +10265,12 @@ bot.events.EventType = {
       'MSInertiaStart', true, true),
 
   // MSPointer events
+  MSGOTPOINTERCAPTURE: new bot.events.MSPointerEventFactory_(
+      'MSGotPointerCapture', true, false),
+  MSLOSTPOINTERCAPTURE: new bot.events.MSPointerEventFactory_(
+      'MSLostPointerCapture', true, false),
+  MSPOINTERCANCEL: new bot.events.MSPointerEventFactory_(
+      'MSPointerCancel', true, true),
   MSPOINTERDOWN: new bot.events.MSPointerEventFactory_(
       'MSPointerDown', true, true),
   MSPOINTERMOVE: new bot.events.MSPointerEventFactory_(
@@ -9862,7 +10287,7 @@ bot.events.EventType = {
 /**
  * Fire a named event on a particular element.
  *
- * @param {!Element} target The element on which to fire the event.
+ * @param {!Element|!Window} target The element on which to fire the event.
  * @param {!bot.events.EventType} type Event type.
  * @param {bot.events.EventArgs=} opt_args Arguments to initialize the event.
  * @return {boolean} Whether the event fired successfully or was cancelled.
@@ -10145,7 +10570,7 @@ bot.inject.wrapValue = function(value) {
       return value.toString();
 
     case 'array':
-      return goog.array.map((/**@type {goog.array.ArrayLike}*/value),
+      return goog.array.map(/**@type {goog.array.ArrayLike}*/ (value),
           bot.inject.wrapValue);
 
     case 'object':
@@ -10153,7 +10578,7 @@ bot.inject.wrapValue = function(value) {
       // JSCompiler complains that it is too broad a type for the remainder of
       // this block where {!Object} is expected. Downcast to prevent generating
       // a ton of compiler warnings.
-      value = (/**@type {!Object}*/value);
+      value = /**@type {!Object}*/ (value);
 
       // Sniff out DOM elements. We're using duck-typing instead of an
       // instanceof check since the instanceof might not always work
@@ -10163,7 +10588,7 @@ bot.inject.wrapValue = function(value) {
            value['nodeType'] == goog.dom.NodeType.DOCUMENT)) {
         var ret = {};
         ret[bot.inject.ELEMENT_KEY] =
-            bot.inject.cache.addElement((/**@type {!Element}*/value));
+            bot.inject.cache.addElement(/**@type {!Element}*/ (value));
         return ret;
       }
 
@@ -10171,12 +10596,12 @@ bot.inject.wrapValue = function(value) {
       if (goog.object.containsKey(value, 'document')) {
         var ret = {};
         ret[bot.inject.WINDOW_KEY] =
-            bot.inject.cache.addElement((/**@type{!Window}*/value));
+            bot.inject.cache.addElement(/**@type{!Window}*/ (value));
         return ret;
       }
 
       if (goog.isArrayLike(value)) {
-        return goog.array.map((/**@type {goog.array.ArrayLike}*/value),
+        return goog.array.map(/**@type {goog.array.ArrayLike}*/ (value),
             bot.inject.wrapValue);
       }
 
@@ -10201,7 +10626,7 @@ bot.inject.wrapValue = function(value) {
  */
 bot.inject.unwrapValue_ = function(value, opt_doc) {
   if (goog.isArray(value)) {
-    return goog.array.map((/**@type {goog.array.ArrayLike}*/value),
+    return goog.array.map(/**@type {goog.array.ArrayLike}*/ (value),
         function(v) { return bot.inject.unwrapValue_(v, opt_doc); });
   } else if (goog.isObject(value)) {
     if (typeof value == 'function') {
@@ -10290,7 +10715,7 @@ bot.inject.executeScript = function(fn, args, opt_stringify, opt_window) {
   var ret;
   try {
     fn = bot.inject.recompileFunction_(fn, win);
-    var unwrappedArgs = (/**@type {Object}*/bot.inject.unwrapValue_(args,
+    var unwrappedArgs = /**@type {Object}*/ (bot.inject.unwrapValue_(args,
         win.document));
     ret = bot.inject.wrapResponse(fn.apply(null, unwrappedArgs));
   } catch (ex) {
@@ -10442,8 +10867,8 @@ bot.inject.wrapError = function(err) {
  * when it is injected into the page. Since compiling each browser atom results
  * in a different symbol table, we must use this known key to access the cache.
  * This ensures the same object is used between injections of different atoms.
- * @const
  * @private {string}
+ * @const
  */
 bot.inject.cache.CACHE_KEY_ = '$wdc_';
 
@@ -10574,7 +10999,7 @@ goog.require('goog.userAgent');
 
 /**
  * @define {boolean} NATIVE_JSON indicates whether the code should rely on the
- * native {@ocde JSON} functions, if available.
+ * native {@code JSON} functions, if available.
  *
  * <p>The JSON functions can be defined by external libraries like Prototype
  * and setting this flag to false forces the use of Closure's goog.json
@@ -10697,7 +11122,6 @@ goog.inherits(bot.Keyboard, bot.Device);
 /**
  * Maps characters to (key,boolean) pairs, where the key generates the
  * character and the boolean is true when the shift must be pressed.
- *
  * @private {!Object.<string, {key: !bot.Keyboard.Key, shift: boolean}>}
  * @const
  */
@@ -10952,6 +11376,7 @@ bot.Keyboard.MODIFIERS = [
   bot.Keyboard.Keys.SHIFT
 ];
 
+
 /**
  * Map of modifier to key.
  * @private {!goog.structs.Map.<!bot.Device.Modifier, !bot.Keyboard.Key>}
@@ -10978,7 +11403,7 @@ bot.Keyboard.MODIFIER_TO_KEY_MAP_ = (function() {
 bot.Keyboard.KEY_TO_MODIFIER_ = (function(modifiersMap) {
   var keyToModifierMap = new goog.structs.Map();
   goog.array.forEach(modifiersMap.getKeys(), function(m) {
-      keyToModifierMap.set(modifiersMap.get(m).code, m);
+    keyToModifierMap.set(modifiersMap.get(m).code, m);
   });
 
   return keyToModifierMap;
@@ -10988,8 +11413,8 @@ bot.Keyboard.KEY_TO_MODIFIER_ = (function(modifiersMap) {
 /**
  * Set the modifier state if the provided key is one, otherwise just add
  * to the list of pressed keys.
- * @param {bot.Keyboard.Key} key
- * @param {boolean} isPressed
+ * @param {bot.Keyboard.Key} key The key to update.
+ * @param {boolean} isPressed Whether the key is pressed.
  * @private
  */
 bot.Keyboard.prototype.setKeyPressed_ = function(key, isPressed) {
@@ -11202,9 +11627,8 @@ bot.Keyboard.prototype.getChar_ = function(key) {
 /**
  * Whether firing a keypress event causes text to be edited without any
  * additional logic to surgically apply the edit.
- *
- * @const
  * @private {boolean}
+ * @const
  */
 bot.Keyboard.KEYPRESS_EDITS_TEXT_ = goog.userAgent.GECKO &&
     !bot.userAgent.isEngineVersion(12);
@@ -11245,7 +11669,7 @@ bot.Keyboard.prototype.updateOnEnter_ = function() {
     this.fireHtmlEvent(bot.events.EventType.TEXTINPUT);
   }
   if (bot.dom.isElement(this.getElement(), goog.dom.TagName.TEXTAREA)) {
-    var newPos = goog.dom.selection.getStart(this.getElement()) + 
+    var newPos = goog.dom.selection.getStart(this.getElement()) +
         bot.Keyboard.NEW_LINE_.length;
     goog.dom.selection.setText(this.getElement(), bot.Keyboard.NEW_LINE_);
     goog.dom.selection.setStart(this.getElement(), newPos);
@@ -11385,7 +11809,7 @@ bot.Keyboard.prototype.updateOnHomeOrEnd_ = function(key) {
       goog.dom.selection.setStart(element, 0);
       // If current position is at the end of the selection, typing home
       // changes the selection to begin at the beginning of the text, running
-      // to the where the current selection begins. 
+      // to the where the current selection begins.
       var endPos = this.currentPos_ == start ? end : start;
       // On IE, changing goog.dom.selection.setStart also changes the end.
       goog.dom.selection.setEnd(element, endPos);
@@ -11397,8 +11821,8 @@ bot.Keyboard.prototype.updateOnHomeOrEnd_ = function(key) {
     if (this.isPressed(bot.Keyboard.Keys.SHIFT)) {
       if (this.currentPos_ == start) {
         // Current position is at the beginning of the selection. Typing end
-        // changes the selection to begin where the current selection ends, 
-        // running to the end of the text. 
+        // changes the selection to begin where the current selection ends,
+        // running to the end of the text.
         goog.dom.selection.setStart(element, end);
       }
       goog.dom.selection.setEnd(element, element.value.length);
@@ -11409,8 +11833,9 @@ bot.Keyboard.prototype.updateOnHomeOrEnd_ = function(key) {
   }
 };
 
+
 /**
-* @param {number} pos New position of the cursor
+* @param {number} pos New position of the cursor.
 * @private
 */
 bot.Keyboard.prototype.updateCurrentPos_ = function(pos) {
@@ -11468,10 +11893,10 @@ bot.Keyboard.prototype.moveCursor = function(element) {
 /**
  * Serialize the current state of the keyboard.
  *
- * @return {{pressed: !Array.<!bot.Keyboard.Key>, currentPos: number}} The 
+ * @return {{pressed: !Array.<!bot.Keyboard.Key>, currentPos: number}} The
  *     current keyboard state.
  */
-bot.Keyboard.prototype.getState = function () {
+bot.Keyboard.prototype.getState = function() {
   // Need to use quoted literals here, so the compiler will not rename the
   // properties of the emitted object. When the object is created via the
   // "constructor", we will look for these *specific* properties. Everywhere
@@ -11482,6 +11907,7 @@ bot.Keyboard.prototype.getState = function () {
     'currentPos': this.currentPos_
   };
 };
+
 
 /**
  * Returns the state of the modifier keys, to be shared with other input
@@ -11526,7 +11952,6 @@ goog.require('bot.userAgent');
 goog.require('goog.dom');
 goog.require('goog.dom.TagName');
 goog.require('goog.math.Coordinate');
-goog.require('goog.style');
 goog.require('goog.userAgent');
 
 
@@ -11536,12 +11961,13 @@ goog.require('goog.userAgent');
  * supports having one button pressed at a time.
  * @param {bot.Mouse.State=} opt_state The mouse's initial state.
  * @param {bot.Device.ModifiersState=} opt_modifiersState State of the keyboard.
+ * @param {bot.Device.EventEmitter=} opt_eventEmitter An object that should be used to fire events.
  *
  * @constructor
  * @extends {bot.Device}
  */
-bot.Mouse = function(opt_state, opt_modifiersState) {
-  goog.base(this, opt_modifiersState);
+bot.Mouse = function(opt_state, opt_modifiersState, opt_eventEmitter) {
+  goog.base(this, opt_modifiersState, opt_eventEmitter);
 
   /** @private {?bot.Mouse.Button} */
   this.buttonPressed_ = null;
@@ -11557,7 +11983,6 @@ bot.Mouse = function(opt_state, opt_modifiersState) {
 
   /**
    * Whether this Mouse has ever explicitly interacted with any element.
-   *
    * @private {boolean}
    */
   this.hasEverInteracted_ = false;
@@ -11579,7 +12004,7 @@ bot.Mouse = function(opt_state, opt_modifiersState) {
 
     try {
       if (bot.dom.isElement(opt_state.element)) {
-        this.setElement((/** @type {!Element} */opt_state.element));
+        this.setElement(/** @type {!Element} */ (opt_state.element));
       }
     } catch (ignored) {
       this.buttonPressed_ = null;
@@ -11614,7 +12039,6 @@ bot.Mouse.Button = {
 
 /**
  * Index to indicate no button pressed in bot.Mouse.MOUSE_BUTTON_VALUE_MAP_.
- *
  * @private {number}
  * @const
  */
@@ -11626,11 +12050,10 @@ bot.Mouse.NO_BUTTON_VALUE_INDEX_ = 3;
  * The array is indexed by the bot.Mouse.Button values. It encodes this table,
  * where each cell contains the (left/middle/right/none) button values.
  *               click/    mouseup/   mouseout/  mousemove  contextmenu
- *               dblclick/ mousedown  mouseover
+ *               dblclick  mousedown  mouseover
  * IE_DOC_PRE9   0 0 0 X   1 4 2 X    0 0 0 0    1 4 2 0    X X 0 X
  * WEBKIT/IE9    0 1 2 X   0 1 2 X    0 1 2 0    0 1 2 0    X X 2 X
  * GECKO/OPERA   0 1 2 X   0 1 2 X    0 0 0 0    0 0 0 0    X X 2 X
- *
  * @private {!Object.<bot.events.EventType, !Array.<?number>>}
  * @const
  */
@@ -11684,13 +12107,15 @@ bot.Mouse.MOUSE_BUTTON_VALUE_MAP_ = (function() {
  * Maps mouse events to corresponding MSPointer event.
  * @private {!Object.<bot.events.EventType, bot.events.EventType>}
  */
-bot.Mouse.MOUSE_EVENT_MAP_ = {
-  mousedown: bot.events.EventType.MSPOINTERDOWN,
-  mousemove: bot.events.EventType.MSPOINTERMOVE,
-  mouseout: bot.events.EventType.MSPOINTEROUT,
-  mouseover: bot.events.EventType.MSPOINTEROVER,
-  mouseup: bot.events.EventType.MSPOINTERUP
-};
+bot.Mouse.MOUSE_EVENT_MAP_ = (function() {
+  var map = {};
+  map[bot.events.EventType.MOUSEDOWN] = bot.events.EventType.MSPOINTERDOWN;
+  map[bot.events.EventType.MOUSEMOVE] = bot.events.EventType.MSPOINTERMOVE;
+  map[bot.events.EventType.MOUSEOUT] = bot.events.EventType.MSPOINTEROUT;
+  map[bot.events.EventType.MOUSEOVER] = bot.events.EventType.MSPOINTEROVER;
+  map[bot.events.EventType.MOUSEUP] = bot.events.EventType.MSPOINTERUP;
+  return map;
+})();
 
 
 /**
@@ -11745,6 +12170,13 @@ bot.Mouse.prototype.pressButton = function(button) {
 
   var performFocus = this.fireMousedown_();
   if (performFocus) {
+    if (bot.userAgent.IE_DOC_10 &&
+        this.buttonPressed_ == bot.Mouse.Button.LEFT &&
+        bot.dom.isElement(this.elementPressed_, goog.dom.TagName.OPTION)) {
+      this.fireMSPointerEvent(bot.events.EventType.MSGOTPOINTERCAPTURE,
+          this.clientXY_, 0, bot.Device.MOUSE_MS_POINTER_ID,
+          MSPointerEvent.MSPOINTER_TYPE_MOUSE, true);
+    }
     this.focusOnElement();
   }
 };
@@ -11760,6 +12192,7 @@ bot.Mouse.prototype.releaseButton = function() {
         'Cannot release a button when no button is pressed.');
   }
 
+  this.maybeToggleOption();
   this.fireMouseEvent_(bot.events.EventType.MOUSEUP);
 
   // TODO(user): Middle button can also trigger click.
@@ -11768,11 +12201,18 @@ bot.Mouse.prototype.releaseButton = function() {
     this.clickElement(this.clientXY_,
         this.getButtonValue_(bot.events.EventType.CLICK));
     this.maybeDoubleClickElement_();
-
+    if (bot.userAgent.IE_DOC_10 &&
+        this.buttonPressed_ == bot.Mouse.Button.LEFT &&
+        bot.dom.isElement(this.elementPressed_, goog.dom.TagName.OPTION)) {
+      this.fireMSPointerEvent(bot.events.EventType.MSLOSTPOINTERCAPTURE,
+          new goog.math.Coordinate(0, 0), 0, bot.Device.MOUSE_MS_POINTER_ID,
+          MSPointerEvent.MSPOINTER_TYPE_MOUSE, false);
+    }
   // TODO(user): In Linux, this fires after mousedown event.
   } else if (this.buttonPressed_ == bot.Mouse.Button.RIGHT) {
     this.fireMouseEvent_(bot.events.EventType.CONTEXTMENU);
   }
+  bot.Device.clearPointerMap();
   this.buttonPressed_ = null;
   this.elementPressed_ = null;
 };
@@ -11804,9 +12244,9 @@ bot.Mouse.prototype.move = function(element, coords) {
   // full event sequence, even if hidden by an element mid sequence.
   var toElemWasInteractable = bot.dom.isInteractable(element);
 
-  var pos = goog.style.getClientPosition(element);
-  this.clientXY_.x = coords.x + pos.x;
-  this.clientXY_.y = coords.y + pos.y;
+  var rect = bot.dom.getClientRect(element);
+  this.clientXY_.x = coords.x + rect.left;
+  this.clientXY_.y = coords.y + rect.top;
   var fromElement = this.getElement();
 
   if (element != fromElement) {
@@ -11907,7 +12347,7 @@ bot.Mouse.prototype.fireMouseEvent_ = function(type, opt_related,
       // The pointerId for mouse events is always 1 and the mouse event is never
       // fired if the MSPointer event fails.
       if (!this.fireMSPointerEvent(msPointerEvent, this.clientXY_,
-          this.getButtonValue_(msPointerEvent),  /* pointerId */ 1,
+          this.getButtonValue_(msPointerEvent), bot.Device.MOUSE_MS_POINTER_ID,
           MSPointerEvent.MSPOINTER_TYPE_MOUSE, /* isPrimary */ true,
           opt_related, opt_force)) {
         return false;
@@ -12008,7 +12448,7 @@ bot.response.isResponseObject = function(value) {
  */
 bot.response.createResponse = function(value) {
   if (bot.response.isResponseObject(value)) {
-    return (/** @type {!bot.response.ResponseObject} */value);
+    return /** @type {!bot.response.ResponseObject} */ (value);
   }
   return {
     'status': bot.ErrorCode.SUCCESS,
@@ -12025,13 +12465,13 @@ bot.response.createResponse = function(value) {
  */
 bot.response.createErrorResponse = function(error) {
   if (bot.response.isResponseObject(error)) {
-    return (/** @type {!bot.response.ResponseObject} */error);
+    return /** @type {!bot.response.ResponseObject} */ (error);
   }
 
   var statusCode = error && goog.isNumber(error.code) ? error.code :
       bot.ErrorCode.UNKNOWN_ERROR;
   return {
-    'status': (/** @type {bot.ErrorCode} */statusCode),
+    'status': /** @type {bot.ErrorCode} */ (statusCode),
     'value': {
       'message': (error && error.message || error) + ''
     }
@@ -12091,9 +12531,9 @@ goog.require('bot');
 goog.require('bot.Device');
 goog.require('bot.Error');
 goog.require('bot.ErrorCode');
+goog.require('bot.dom');
 goog.require('bot.events.EventType');
 goog.require('goog.math.Coordinate');
-goog.require('goog.style');
 
 
 
@@ -12123,6 +12563,10 @@ goog.inherits(bot.Touchscreen, bot.Device);
 bot.Touchscreen.prototype.hasMovedAfterPress_ = false;
 
 
+/** @private {boolean} */
+bot.Touchscreen.prototype.cancelled_ = false;
+
+
 /** @private {number} */
 bot.Touchscreen.prototype.touchIdentifier_ = 0;
 
@@ -12132,7 +12576,7 @@ bot.Touchscreen.prototype.touchIdentifier2_ = 0;
 
 
 /** @private {number} */
-bot.Touchscreen.prototype.touchCounter_ = 1;
+bot.Touchscreen.prototype.touchCounter_ = 2;
 
 
 /**
@@ -12173,13 +12617,15 @@ bot.Touchscreen.prototype.release = function() {
         'Cannot release touchscreen when not already pressed.');
   }
 
-  if (bot.userAgent.IE_DOC_10) {
-    this.firePointerEvents_(bot.Touchscreen.fireSingleReleasePointer_);
-  } else {
+  if (!bot.userAgent.IE_DOC_10) {
     this.fireTouchReleaseEvents_();
+  } else if (!this.cancelled_) {
+    this.firePointerEvents_(bot.Touchscreen.fireSingleReleasePointer_);
   }
+  bot.Device.clearPointerMap();
   this.touchIdentifier_ = 0;
   this.touchIdentifier2_ = 0;
+  this.cancelled_ = false;
 };
 
 
@@ -12196,25 +12642,39 @@ bot.Touchscreen.prototype.move = function(element, coords, opt_coords2) {
   // The target element for touch actions is the original element. Hence, the
   // element is set only when the touchscreen is not currently being pressed.
   // The exception is IE10 which fire events on the moved to element.
+  var originalElement = this.getElement();
   if (!this.isPressed() || bot.userAgent.IE_DOC_10) {
     this.setElement(element);
   }
 
-  var pos = goog.style.getClientPosition(element);
-  this.clientXY_.x = coords.x + pos.x;
-  this.clientXY_.y = coords.y + pos.y;
+  var rect = bot.dom.getClientRect(element);
+  this.clientXY_.x = coords.x + rect.left;
+  this.clientXY_.y = coords.y + rect.top;
 
   if (goog.isDef(opt_coords2)) {
-    this.clientXY2_.x = opt_coords2.x + pos.x;
-    this.clientXY2_.y = opt_coords2.y + pos.y;
+    this.clientXY2_.x = opt_coords2.x + rect.left;
+    this.clientXY2_.y = opt_coords2.y + rect.top;
   }
 
   if (this.isPressed()) {
-    this.hasMovedAfterPress_ = true;
-    if (bot.userAgent.IE_DOC_10) {
-      this.firePointerEvents_(bot.Touchscreen.fireSingleMovePointer_);
-    } else {
+    if (!bot.userAgent.IE_DOC_10) {
+      this.hasMovedAfterPress_ = true;
       this.fireTouchEvent_(bot.events.EventType.TOUCHMOVE);
+    } else if (!this.cancelled_) {
+      if (element != originalElement) {
+        this.hasMovedAfterPress_ = true;
+      }
+      if (bot.Touchscreen.hasMsTouchActionsEnabled_(element)) {
+        this.firePointerEvents_(bot.Touchscreen.fireSingleMovePointer_);
+      } else {
+        this.fireMSPointerEvent(bot.events.EventType.MSPOINTEROUT, coords, -1,
+            this.touchIdentifier_, MSPointerEvent.MSPOINTER_TYPE_TOUCH, true);
+        this.fireMouseEvent(bot.events.EventType.MOUSEOUT, coords, 0);
+        this.fireMSPointerEvent(bot.events.EventType.MSPOINTERCANCEL, coords, 0,
+            this.touchIdentifier_, MSPointerEvent.MSPOINTER_TYPE_TOUCH, true);
+        this.cancelled_ = true;
+        bot.Device.clearPointerMap();
+      }
     }
   }
 };
@@ -12273,6 +12733,7 @@ bot.Touchscreen.prototype.fireTouchReleaseEvents_ = function() {
     if (performFocus) {
       this.focusOnElement();
     }
+    this.maybeToggleOption();
     this.fireMouseEvent(bot.events.EventType.MOUSEUP, this.clientXY_, 0);
 
     // Special click logic to follow links and to perform form actions.
@@ -12283,14 +12744,18 @@ bot.Touchscreen.prototype.fireTouchReleaseEvents_ = function() {
 
 /**
  * A helper function to fire a sequence of Pointer events.
- * @param {function(!bot.Touchscreen, !goog.math.Coordinate, number, boolean)}
- *     fireSinglePointer A function that fires a set of events for one finger.
+ * @param {function(!bot.Touchscreen, !Element, !goog.math.Coordinate, number,
+ *     boolean)} fireSinglePointer A function that fires a set of events for one
+ *     finger.
  * @private
  */
 bot.Touchscreen.prototype.firePointerEvents_ = function(fireSinglePointer) {
-  fireSinglePointer(this, this.clientXY_, this.touchIdentifier_, true);
-  if (this.touchIdentifier2_) {
-    fireSinglePointer(this, this.clientXY2_, this.touchIdentifier2_, false);
+  fireSinglePointer(this, this.getElement(), this.clientXY_,
+                    this.touchIdentifier_, true);
+  if (this.touchIdentifier2_ &&
+      bot.Touchscreen.hasMsTouchActionsEnabled_(this.getElement())) {
+    fireSinglePointer(this, this.getElement(),
+                      this.clientXY2_, this.touchIdentifier2_, false);
   }
 };
 
@@ -12299,6 +12764,7 @@ bot.Touchscreen.prototype.firePointerEvents_ = function(fireSinglePointer) {
  * A helper function to fire Pointer events related to a press.
  *
  * @param {!bot.Touchscreen} ts A touchscreen object.
+ * @param {!Element} element Element that is being pressed.
  * @param {!goog.math.Coordinate} coords Coordinates relative to
  *   currentElement.
  * @param {number} id The touch identifier.
@@ -12306,7 +12772,8 @@ bot.Touchscreen.prototype.firePointerEvents_ = function(fireSinglePointer) {
  *     of contact.
  * @private
  */
-bot.Touchscreen.fireSinglePressPointer_ = function(ts, coords, id, isPrimary) {
+bot.Touchscreen.fireSinglePressPointer_ = function(ts, element, coords, id,
+    isPrimary) {
   // Fire a mousemove event.
   ts.fireMouseEvent(bot.events.EventType.MOUSEMOVE, coords, 0);
 
@@ -12321,6 +12788,11 @@ bot.Touchscreen.fireSinglePressPointer_ = function(ts, coords, id, isPrimary) {
 
   // Element gets focus after the mousedown event.
   if (ts.fireMouseEvent(bot.events.EventType.MOUSEDOWN, coords, 0)) {
+    // For selectable elements, IE 10 fires a MSGotPointerCapture event.
+    if (bot.dom.isSelectable(element)) {
+      ts.fireMSPointerEvent(bot.events.EventType.MSGOTPOINTERCAPTURE, coords, 0,
+          id, MSPointerEvent.MSPOINTER_TYPE_TOUCH, isPrimary);
+    }
     ts.focusOnElement();
   }
 };
@@ -12330,6 +12802,7 @@ bot.Touchscreen.fireSinglePressPointer_ = function(ts, coords, id, isPrimary) {
  * A helper function to fire Pointer events related to a release.
  *
  * @param {!bot.Touchscreen} ts A touchscreen object.
+ * @param {!Element} element Element that is being released.
  * @param {!goog.math.Coordinate} coords Coordinates relative to
  *   currentElement.
  * @param {number} id The touch identifier.
@@ -12337,20 +12810,32 @@ bot.Touchscreen.fireSinglePressPointer_ = function(ts, coords, id, isPrimary) {
  *     of contact.
  * @private
  */
-bot.Touchscreen.fireSingleReleasePointer_ = function(ts, coords, id,
-                                                     isPrimary) {
+bot.Touchscreen.fireSingleReleasePointer_ = function(ts, element, coords, id,
+    isPrimary) {
   // Fire a MSPointerUp and mouseup events.
   ts.fireMSPointerEvent(bot.events.EventType.MSPOINTERUP, coords, 0, id,
       MSPointerEvent.MSPOINTER_TYPE_TOUCH, isPrimary);
-  ts.fireMouseEvent(bot.events.EventType.MOUSEUP, coords, 0);
+  ts.fireMouseEvent(bot.events.EventType.MOUSEUP, coords, 0, null, 0, false,
+      id);
 
   // Fire a click.
-  ts.clickElement(coords, 0);
+  if (!ts.hasMovedAfterPress_) {
+    ts.maybeToggleOption();
+    ts.clickElement(ts.clientXY_, 0, id);
+  }
+
+  if (bot.dom.isSelectable(element)) {
+    // For selectable elements, IE 10 fires a MSLostPointerCapture event.
+    ts.fireMSPointerEvent(bot.events.EventType.MSLOSTPOINTERCAPTURE,
+        new goog.math.Coordinate(0, 0), 0, id,
+        MSPointerEvent.MSPOINTER_TYPE_TOUCH, false);
+  }
 
   // Fire a MSPointerOut and mouseout events.
   ts.fireMSPointerEvent(bot.events.EventType.MSPOINTEROUT, coords, -1, id,
       MSPointerEvent.MSPOINTER_TYPE_TOUCH, isPrimary);
-  ts.fireMouseEvent(bot.events.EventType.MOUSEOUT, coords, 0);
+  ts.fireMouseEvent(bot.events.EventType.MOUSEOUT, coords, 0, null, 0, false,
+      id);
 };
 
 
@@ -12358,6 +12843,7 @@ bot.Touchscreen.fireSingleReleasePointer_ = function(ts, coords, id,
  * A helper function to fire Pointer events related to a move.
  *
  * @param {!bot.Touchscreen} ts A touchscreen object.
+ * @param {!Element} element Element that is being moved.
  * @param {!goog.math.Coordinate} coords Coordinates relative to
  *   currentElement.
  * @param {number} id The touch identifier.
@@ -12365,11 +12851,40 @@ bot.Touchscreen.fireSingleReleasePointer_ = function(ts, coords, id,
  *     of contact.
  * @private
  */
-bot.Touchscreen.fireSingleMovePointer_ = function(ts, coords, id, isPrimary) {
+bot.Touchscreen.fireSingleMovePointer_ = function(ts, element, coords, id,
+    isPrimary) {
   // Fire a MSPointerMove and mousemove events.
   ts.fireMSPointerEvent(bot.events.EventType.MSPOINTERMOVE, coords, -1, id,
       MSPointerEvent.MSPOINTER_TYPE_TOUCH, isPrimary);
-  ts.fireMouseEvent(bot.events.EventType.MOUSEMOVE, coords, 0);
+  ts.fireMouseEvent(bot.events.EventType.MOUSEMOVE, coords, 0, null, 0, false,
+      id);
+};
+
+
+/**
+ * A function that determines whether an element can be manipulated by the user.
+ * The msTouchAction style is queried and an element can be manipulated if the
+ * style value is none. If an element cannot be manipulated, then move gestures
+ * will result in a cancellation and multi-touch events will be prevented. Tap
+ * gestures will still be allowed. If not on IE 10, the function returns true.
+ *
+ * @param {!Element} element The element being manipulated.
+ * @return {boolean} Whether the element can be manipulated.
+ * @private
+ */
+bot.Touchscreen.hasMsTouchActionsEnabled_ = function(element) {
+  if (!bot.userAgent.IE_DOC_10) {
+    throw new Error('hasMsTouchActionsEnable should only be called from IE 10');
+  }
+
+  // Although this particular element may have a style indicating that it cannot
+  // receive javascript events, its parent may indicate otherwise.
+  if (bot.dom.getEffectiveStyle(element, 'ms-touch-action') == 'none') {
+    return true;
+  } else {
+    var parent = bot.dom.getParentElement(element);
+    return !!parent && bot.Touchscreen.hasMsTouchActionsEnabled_(parent);
+  }
 };
 // Copyright 2011 WebDriver committers
 // Copyright 2011 Google Inc.
@@ -12419,7 +12934,7 @@ bot.userAgent.isEngineVersion = function(version) {
     return goog.string.compareVersions(
         /** @type {number} */ (goog.userAgent.DOCUMENT_MODE), version) >= 0;
   } else {
-    return goog.userAgent.isVersion(version);
+    return goog.userAgent.isVersionOrHigher(version);
   }
 };
 
@@ -12454,7 +12969,6 @@ bot.userAgent.isProductVersion = function(version) {
  * When we are in a Firefox extension, this is a function that accepts a version
  * and returns whether the version of Gecko we are on is the same or higher
  * than the given version. When we are not in a Firefox extension, this is null.
- *
  * @private {(undefined|function((string|number)): boolean)}
  */
 bot.userAgent.FIREFOX_EXTENSION_IS_ENGINE_VERSION_;
@@ -12464,7 +12978,6 @@ bot.userAgent.FIREFOX_EXTENSION_IS_ENGINE_VERSION_;
  * When we are in a Firefox extension, this is a function that accepts a version
  * and returns whether the version of Firefox we are on is the same or higher
  * than the given version. When we are not in a Firefox extension, this is null.
- *
  * @private {(undefined|function((string|number)): boolean)}
  */
 bot.userAgent.FIREFOX_EXTENSION_IS_PRODUCT_VERSION_;
@@ -12537,9 +13050,8 @@ bot.userAgent.MOBILE = bot.userAgent.IOS || goog.userAgent.product.ANDROID;
 
 /**
  * Android Operating System Version.
- *
- * @const
  * @private {string}
+ * @const
  */
 bot.userAgent.ANDROID_VERSION_ = (function() {
   if (goog.userAgent.product.ANDROID) {
@@ -12558,7 +13070,7 @@ bot.userAgent.ANDROID_VERSION_ = (function() {
  * @const
  */
 bot.userAgent.IE_DOC_PRE8 = goog.userAgent.IE &&
-    !goog.userAgent.isDocumentMode(8);
+    !goog.userAgent.isDocumentModeOrHigher(8);
 
 
 /**
@@ -12566,7 +13078,7 @@ bot.userAgent.IE_DOC_PRE8 = goog.userAgent.IE &&
  * @type {boolean}
  * @const
  */
-bot.userAgent.IE_DOC_9 = goog.userAgent.isDocumentMode(9);
+bot.userAgent.IE_DOC_9 = goog.userAgent.isDocumentModeOrHigher(9);
 
 
 /**
@@ -12575,7 +13087,7 @@ bot.userAgent.IE_DOC_9 = goog.userAgent.isDocumentMode(9);
  * @const
  */
 bot.userAgent.IE_DOC_PRE9 = goog.userAgent.IE &&
-    !goog.userAgent.isDocumentMode(9);
+    !goog.userAgent.isDocumentModeOrHigher(9);
 
 
 /**
@@ -12583,7 +13095,7 @@ bot.userAgent.IE_DOC_PRE9 = goog.userAgent.IE &&
  * @type {boolean}
  * @const
  */
-bot.userAgent.IE_DOC_10 = goog.userAgent.isDocumentMode(10);
+bot.userAgent.IE_DOC_10 = goog.userAgent.isDocumentModeOrHigher(10);
 
 
 /**
@@ -12592,7 +13104,7 @@ bot.userAgent.IE_DOC_10 = goog.userAgent.isDocumentMode(10);
  * @const
  */
 bot.userAgent.IE_DOC_PRE10 = goog.userAgent.IE &&
-    !goog.userAgent.isDocumentMode(10);
+    !goog.userAgent.isDocumentModeOrHigher(10);
 
 
 /**
@@ -12627,19 +13139,22 @@ goog.provide('bot.window');
 goog.require('bot');
 goog.require('bot.Error');
 goog.require('bot.ErrorCode');
+goog.require('bot.events');
 goog.require('bot.userAgent');
+goog.require('goog.dom.DomHelper');
 goog.require('goog.math.Coordinate');
 goog.require('goog.math.Size');
+goog.require('goog.style');
 goog.require('goog.userAgent');
+goog.require('goog.userAgent.product');
 
 
 /**
  * Whether the value of history.length includes a newly loaded page. If not,
  * after a new page load history.length is the number of pages that have loaded,
  * minus 1, but becomes the total number of pages on a subsequent back() call.
- *
- * @const
  * @private {boolean}
+ * @const
  */
 bot.window.HISTORY_LENGTH_INCLUDES_NEW_PAGE_ = !goog.userAgent.IE &&
     !goog.userAgent.OPERA;
@@ -12650,12 +13165,60 @@ bot.window.HISTORY_LENGTH_INCLUDES_NEW_PAGE_ = !goog.userAgent.IE &&
  * in the history. If not, history.length equals the number of prior pages.
  * Here is the WebKit bug for this behavior that was fixed by version 533:
  * https://bugs.webkit.org/show_bug.cgi?id=24472
- *
- * @const
  * @private {boolean}
+ * @const
  */
 bot.window.HISTORY_LENGTH_INCLUDES_FORWARD_PAGES_ = !goog.userAgent.OPERA &&
     (!goog.userAgent.WEBKIT || bot.userAgent.isEngineVersion('533'));
+
+
+/**
+ * Screen orientation values. From the draft W3C spec at:
+ * http://www.w3.org/TR/2012/WD-screen-orientation-20120522
+ *
+ * @enum {string}
+ */
+bot.window.Orientation = {
+  PORTRAIT: 'portrait-primary',
+  PORTRAIT_SECONDARY: 'portrait-secondary',
+  LANDSCAPE: 'landscape-primary',
+  LANDSCAPE_SECONDARY: 'landscape-secondary'
+};
+
+
+/**
+ * Returns the degrees corresponding to the orientation input.
+ *
+ * @param {!bot.window.Orientation} orientation The orientation.
+ * @return {number} The orientation degrees.
+ * @private
+ */
+bot.window.getOrientationDegrees_ = (function() {
+  var orientationMap;
+  return function(orientation) {
+    if (!orientationMap) {
+      orientationMap = {};
+      if (goog.userAgent.MOBILE) {
+        // The iPhone and Android phones do not change orientation event when
+        // held upside down. Hence, PORTRAIT_SECONDARY is not set.
+        orientationMap[bot.window.Orientation.PORTRAIT] = 0;
+        orientationMap[bot.window.Orientation.LANDSCAPE] = 90;
+        orientationMap[bot.window.Orientation.LANDSCAPE_SECONDARY] = -90;
+        if (goog.userAgent.product.IPAD) {
+          orientationMap[bot.window.Orientation.PORTRAIT_SECONDARY] = 180;
+        }
+      } else if (goog.userAgent.product.ANDROID) {
+        // Unlike the iPad, Android tablets treat landscape orientation as the
+        // default, i.e., having window.orientation = 0.
+        orientationMap[bot.window.Orientation.PORTRAIT] = -90;
+        orientationMap[bot.window.Orientation.LANDSCAPE] = 0;
+        orientationMap[bot.window.Orientation.PORTRAIT_SECONDARY] = 90;
+        orientationMap[bot.window.Orientation.LANDSCAPE_SECONDARY] = 180;
+      }
+    }
+    return orientationMap[orientation];
+  };
+})();
 
 
 /**
@@ -12746,6 +13309,24 @@ bot.window.getInteractableSize = function(opt_win) {
 
 
 /**
+ * Gets the frame element.
+ *
+ * @param {!Window} win Window of the frame. Defaults to bot.getWindow().
+ * @return {Element} The frame element if it exists, null otherwise.
+ * @private
+ */
+bot.window.getFrame_ = function(win) {
+  try {
+    // On IE, accessing the frameElement of a popup window results in a "No
+    // Such interface" exception.
+    return win.frameElement;
+  } catch (e) {
+    return null;
+  }
+};
+
+
+/**
  * Determine the outer size of the window.
  *
  * @param {!Window=} opt_win Window to determine the size of. Defaults to
@@ -12754,11 +13335,28 @@ bot.window.getInteractableSize = function(opt_win) {
  */
 bot.window.getSize = function(opt_win) {
   var win = opt_win || bot.getWindow();
-
-  var width = win.outerWidth;
-  var height = win.outerHeight;
-
-  return new goog.math.Size(width, height);
+  var frame = bot.window.getFrame_(win);
+  if (bot.userAgent.ANDROID_PRE_GINGERBREAD) {
+    if (frame) {
+      // Early Android browsers do not account for border width.
+      var box = goog.style.getBorderBox(frame);
+      return new goog.math.Size(frame.clientWidth - box.left - box.right,
+                                frame.clientHeight);
+    } else {
+      // A fixed popup size.
+      return new goog.math.Size(320, 240);
+    }
+  } else if (frame) {
+    return new goog.math.Size(frame.clientWidth, frame.clientHeight);
+  } else {
+    var docElem = win.document.documentElement;
+    var body = win.document.body;
+    var width = win.outerWidth || (docElem && docElem.clientWidth) ||
+        (body && body.clientWidth) || 0;
+    var height = win.outerHeight || (docElem && docElem.clientHeight) ||
+        (body && body.clientHeight) || 0;
+    return new goog.math.Size(width, height);
+  }
 };
 
 
@@ -12771,8 +13369,45 @@ bot.window.getSize = function(opt_win) {
  */
 bot.window.setSize = function(size, opt_win) {
   var win = opt_win || bot.getWindow();
+  var frame = bot.window.getFrame_(win);
+  if (frame) {
+    // minHeight and minWidth are altered because many browsers will not change
+    // height or width if it is less than a specified minHeight or minWidth.
+    frame.style.minHeight = '0px';
+    frame.style.minWidth = '0px';
+    frame.width = size.width + 'px';
+    frame.style.width = size.width + 'px';
+    frame.height = size.height + 'px';
+    frame.style.height = size.height + 'px';
+  } else {
+    win.resizeTo(size.width, size.height);
+  }
+};
 
-  win.resizeTo(size.width, size.height);
+
+/**
+ * Determine the scroll position of the window.
+ *
+ * @param {!Window=} opt_win Window to determine the scroll position of.
+ *   Defaults to bot.getWindow().
+ * @return {!goog.math.Coordinate} The scroll position.
+ */
+bot.window.getScroll = function(opt_win) {
+  var win = opt_win || bot.getWindow();
+  return new goog.dom.DomHelper(win.document).getDocumentScroll();
+};
+
+
+/**
+ * Set the scroll position of the window.
+ *
+ * @param {!goog.math.Coordinate} position The new scroll position.
+ * @param {!Window=} opt_win Window to apply position to. Defaults to
+ *   bot.getWindow().
+ */
+bot.window.setScroll = function(position, opt_win) {
+  var win = opt_win || bot.getWindow();
+  win.scrollTo(position.x, position.y);
 };
 
 
@@ -12809,6 +13444,69 @@ bot.window.getPosition = function(opt_win) {
 bot.window.setPosition = function(targetPosition, opt_win) {
   var win = opt_win || bot.getWindow();
   win.moveTo(targetPosition.x, targetPosition.y);
+};
+
+
+/**
+ * @return {number} The current window orientation degrees.
+ *     window.
+ * @private
+ */
+bot.window.getCurrentOrientationDegrees_ = function() {
+  var win = bot.getWindow();
+  if (!goog.isDef(win.orientation)) {
+    // If window.orientation is not defined, assume a default orientation of 0.
+    // A value of 0 indicates a portrait orientation except for android tablets
+    // where 0 indicates a landscape orientation.
+    win.orientation = 0;
+  }
+  return win.orientation;
+};
+
+
+/**
+ * Changes window orientation.
+ *
+ * @param {!bot.window.Orientation} orientation The new orientation of the
+ *     window.
+ */
+bot.window.changeOrientation = function(orientation) {
+  var win = bot.getWindow();
+  var currentOrientationDegrees = bot.window.getCurrentOrientationDegrees_();
+  var newOrientationDegrees = bot.window.getOrientationDegrees_(orientation);
+  if (currentOrientationDegrees == newOrientationDegrees ||
+      !goog.isDef(newOrientationDegrees)) {
+    return;
+  }
+
+  // If possible, try to override the window's orientation value.
+  // On some older version of Android, it's not possible to change
+  // the window's orientation value.
+  if (Object.getOwnPropertyDescriptor && Object.defineProperty) {
+    var descriptor = Object.getOwnPropertyDescriptor(win, 'orientation');
+    if (descriptor && descriptor.configurable) {
+      Object.defineProperty(win, 'orientation', {
+        configurable: true,
+        get: function() {
+          return newOrientationDegrees;
+        }
+      });
+    }
+  }
+  bot.events.fire(win, bot.events.EventType.ORIENTATIONCHANGE);
+
+  // Change the window size to reflect the new orientation.
+  if (Math.abs(currentOrientationDegrees - newOrientationDegrees) % 180 != 0) {
+    var size = bot.window.getSize();
+    var shorter = size.getShortest();
+    var longer = size.getLongest();
+    if (orientation == bot.window.Orientation.PORTRAIT ||
+        orientation == bot.window.Orientation.PORTRAIT_SECONDARY) {
+      bot.window.setSize(new goog.math.Size(shorter, longer));
+    } else {
+      bot.window.setSize(new goog.math.Size(longer, shorter));
+    }
+  }
 };
 // Copyright 2010 WebDriver committers
 // Copyright 2010 Google Inc.
@@ -12916,8 +13614,6 @@ bot.locators.className.many = function(target, root) {
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// TODO(simon): Add support for using sizzle to locate elements
-
 goog.provide('bot.locators.css');
 
 goog.require('bot.userAgent');
@@ -12952,7 +13648,7 @@ bot.locators.css.single = function(target, root) {
   var element = root.querySelector(target);
 
   return element && element.nodeType == goog.dom.NodeType.ELEMENT ?
-      (/**@type {Element}*/element) : null;
+      /**@type {Element}*/ (element) : null;
 };
 
 
@@ -13028,7 +13724,7 @@ bot.locators.id.single = function(target, root) {
     return bot.dom.getAttribute(element, 'id') == target &&
         goog.dom.contains(root, element);
   });
-  return (/**@type{Element}*/element);
+  return /**@type{Element}*/ (element);
 };
 
 
@@ -13098,7 +13794,7 @@ bot.locators.linkText.single_ = function(target, root, opt_isPartial) {
     var text = bot.dom.getVisibleText(element);
     return (opt_isPartial && text.indexOf(target) != -1) || text == target;
   });
-  return (/**@type{Element}*/element);
+  return /**@type{Element}*/ (element);
 };
 
 
@@ -13228,9 +13924,8 @@ bot.locators.strategy;
  * Note that the versions with spaces are synonyms for those without spaces,
  * and are specified at:
  * https://code.google.com/p/selenium/wiki/JsonWireProtocol
- *
- * @const
  * @private {Object.<string,bot.locators.strategy>}
+ * @const
  */
 bot.locators.STRATEGIES_ = {
   'className': bot.locators.className,
@@ -13373,7 +14068,7 @@ bot.locators.name.single = function(target, root) {
   var element = goog.array.find(allElements, function(element) {
     return bot.dom.getAttribute(element, 'name') == target;
   });
-  return (/**@type{Element}*/element);
+  return /**@type{Element}*/ (element);
 };
 
 
@@ -13464,8 +14159,6 @@ bot.locators.tagName.many = function(target, root) {
  * because the latter silently return nothing when the xpath resolves to a
  * non-Node type, limiting the error-checking the implementation can provide.
  * </ol>
- *
- * TODO(user): Add support for browsers without native xpath
  */
 
 goog.provide('bot.locators.xpath');
@@ -13529,7 +14222,7 @@ bot.locators.xpath.evaluate_ = function(node, path, resultType) {
   var doc = goog.dom.getOwnerDocument(node);
 
   // Let the wgxpath library be compiled away unless we are on IE or Android.
-  // TODO(gdennis): Restrict this to just IE when we drop support for Froyo.
+  // TODO(user): Restrict this to just IE when we drop support for Froyo.
   if (goog.userAgent.IE || goog.userAgent.product.ANDROID) {
     wgxpath.install(goog.dom.getWindow(doc));
   }
@@ -13538,7 +14231,7 @@ bot.locators.xpath.evaluate_ = function(node, path, resultType) {
     var resolver = doc.createNSResolver ?
         doc.createNSResolver(doc.documentElement) :
         bot.locators.xpath.DEFAULT_RESOLVER_;
-    if (goog.userAgent.IE && !goog.userAgent.isVersion(7)) {
+    if (goog.userAgent.IE && !goog.userAgent.isVersionOrHigher(7)) {
       // IE6, and only IE6, has an issue where calling a custom function
       // directly attached to the document object does not correctly propagate
       // thrown errors. So in that case *only* we will use apply().
@@ -13605,7 +14298,7 @@ bot.locators.xpath.single = function(target, root) {
   if (!goog.isNull(node)) {
     bot.locators.xpath.checkElement_(node, target);
   }
-  return (/** @type {Element} */node);
+  return /** @type {Element} */ (node);
 };
 
 
@@ -13647,7 +14340,7 @@ bot.locators.xpath.many = function(target, root) {
   goog.array.forEach(nodes, function(n) {
     bot.locators.xpath.checkElement_(n, target);
   });
-  return (/** @type {!goog.array.ArrayLike} */nodes);
+  return /** @type {!goog.array.ArrayLike} */ (nodes);
 };
 // Copyright 2011 WebDriver committers
 // Copyright 2011 Google Inc.
@@ -13926,7 +14619,6 @@ bot.html5.API = {
 
 /**
  * True if the current browser is IE8.
- *
  * @private {boolean}
  * @const
  */
@@ -13936,7 +14628,6 @@ bot.html5.IS_IE8_ = goog.userAgent.IE &&
 
 /**
  * True if the current browser is Safari 4.
- *
  * @private {boolean}
  * @const
  */
@@ -13946,7 +14637,6 @@ bot.html5.IS_SAFARI4_ = goog.userAgent.product.SAFARI &&
 
 /**
  * True if the browser is Android 2.2 (Froyo).
- *
  * @private {boolean}
  * @const
  */
@@ -13956,7 +14646,6 @@ bot.html5.IS_ANDROID_FROYO_ = goog.userAgent.product.ANDROID &&
 
 /**
  * True if the current browser is Safari 5 on Windows.
- *
  * @private {boolean}
  * @const
  */
@@ -14223,7 +14912,7 @@ bot.storage.Storage.prototype.setItem = function(key, value) {
  */
 bot.storage.Storage.prototype.getItem = function(key) {
   var value = this.storageMap_.getItem(key);
-  return  /** @type {?string} */ (value);
+  return /** @type {?string} */ (value);
 };
 
 
@@ -14520,7 +15209,7 @@ webdriver.atoms.element.getAttribute = function(element, attribute) {
       value = value.cssText;
     }
 
-    return (/** @type {?string} */value);
+    return /** @type {?string} */ (value);
   }
 
   if (('selected' == name || 'checked' == name) &&
@@ -14542,7 +15231,7 @@ webdriver.atoms.element.getAttribute = function(element, attribute) {
       // We want the full URL if present
       value = bot.dom.getProperty(element, name);
     }
-    return (/** @type {?string} */value);
+    return /** @type {?string} */ (value);
   }
 
   var propName = webdriver.atoms.element.PROPERTY_ALIASES_[attribute] ||
@@ -15100,7 +15789,6 @@ webdriver.atoms.inject.storage.appcache.getStatus = function() {
 
 goog.provide('webdriver.atoms.inject.dom');
 
-goog.require('bot.action');
 goog.require('bot.dom');
 goog.require('webdriver.atoms.element');
 goog.require('webdriver.atoms.inject');
@@ -15158,8 +15846,12 @@ webdriver.atoms.inject.dom.getAttributeValue = function(element, attribute) {
  *     defined by the wire protocol.
  */
 webdriver.atoms.inject.dom.getSize = function(element) {
-  return webdriver.atoms.inject.executeScript(bot.dom.getElementSize,
-      [element]);
+  return webdriver.atoms.inject.executeScript(getSize, [element]);
+
+  function getSize(e) {
+    var rect = bot.dom.getClientRect(e);
+    return {'width': rect.width, 'height': rect.height};
+  }
 };
 
 
@@ -15273,7 +15965,8 @@ webdriver.atoms.inject.getWindow_ = function(opt_window) {
     win = window;
   }
   return /**@type {!Window}*/(win);
-};// Copyright 2011 WebDriver committers
+};
+// Copyright 2011 WebDriver committers
 // Copyright 2011 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");

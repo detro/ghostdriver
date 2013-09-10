@@ -1,7 +1,7 @@
-2013-06-17 02:01:14
+2013-09-10 19:27:09
 
-commit 4e90c975c693adf6252a92f753587b9c534806df (HEAD, tag: refs/tags/selenium-2.33.0)
+commit 8df0c6bedf70ff9f22c647788f9fe9c8d22210e2 (HEAD, tag: refs/tags/selenium-2.35.0)
 Author: Jim Evans <james.h.evans.jr@gmail.com>
-Date:   Wed May 22 11:14:19 2013 -0400
+Date:   Mon Aug 12 11:42:44 2013 -0400
 
-    Bumping IEDriverServer version resources to 2.33.0.0
+    Updating IE prebuilts for 2.35.0
