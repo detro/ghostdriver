@@ -189,6 +189,17 @@ ghostdriver.WebElementLocator = function(session) {
 
         _log.debug("_handleLocateCommand", "Element(s) Search Start Time: " + searchStartTime);
 
+        // If any JavaScript errors have occured, send them back to the caller
+        if (_session.caughtErrors.length) {
+            _errors.handleFailedCommandEH(
+                _errors.FAILED_CMD_STATUS_CODES_NAMES[_errors.FAILED_CMD_STATUS_CODES.JavaScriptError],
+                JSON.stringify(_session.caughtErrors),
+                req,
+                res,
+                _session,
+                "WebElementLocator");
+        }
+
         // If a "locatorMethod" was not provided, default to "locateElement"
         if(typeof(locatorMethod) !== "function") {
             locatorMethod = this.locateElement;

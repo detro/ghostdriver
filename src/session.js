@@ -107,6 +107,7 @@ ghostdriver.Session = function(desiredCapabilities) {
     _capsPageCustomHeadersPref = "phantomjs.page.customHeaders.",
     _pageSettings = {},
     _pageCustomHeaders = {},
+    _caughtErrors = [],
     _log = ghostdriver.logger.create("Session [" + _id + "]"),
     k, settingKey, headerKey;
 
@@ -184,6 +185,14 @@ ghostdriver.Session = function(desiredCapabilities) {
             loadingStartedTs = new Date().getTime();
 
             checkLoadingFinished = function() {
+                // If any JavaScript errors have occured, send them back to the caller
+                if (_caughtErrors.length) {
+                    thisPage.resetOneShotCallbacks();
+                    onErrorFunc.call(thisPage, JSON.stringify(_caughtErrors));
+
+                    return;
+                }
+
                 if (!_isLoading()) {               //< page finished loading
                     _log.debug("_execFuncAndWaitForLoadDecorator", "Page Loading in Session: false");
 
@@ -303,10 +312,16 @@ ghostdriver.Session = function(desiredCapabilities) {
         }
         // 7. Applying Page custom headers received via capabilities
         page.customHeaders = _pageCustomHeaders;
-        // 8. Log Page internal errors
+        // 8. Log Page internal errors and save them into an error list
         page["onError"] = function(errorMsg, errorStack) {
             _log.error("Page at '"+page.url+"'", "Console Error (msg): " + errorMsg);
             _log.error("Page at '"+page.url+"'", "Console Error (stack): " + JSON.stringify(errorStack, null, "  "));
+
+            var stacks = "";
+            errorStack.forEach(function(item) {
+                stacks += "; [file:" + item.file + ',line:' + item.line + ',function:' + item.function + ']';
+            });
+            _caughtErrors.push(new Error(errorMsg + stacks));
         };
 
         page.onConsoleMessage = function(msg) { _log.debug("page.onConsoleMessage", msg); };
@@ -530,7 +545,8 @@ ghostdriver.Session = function(desiredCapabilities) {
         getPageLoadTimeout : _getPageLoadTimeout,
         executePhantomJS : _executePhantomJS,
         timeoutNames : _const.TIMEOUT_NAMES,
-        isLoading : _isLoading
+        isLoading : _isLoading,
+        caughtErrors : _caughtErrors
     };
 };
 
