@@ -3,7 +3,7 @@ apply plugin: "idea"
 apply plugin: "eclipse"
 
 task wrapper(type: Wrapper) {
-    gradleVersion = "1.2"
+    gradleVersion = "1.7"
     jarFile = "gradle/gradle-wrapper.jar"
 }
 
@@ -11,7 +11,7 @@ repositories {
     mavenCentral()
 }
 
-ext.seleniumVersion = "2.32.0"
+ext.seleniumVersion = "2.35.0"
 ext.junitVersion = "4.11"
 ext.jettyVersion = "6.1.21"
 ext.jsr305Version = "2.0.1"
@@ -23,7 +23,7 @@ dependencies {
     testCompile "com.google.code.findbugs:jsr305:$jsr305Version"
     testCompile "junit:junit-dep:$junitVersion"
     testCompile "org.mortbay.jetty:jetty:$jettyVersion"
-    testCompile files("../../binding/java/jars/phantomjsdriver-1.0.4.jar")
+    testCompile files("../../binding/java/jars/phantomjsdriver-1.1.0.jar")
 }
 
 tasks.withType(JavaExec) {

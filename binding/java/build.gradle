@@ -4,7 +4,7 @@ apply plugin: "eclipse"
 apply plugin: "nexus"
 
 task wrapper(type: Wrapper) {
-    gradleVersion   = "1.2"
+    gradleVersion   = "1.7"
     jarFile         = "gradle/gradle-wrapper.jar"
 }
 
@@ -18,13 +18,13 @@ compileJava {
 }
 
 project.archivesBaseName    = project.name
-project.version             = "1.0.4"
+project.version             = "1.1.0"
 
 ext.projectLongName         = "PhantomJS Driver (GhostDriver)"
 ext.projectArtefactDir      = "jars/"
 ext.projectMainClass        = "org.openqa.selenium.phantomjs.PhantomJSDriver"
 ext.projectCreator          = "Ivan De Marino (https://github.com/detro)"
-ext.seleniumVersion         = "2.33.0"
+ext.seleniumVersion         = "2.35.0"
 
 dependencies {
     ["selenium-java", "selenium-remote-driver", "selenium-server"].each {
@@ -82,9 +82,9 @@ task javadocJarBuild(type: Jar, dependsOn: javadoc) {
     }
 }
 
-task jars {
-    dependsOn jar, sourceJarBuild, javadocJarBuild
-}
+//task jars {
+//    dependsOn jar, sourceJarBuild, javadocJarBuild
+//}
 
 //signing {
 //    sign jar
@@ -92,10 +92,10 @@ task jars {
 //    sign javadocJarBuild
 //}
 
-//task signJars {
-//    dependsOn jars
-//    dependsOn signJar, signJavadocJarBuild, signSourceJarBuild
-//}
+task signJars {
+    dependsOn jars
+    dependsOn signJar, signJavadocJarBuild, signSourceJarBuild
+}
 
 buildscript {
     repositories {
