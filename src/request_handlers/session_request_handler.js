@@ -63,7 +63,9 @@ ghostdriver.SessionReqHand = function(session) {
         CLICK           : "click",
         BUTTON_DOWN     : "buttondown",
         BUTTON_UP       : "buttonup",
-        DOUBLE_CLICK    : "doubleclick"
+        DOUBLE_CLICK    : "doubleclick",
+        PHANTOM_DIR     : "/phantom/",
+        PHANTOM_EXEC    : "execute",
     };
 
     var
@@ -133,7 +135,7 @@ ghostdriver.SessionReqHand = function(session) {
         } else if (req.urlParsed.file === _const.REFRESH && req.method === "POST") {
             _refreshCommand(req, res);
             return;
-        } else if (req.urlParsed.file === _const.EXECUTE && req.method === "POST") {
+        } else if (req.urlParsed.file === _const.EXECUTE && req.urlParsed.directory === "/" && req.method == "POST") {
             _executeCommand(req, res);
             return;
         } else if (req.urlParsed.file === _const.EXECUTE_ASYNC && req.method === "POST") {
@@ -156,6 +158,9 @@ ghostdriver.SessionReqHand = function(session) {
             return;
         } else if (req.urlParsed.file === _const.MOVE_TO && req.method === "POST") {
             _postMouseMoveToCommand(req, res);
+            return;
+        } else if (req.urlParsed.file === _const.PHANTOM_EXEC && req.urlParsed.directory === _const.PHANTOM_DIR && req.method === "POST") {
+            _executePhantomJS(req, res);
             return;
         } else if (req.urlParsed.file === _const.CLICK && req.method === "POST") {
             _postMouseClickCommand(req, res, "click");
@@ -835,6 +840,15 @@ ghostdriver.SessionReqHand = function(session) {
 
     _getTitleCommand = function(req, res) {
         res.success(_session.getId(), _protoParent.getSessionCurrWindow.call(this, _session, req).title);
+    };
+
+    _executePhantomJS = function(req, res) {
+        var params = JSON.parse(req.post);
+        if (typeof(params) === "object" && params.script && params.args) {
+            res.success(_session.getId(), _session.executePhantomJS(_protoParent.getSessionCurrWindow.call(this, _session, req), params.script, params.args));
+        } else {
+            throw _errors.createInvalidReqMissingCommandParameterEH(req);
+        }
     };
 
     // public:
