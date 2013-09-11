@@ -179,7 +179,7 @@ If you reached this stage in understanding the Atoms, you are ready to go furthe
 You can contribute by testing GhostDriver, reporting bugs and issues, or submitting Pull Requests.
 Any **help is welcome**, but bear in mind the following base principles:
 
-* Issue reporting requires a reproducible example, otherwise will most probably be **closed withouth warning**
+* Issue reporting requires a reproducible example, otherwise will most probably be **closed without warning**
 * Squash your commits by theme: I prefer a clean, readable log
 * Maintain consistency with the code-style you are surrounded by
 * If you are going to make a big, substantial change, let's discuss it first
