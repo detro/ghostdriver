@@ -498,6 +498,18 @@ ghostdriver.Session = function(desiredCapabilities) {
         }
     };
 
+    _getLog = function (type) {
+        if (type === 'har') {
+            return {};
+        } else {
+            return null;
+        }
+    };
+
+    _getLogTypes = function () {
+        return ['har'];
+    };
+
     // Initialize the Session.
     // Particularly, create the first empty page/window.
     _init();
@@ -530,7 +542,9 @@ ghostdriver.Session = function(desiredCapabilities) {
         getPageLoadTimeout : _getPageLoadTimeout,
         executePhantomJS : _executePhantomJS,
         timeoutNames : _const.TIMEOUT_NAMES,
-        isLoading : _isLoading
+        isLoading : _isLoading,
+        getLog: _getLog,
+        getLogTypes: _getLogTypes
     };
 };
 
