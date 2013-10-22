@@ -311,6 +311,33 @@ ghostdriver.Session = function(desiredCapabilities) {
 
         page.onConsoleMessage = function(msg) { _log.debug("page.onConsoleMessage", msg); };
 
+        page.resources = [];
+        page.startTime = null;
+        page.setOneShotCallback("onLoadStarted", function() {
+            page.startTime = new Date();
+        });
+        page.setOneShotCallback("onLoadFinished", function() {
+            page.endTime = new Date();
+            page.title = page.evaluate(function () {
+                return document.title;
+            });
+        });
+        page.onResourceRequested = function (req) {
+            page.resources[req.id] = {
+                request: req,
+                startReply: null,
+                endReply: null
+            };
+        };
+        page.onResourceReceived = function (res) {
+            if (res.stage === 'start') {
+                page.resources[res.id].startReply = res;
+            }
+            if (res.stage === 'end') {
+                page.resources[res.id].endReply = res;
+            }
+        };
+
         _log.info("_decorateNewWindow", "page.settings: " + JSON.stringify(page.settings));
         _log.info("page.customHeaders: ", JSON.stringify(page.customHeaders));
 
@@ -496,15 +523,18 @@ ghostdriver.Session = function(desiredCapabilities) {
         for (k in _windows) {
             _closeWindow(k);
         }
-    };
+    },
 
     _getLog = function (type) {
+        var page, createHar;
         if (type === 'har') {
-            return {};
+            page = _getCurrentWindow();
+            createHar = require('./har.js');
+            return createHar(page, page.resources);
         } else {
             return null;
         }
-    };
+    },
 
     _getLogTypes = function () {
         return ['har'];
