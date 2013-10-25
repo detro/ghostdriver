@@ -102,6 +102,3 @@ exports.createHar = function (page, resources) {
         }
     };
 };
-
-var page = {};
-exports.createHar(page, {});
