@@ -314,13 +314,10 @@ ghostdriver.Session = function(desiredCapabilities) {
         page.resources = [];
         page.startTime = null;
         page.setOneShotCallback("onLoadStarted", function() {
-            page.startTime = new Date();
+            page.startTime = page.endTime = new Date();
         });
         page.setOneShotCallback("onLoadFinished", function() {
             page.endTime = new Date();
-            page.title = page.evaluate(function () {
-                return document.title;
-            });
         });
         page.onResourceRequested = function (req) {
             page.resources[req.id] = {
@@ -527,17 +524,17 @@ ghostdriver.Session = function(desiredCapabilities) {
 
     _getLog = function (type) {
         var page, createHar;
-        if (type === 'har') {
+        if (type === 'network') {
             page = _getCurrentWindow();
-            createHar = require('./har.js');
+            createHar = require('./har.js').createHar;
             return createHar(page, page.resources);
         } else {
-            return null;
+            return [];
         }
     },
 
     _getLogTypes = function () {
-        return ['har'];
+        return [];
     };
 
     // Initialize the Session.

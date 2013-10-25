@@ -67,7 +67,8 @@ ghostdriver.SessionReqHand = function(session) {
         PHANTOM_DIR     : "/phantom/",
         PHANTOM_EXEC    : "execute",
         LOG             : "log",
-        TYPES           : "types"
+        TYPES           : "types",
+        NETWORK         : "network"
     };
 
     var
@@ -190,6 +191,9 @@ ghostdriver.SessionReqHand = function(session) {
             return;
         } else if (req.urlParsed.chunks[0] === _const.LOG && req.urlParsed.chunks[1] === _const.TYPES && req.method === "GET") {  //< ".../log/types"
             _getLogTypes(req, res);
+            return;
+        } else if (req.urlParsed.chunks[0] === _const.LOG && req.urlParsed.chunks[1] === _const.NETWORK && req.method === "GET") {  //< ".../log/network"
+            _getLogNetwork(req, res);
             return;
         }
 
@@ -869,6 +873,10 @@ ghostdriver.SessionReqHand = function(session) {
 
     _getLogTypes = function (req, res) {
         res.success(_session.getId(), _session.getLogTypes());
+    },
+
+    _getLogNetwork = function (req, res) {
+        res.success(_session.getId(), _session.getLog('network'));
     };
 
     // public:

@@ -1,4 +1,4 @@
-exports = function (page, resources) {
+exports.createHar = function (page, resources) {
     var entries = [];
 
     resources.forEach(function (resource) {
@@ -70,10 +70,10 @@ exports = function (page, resources) {
                 id: page.url,
                 title: page.title,
                 pageTimings: {
-                    onLoad: page.endTime - page.startTime
+                    onLoad: page.endTime.getTime() - page.startTime.getTime()
                 }
             }],
             entries: entries
         }
     };
-}
+};
