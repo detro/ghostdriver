@@ -1,3 +1,28 @@
+/**
+ * Page object
+ * @typedef {Object} PageObject
+ * @property {String} title - contents of <title> tag
+ * @property {String} url - page URL
+ * @property {Date} startTime - time when page starts loading
+ * @property {Date} endTime - time when onLoad event fires
+ */
+
+/**
+ * Resource object
+ * @typedef {Object} ResourceObject
+ * @property {Object} request - PhantomJS request object
+ * @property {Object} startReply - PhantomJS response object
+ * @property {Object} endReply - PhantomJS response object
+ */
+
+/**
+ * This function is based on PhantomJS network logging example:
+ * https://github.com/ariya/phantomjs/blob/master/examples/netsniff.js
+ *
+ * @param {PageObject} page
+ * @param {ResourceObject} resources
+ * @returns {{log: {version: string, creator: {name: string, version: string}, pages: Array, entries: Array}}}
+ */
 exports.createHar = function (page, resources) {
     var entries = [];
 
@@ -77,3 +102,6 @@ exports.createHar = function (page, resources) {
         }
     };
 };
+
+var page = {};
+exports.createHar(page, {});
