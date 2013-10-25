@@ -304,13 +304,31 @@ ghostdriver.Session = function(desiredCapabilities) {
         // 7. Applying Page custom headers received via capabilities
         page.customHeaders = _pageCustomHeaders;
         // 8. Log Page internal errors
-        page["onError"] = function(errorMsg, errorStack) {
+        page.onError = function(errorMsg, errorStack) {
+            var stack = '';
+            errorStack.forEach(function (stackEntry) {
+                stack += (stackEntry.function || '(anonymous function)') +
+                    ' in ' + stackEntry.file + ' on line ' + stackEntry.line + "\n";
+            });
             _log.error("Page at '"+page.url+"'", "Console Error (msg): " + errorMsg);
-            _log.error("Page at '"+page.url+"'", "Console Error (stack): " + JSON.stringify(errorStack, null, "  "));
+            _log.error("Page at '"+page.url+"'", "Console Error (stack): " + stack);
+            page.browserLog.push({
+                'level': 'WARNING',
+                'message': errorMsg + "\n" + stack,
+                'timestamp': Math.round((new Date()).getTime() / 1000)
+            });
         };
-
-        page.onConsoleMessage = function(msg) { _log.debug("page.onConsoleMessage", msg); };
-
+        // Log page console messages
+        page.browserLog = [];
+        page.onConsoleMessage = function(msg, lineNum, sourceId) {
+            _log.debug("page.onConsoleMessage", msg);
+            page.browserLog.push({
+                'level': 'INFO',
+                'message': 'CONSOLE: ' + msg + ' (from line #' + lineNum + ' in "' + sourceId + '")',
+                'timestamp': Math.round((new Date()).getTime() / 1000)
+            });
+        };
+        // Log page network activity
         page.resources = [];
         page.startTime = null;
         page.setOneShotCallback("onLoadStarted", function() {
@@ -528,13 +546,15 @@ ghostdriver.Session = function(desiredCapabilities) {
             page = _getCurrentWindow();
             createHar = require('./har.js').createHar;
             return createHar(page, page.resources);
+        } if (type === 'browser') {
+            return _getCurrentWindow().browserLog;
         } else {
             return [];
         }
     },
 
     _getLogTypes = function () {
-        return [];
+        return ['browser'];
     };
 
     // Initialize the Session.

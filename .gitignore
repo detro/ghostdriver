@@ -16,4 +16,3 @@ build
 
 # vim temp files
 *.swp
-node_modules
