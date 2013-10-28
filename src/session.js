@@ -544,7 +544,7 @@ ghostdriver.Session = function(desiredCapabilities) {
         var page, createHar;
         if (type === 'network') {
             page = _getCurrentWindow();
-            createHar = require('./har.js').createHar;
+            createHar = require('./third_party/har.js').createHar;
             return createHar(page, page.resources);
         } if (type === 'browser') {
             return _getCurrentWindow().browserLog;
