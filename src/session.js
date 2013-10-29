@@ -201,6 +201,7 @@ ghostdriver.Session = function(desiredCapabilities) {
 
                     if (onLoadFinishedArgs !== null) {
                         // Report the result of the "Load Finished" event
+                        _clearPageLog(thisPage);
                         onLoadFunc.apply(thisPage, onLoadFinishedArgs);
                     } else {
                         // No page load was caused: just report "success"
@@ -374,6 +375,17 @@ ghostdriver.Session = function(desiredCapabilities) {
 
         // If we arrived here, means that no window is loading
         return false;
+    },
+
+    /**
+     * According to log method specification we have to clear log after each page refresh.
+     * https://code.google.com/p/selenium/wiki/JsonWireProtocol#/session/:sessionId/log
+     * @param {Object} page
+     * @private
+     */
+    _clearPageLog = function (page) {
+        page.resources = [];
+        page.browserLog = [];
     },
 
     _getWindow = function(handleOrName) {
