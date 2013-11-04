@@ -84,7 +84,7 @@ ghostdriver.Session = function(desiredCapabilities) {
         "cssSelectorsEnabled"       : _defaultCapabilities.cssSelectorsEnabled,
         "webStorageEnabled"         : _defaultCapabilities.webStorageEnabled,
         "rotatable"                 : _defaultCapabilities.rotatable,
-        "networkLogging"            : _defaultCapabilities.networkLogging,,
+        "networkLogging"            : _defaultCapabilities.networkLogging,
         "acceptSslCerts"            : _defaultCapabilities.acceptSslCerts,
         "nativeEvents"              : _defaultCapabilities.nativeEvents,
         "proxy"                     : typeof(desiredCapabilities.proxy) === "undefined" ?
@@ -290,12 +290,12 @@ ghostdriver.Session = function(desiredCapabilities) {
         page["onCallback"] = _oneShotCallbackFactory(page, "onCallback");
         
         if(_negotiatedCapabilities.networkLogging) {
-           function logRequest(request) {
-               _log.debug('Network Request ' + JSON.stringify(request, undefined, 4));
+           function logRequest(type, request) {
+               _log.debug('Network request "' + type + '": ' + JSON.stringify(request, undefined, 4));
            }
            
-           page["onResourceRequested"] = logReqest;
-           page["onResourceReceived"] = logReqest;
+           page["onResourceRequested"] = function(req) { logReqest('onResourceRequested', req); };
+           page["onResourceReceived"] = function(req) { logReqest('onResourceReceived', req); };
         }
         
         // 3. Utility methods
