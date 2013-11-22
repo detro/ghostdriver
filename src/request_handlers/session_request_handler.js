@@ -66,6 +66,9 @@ ghostdriver.SessionReqHand = function(session) {
         DOUBLE_CLICK    : "doubleclick",
         PHANTOM_DIR     : "/phantom/",
         PHANTOM_EXEC    : "execute",
+        LOG             : "log",
+        TYPES           : "types",
+        NETWORK         : "network"
     };
 
     var
@@ -182,6 +185,15 @@ ghostdriver.SessionReqHand = function(session) {
             } else if(req.method === "DELETE") {
                 _deleteCookieCommand(req, res);
             }
+            return;
+        } else if (req.urlParsed.chunks[0] === _const.LOG && req.method === "POST") {  //< ".../log"
+            _getLog(req, res);
+            return;
+        } else if (req.urlParsed.chunks[0] === _const.LOG && req.urlParsed.chunks[1] === _const.TYPES && req.method === "GET") {  //< ".../log/types"
+            _getLogTypes(req, res);
+            return;
+        } else if (req.urlParsed.chunks[0] === _const.LOG && req.urlParsed.chunks[1] === _const.NETWORK && req.method === "GET") {  //< ".../log/network"
+            _getLogNetwork(req, res);
             return;
         }
 
@@ -849,6 +861,22 @@ ghostdriver.SessionReqHand = function(session) {
         } else {
             throw _errors.createInvalidReqMissingCommandParameterEH(req);
         }
+    },
+
+    _getLog = function (req, res) {
+        var params = JSON.parse(req.post);
+        if (!params.type) {
+            throw _errors.createInvalidReqMissingCommandParameterEH(req);
+        }
+        res.success(_session.getId(), _session.getLog(params.type));
+    },
+
+    _getLogTypes = function (req, res) {
+        res.success(_session.getId(), _session.getLogTypes());
+    },
+
+    _getLogNetwork = function (req, res) {
+        res.success(_session.getId(), _session.getLog('network'));
     };
 
     // public:

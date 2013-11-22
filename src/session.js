@@ -304,12 +304,64 @@ ghostdriver.Session = function(desiredCapabilities) {
         // 7. Applying Page custom headers received via capabilities
         page.customHeaders = _pageCustomHeaders;
         // 8. Log Page internal errors
-        page["onError"] = function(errorMsg, errorStack) {
+        page.onError = function(errorMsg, errorStack) {
+            var stack = '';
+            errorStack.forEach(function (stackEntry) {
+                stack += (stackEntry.function || '(anonymous function)') +
+                    ' in ' + stackEntry.file + ' on line ' + stackEntry.line + "\n";
+            });
             _log.error("Page at '"+page.url+"'", "Console Error (msg): " + errorMsg);
-            _log.error("Page at '"+page.url+"'", "Console Error (stack): " + JSON.stringify(errorStack, null, "  "));
+            _log.error("Page at '"+page.url+"'", "Console Error (stack): " + stack);
+            page.browserLog.push({
+                'level': 'WARNING',
+                'message': errorMsg + "\n" + stack,
+                'timestamp': Math.round((new Date()).getTime() / 1000)
+            });
         };
-
-        page.onConsoleMessage = function(msg) { _log.debug("page.onConsoleMessage", msg); };
+        // Log page console messages
+        page.browserLog = [];
+        page.onConsoleMessage = function(msg, lineNum, sourceId) {
+            _log.debug("page.onConsoleMessage", msg);
+            page.browserLog.push({
+                'level': 'INFO',
+                'message': 'CONSOLE: ' + msg + ' (from line #' + lineNum + ' in "' + sourceId + '")',
+                'timestamp': Math.round((new Date()).getTime() / 1000)
+            });
+        };
+        // Log page network activity
+        page.resources = [];
+        page.startTime = null;
+        page.setOneShotCallback("onLoadStarted", function() {
+            page.startTime = page.endTime = new Date();
+        });
+        page.setOneShotCallback("onLoadFinished", function() {
+            page.endTime = new Date();
+        });
+        page.onResourceRequested = function (req) {
+            page.resources[req.id] = {
+                request: req,
+                startReply: null,
+                endReply: null,
+                error: null
+            };
+        };
+        page.onResourceReceived = function (res) {
+            page.resources[res.id] || (page.resources[res.id] = {});
+            if (res.stage === 'start') {
+                page.resources[res.id].startReply = res;
+            } else if (res.stage === 'end') {
+                page.resources[res.id].endReply = res;
+            }
+        };
+        page.onResourceError = function(error) {
+            page.resources[error.id].error = error;
+        };
+        page.onNavigationRequested = function(url, type, willNavigate, main) {
+            // Clear page log before page loading
+            if (main && willNavigate) {
+                _clearPageLog(page);
+            }
+        };
 
         _log.info("_decorateNewWindow", "page.settings: " + JSON.stringify(page.settings));
         _log.info("page.customHeaders: ", JSON.stringify(page.customHeaders));
@@ -332,6 +384,17 @@ ghostdriver.Session = function(desiredCapabilities) {
 
         // If we arrived here, means that no window is loading
         return false;
+    },
+
+    /**
+     * According to log method specification we have to clear log after each page refresh.
+     * https://code.google.com/p/selenium/wiki/JsonWireProtocol#/session/:sessionId/log
+     * @param {Object} page
+     * @private
+     */
+    _clearPageLog = function (page) {
+        page.resources = [];
+        page.browserLog = [];
     },
 
     _getWindow = function(handleOrName) {
@@ -496,6 +559,23 @@ ghostdriver.Session = function(desiredCapabilities) {
         for (k in _windows) {
             _closeWindow(k);
         }
+    },
+
+    _getLog = function (type) {
+        var page, createHar;
+        if (type === 'network') {
+            page = _getCurrentWindow();
+            createHar = require('./third_party/har.js').createHar;
+            return createHar(page, page.resources);
+        } if (type === 'browser') {
+            return _getCurrentWindow().browserLog;
+        } else {
+            return [];
+        }
+    },
+
+    _getLogTypes = function () {
+        return ['browser'];
     };
 
     // Initialize the Session.
@@ -530,7 +610,9 @@ ghostdriver.Session = function(desiredCapabilities) {
         getPageLoadTimeout : _getPageLoadTimeout,
         executePhantomJS : _executePhantomJS,
         timeoutNames : _const.TIMEOUT_NAMES,
-        isLoading : _isLoading
+        isLoading : _isLoading,
+        getLog: _getLog,
+        getLogTypes: _getLogTypes
     };
 };
 
