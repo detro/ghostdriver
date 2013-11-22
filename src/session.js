@@ -201,7 +201,6 @@ ghostdriver.Session = function(desiredCapabilities) {
 
                     if (onLoadFinishedArgs !== null) {
                         // Report the result of the "Load Finished" event
-                        _clearPageLog(thisPage);
                         onLoadFunc.apply(thisPage, onLoadFinishedArgs);
                     } else {
                         // No page load was caused: just report "success"
@@ -342,15 +341,25 @@ ghostdriver.Session = function(desiredCapabilities) {
             page.resources[req.id] = {
                 request: req,
                 startReply: null,
-                endReply: null
+                endReply: null,
+                error: null
             };
         };
         page.onResourceReceived = function (res) {
+            page.resources[res.id] || (page.resources[res.id] = {});
             if (res.stage === 'start') {
                 page.resources[res.id].startReply = res;
-            }
-            if (res.stage === 'end') {
+            } else if (res.stage === 'end') {
                 page.resources[res.id].endReply = res;
+            }
+        };
+        page.onResourceError = function(error) {
+            page.resources[error.id].error = error;
+        };
+        page.onNavigationRequested = function(url, type, willNavigate, main) {
+            // Clear page log before page loading
+            if (main && willNavigate) {
+                _clearPageLog(page);
             }
         };
 
