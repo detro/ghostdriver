@@ -31,13 +31,13 @@ ghostdriver.Session = function(desiredCapabilities) {
     // private:
     const
     _const = {
-        TIMEOUT_NAMES : {
-            SCRIPT          : "script",
-            ASYNC_SCRIPT    : "async script",
-            IMPLICIT        : "implicit",
-            PAGE_LOAD       : "page load"
+        TIMEOUT_NAMES       : {
+            SCRIPT              : "script",
+            ASYNC_SCRIPT        : "async script",
+            IMPLICIT            : "implicit",
+            PAGE_LOAD           : "page load"
         },
-        ONE_SHOT_POSTFIX : "OneShot"
+        ONE_SHOT_POSTFIX    : "OneShot",
         LOG_TYPES           : {
             HAR                 : "har",
             BROWSER             : "browser"
@@ -191,18 +191,6 @@ ghostdriver.Session = function(desiredCapabilities) {
                 if (!_isLoading()) {               //< page finished loading
                     _log.debug("_execFuncAndWaitForLoadDecorator", "Page Loading in Session: false");
 
-                    try {
-                        // In case this command closed the window, "thisPage"
-                        // might now be invalid/deleted and calls to methods
-                        // attached to it will throw exceptions.
-                        // So, we just need to wrap it and move on.
-                        thisPage.resetOneShotCallbacks();
-                    } catch (e) {
-                        // swallow the exception: once this call is done
-                        // the window would have become invalid and any attempt
-                        // to access it will correctly throw a "NoWindow" Exception.
-                    }
-
                     if (onLoadFinishedArgs !== null) {
                         // Report the result of the "Load Finished" event
                         onLoadFunc.apply(thisPage, onLoadFinishedArgs);
@@ -217,11 +205,8 @@ ghostdriver.Session = function(desiredCapabilities) {
 
                 // Timeout error?
                 if (new Date().getTime() - loadingStartedTs > _getPageLoadTimeout()) {
-                    thisPage.resetOneShotCallbacks();
-
                     // Report the "Timeout" event
                     onErrorFunc.call(thisPage, "timeout");
-
                     return;
                 }
 
@@ -234,28 +219,41 @@ ghostdriver.Session = function(desiredCapabilities) {
 
     _oneShotCallbackFactory = function(page, callbackName) {
         return function() {
-            var retVal;
+            var oneShotCallbackName = callbackName + _const.ONE_SHOT_POSTFIX,
+                i, retVal;
 
-            if (typeof(page[callbackName + _const.ONE_SHOT_POSTFIX]) === "function") {
-                _log.debug("_oneShotCallback", callbackName);
+            try {
+                // If there are callback functions registered
+                if (page[oneShotCallbackName] instanceof Array
+                    && page[oneShotCallbackName].length > 0) {
+                    _log.debug("_oneShotCallback", callbackName);
 
-                retVal = page[callbackName + _const.ONE_SHOT_POSTFIX].apply(page, arguments);
-                page[callbackName + _const.ONE_SHOT_POSTFIX] = null;
+                    // Invoke all the callback functions (once)
+                    for (i = page[oneShotCallbackName].length -1; i >= 0; --i) {
+                        retVal = page[oneShotCallbackName][i].apply(page, arguments);
+                    }
+
+                    // Remove all the callback functions now
+                    page[oneShotCallbackName] = [];
+                }
+            } catch (e) {
+                // In case the "page" object has been closed,
+                // the code above will fail: that's OK.
             }
+
+            // Return (latest) value
             return retVal;
         };
     },
 
     _setOneShotCallbackDecorator = function(callbackName, handlerFunc) {
-        this[callbackName + _const.ONE_SHOT_POSTFIX] = handlerFunc;
-    },
+        var oneShotCallbackName = callbackName + _const.ONE_SHOT_POSTFIX;
 
-    _resetOneShotCallbacksDecorator = function() {
-        _log.debug("_resetOneShotCallbacksDecorator");
-
-        this["onLoadStarted" + _const.ONE_SHOT_POSTFIX] = null;
-        this["onLoadFinished" + _const.ONE_SHOT_POSTFIX] = null;
-        this["onUrlChanged" + _const.ONE_SHOT_POSTFIX] = null;
+        // Initialize array of One Shot Callbacks
+        if (!(this[oneShotCallbackName] instanceof Array)) {
+            this[oneShotCallbackName] = [];
+        }
+        this[oneShotCallbackName].push(handlerFunc);
     },
 
     // Add any new page to the "_windows" container of this session
@@ -293,7 +291,6 @@ ghostdriver.Session = function(desiredCapabilities) {
         // 3. Utility methods
         page.execFuncAndWaitForLoad = _execFuncAndWaitForLoadDecorator;
         page.setOneShotCallback = _setOneShotCallbackDecorator;
-        page.resetOneShotCallbacks = _resetOneShotCallbacksDecorator;
         // 4. Store every newly created page
         page.onPageCreated = _addNewPage;
         // 5. Remove every closing page
