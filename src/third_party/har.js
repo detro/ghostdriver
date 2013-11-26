@@ -159,11 +159,13 @@ exports.createHar = function (page, resources) {
                     '.' + phantom.version.patch
             },
             pages: [{
-                startedDateTime: page.startTime.toISOString(),
+                startedDateTime: (page.startTime instanceof Date)
+                    ? page.startTime.toISOString() : null,
                 id: page.url,
                 title: page.title,
                 pageTimings: {
-                    onLoad: page.endTime.getTime() - page.startTime.getTime()
+                    onLoad: (page.startTime instanceof Date && page.endTime instanceof Date)
+                        ? page.endTime.getTime() - page.startTime.getTime() : null
                 }
             }],
             entries: entries
