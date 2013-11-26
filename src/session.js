@@ -38,6 +38,10 @@ ghostdriver.Session = function(desiredCapabilities) {
             PAGE_LOAD       : "page load"
         },
         ONE_SHOT_POSTFIX : "OneShot"
+        LOG_TYPES           : {
+            HAR                 : "har",
+            BROWSER             : "browser"
+        }
     };
 
     var
@@ -306,33 +310,37 @@ ghostdriver.Session = function(desiredCapabilities) {
         // 8. Log Page internal errors
         page.onError = function(errorMsg, errorStack) {
             var stack = '';
-            errorStack.forEach(function (stackEntry) {
-                stack += (stackEntry.function || '(anonymous function)') +
-                    ' in ' + stackEntry.file + ' on line ' + stackEntry.line + "\n";
+
+            // Prep the "stack" part of the message
+            errorStack.forEach(function (stackEntry, idx, arr) {
+                stack += "  " //< a bit of indentation
+                    + (stackEntry.function || "(anonymous function)")
+                    + " (" + stackEntry.file + ":" + stackEntry.line + ")";
+                stack += idx < arr.length - 1 ? "\n" : "";
             });
-            _log.error("Page at '"+page.url+"'", "Console Error (msg): " + errorMsg);
-            _log.error("Page at '"+page.url+"'", "Console Error (stack): " + stack);
-            page.browserLog.push({
-                'level': 'WARNING',
-                'message': errorMsg + "\n" + stack,
-                'timestamp': Math.round((new Date()).getTime() / 1000)
-            });
+
+            // Log as error
+            _log.error("page.onError", "msg: " + errorMsg);
+            _log.error("page.onError", "stack:\n" + stack);
+
+            // Register as part of the "browser" log
+            page.browserLog.push(_createLogEntry("WARNING", errorMsg + "\n" + stack));
         };
-        // Log page console messages
+        // 9. Log Page console messages
         page.browserLog = [];
         page.onConsoleMessage = function(msg, lineNum, sourceId) {
+            // Log as debug
             _log.debug("page.onConsoleMessage", msg);
-            page.browserLog.push({
-                'level': 'INFO',
-                'message': 'CONSOLE: ' + msg + ' (from line #' + lineNum + ' in "' + sourceId + '")',
-                'timestamp': Math.round((new Date()).getTime() / 1000)
-            });
+
+            // Register as part of the "browser" log
+            page.browserLog.push(_createLogEntry("INFO", msg + " (" + sourceId + ":" + lineNum + ")"));
         };
-        // Log page network activity
+        // 10. Log Page network activity
         page.resources = [];
         page.startTime = null;
+        page.endTime = null;
         page.setOneShotCallback("onLoadStarted", function() {
-            page.startTime = page.endTime = new Date();
+            page.startTime = new Date();
         });
         page.setOneShotCallback("onLoadFinished", function() {
             page.endTime = new Date();
@@ -367,6 +375,14 @@ ghostdriver.Session = function(desiredCapabilities) {
         _log.info("page.customHeaders: ", JSON.stringify(page.customHeaders));
 
         return page;
+    },
+
+    _createLogEntry = function(level, message) {
+        return {
+            "level"     : level,
+            "message"   : message,
+            "timestamp" : (new Date()).getTime()
+        };
     },
 
     /**
@@ -562,20 +578,36 @@ ghostdriver.Session = function(desiredCapabilities) {
     },
 
     _getLog = function (type) {
-        var page, createHar;
-        if (type === 'network') {
+        var har = require('./third_party/har.js'),
+            page, tmp;
+
+        // Return "HAR" as Log Type "har"
+        if (type === _const.LOG_TYPES.HAR) {
             page = _getCurrentWindow();
-            createHar = require('./third_party/har.js').createHar;
-            return createHar(page, page.resources);
-        } if (type === 'browser') {
-            return _getCurrentWindow().browserLog;
-        } else {
-            return [];
+            tmp = [];
+            tmp.push(_createLogEntry(
+                "INFO",
+                JSON.stringify(har.createHar(page, page.resources))));
+            return tmp;
         }
+
+        // Return Browser Console Log
+        if (type === _const.LOG_TYPES.BROWSER) {
+            return _getCurrentWindow().browserLog;
+        }
+
+        // Return empty Log
+        return [];
     },
 
     _getLogTypes = function () {
-        return ['browser'];
+        var logTypes = [], k;
+
+        for (k in _const.LOG_TYPES) {
+            logTypes.push(_const.LOG_TYPES[k]);
+        }
+
+        return logTypes;
     };
 
     // Initialize the Session.
