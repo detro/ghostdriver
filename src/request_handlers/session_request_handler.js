@@ -67,8 +67,7 @@ ghostdriver.SessionReqHand = function(session) {
         PHANTOM_DIR     : "/phantom/",
         PHANTOM_EXEC    : "execute",
         LOG             : "log",
-        TYPES           : "types",
-        NETWORK         : "network"
+        TYPES           : "types"
     };
 
     var
@@ -187,13 +186,13 @@ ghostdriver.SessionReqHand = function(session) {
             }
             return;
         } else if (req.urlParsed.chunks[0] === _const.LOG && req.method === "POST") {  //< ".../log"
-            _getLog(req, res);
+            _postLog(req, res);
             return;
         } else if (req.urlParsed.chunks[0] === _const.LOG && req.urlParsed.chunks[1] === _const.TYPES && req.method === "GET") {  //< ".../log/types"
             _getLogTypes(req, res);
             return;
-        } else if (req.urlParsed.chunks[0] === _const.LOG && req.urlParsed.chunks[1] === _const.NETWORK && req.method === "GET") {  //< ".../log/network"
-            _getLogNetwork(req, res);
+        } else if (req.urlParsed.chunks[0] === _const.LOG && _session.getLogTypes().indexOf(req.urlParsed.chunks[1]) >= 0 && req.method === "GET") {  //< ".../log/LOG_TYPE"
+            _getLog(req, res, req.urlParsed.chunks[1]);
             return;
         }
 
@@ -863,20 +862,20 @@ ghostdriver.SessionReqHand = function(session) {
         }
     },
 
-    _getLog = function (req, res) {
+    _postLog = function (req, res) {
         var params = JSON.parse(req.post);
-        if (!params.type) {
+        if (!params.type || _session.getLogTypes().indexOf(params.type) < 0) {
             throw _errors.createInvalidReqMissingCommandParameterEH(req);
         }
-        res.success(_session.getId(), _session.getLog(params.type));
+        _getLog(req, res, params.type);
     },
 
     _getLogTypes = function (req, res) {
         res.success(_session.getId(), _session.getLogTypes());
     },
 
-    _getLogNetwork = function (req, res) {
-        res.success(_session.getId(), _session.getLog('network'));
+    _getLog = function (req, res, logType) {
+        res.success(_session.getId(), _session.getLog(logType));
     };
 
     // public:
