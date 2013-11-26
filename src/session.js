@@ -358,8 +358,9 @@ ghostdriver.Session = function(desiredCapabilities) {
                 page.resources[res.id].endReply = res;
             }
         };
-        page.onResourceError = function(error) {
-            page.resources[error.id].error = error;
+        page.onResourceError = function(resError) {
+            page.resources[resError.id] || (page.resources[resError.id] = {});
+            page.resources[resError.id].error = resError;
         };
         page.onNavigationRequested = function(url, type, willNavigate, main) {
             // Clear page log before page loading
