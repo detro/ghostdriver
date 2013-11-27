@@ -47,7 +47,7 @@ Just add the following to your `pom.xml`:
 <dependency>
     <groupId>com.github.detro.ghostdriver</groupId>
     <artifactId>phantomjsdriver</artifactId>
-    <version>1.0.3</version>
+    <version>1.0.4</version>
 </dependency>
 ```
 
