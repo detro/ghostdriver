@@ -110,7 +110,6 @@ exports.createHar = function (page, resources) {
                 pageref: page.url
             });
         } else if (error) {
-            console.log(JSON.stringify(error, null, "  "));
             entries.push({
                 startedDateTime: request.time.toISOString(),
                 time: 0,

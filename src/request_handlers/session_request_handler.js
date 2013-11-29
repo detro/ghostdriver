@@ -211,7 +211,7 @@ ghostdriver.SessionReqHand = function(session) {
             command,
             targetWindow;
 
-        _log.debug("_doWindowHandleCommands", "req => " + JSON.stringify(req));
+        _log.debug("_doWindowHandleCommands", JSON.stringify(req));
 
         // Ensure all the parameters are provided
         if (req.urlParsed.chunks.length === 3) {
@@ -401,11 +401,11 @@ ghostdriver.SessionReqHand = function(session) {
     _executeAsyncCommand = function(req, res) {
         var postObj = JSON.parse(req.post);
 
-        _log.debug("_executeCommand", "postObj => " + JSON.stringify(postObj));
+        _log.debug("_executeAsyncCommand", JSON.stringify(postObj));
 
         if (typeof(postObj) === "object" && postObj.script && postObj.args) {
             _protoParent.getSessionCurrWindow.call(this, _session, req).setOneShotCallback("onCallback", function() {
-                _log.debug("_executeCommand", "onCallback - arguments => " + JSON.stringify(arguments));
+                _log.debug("_executeAsyncCommand.callbackArguments", JSON.stringify(arguments));
 
                 res.respondBasedOnResult(_session, req, arguments[0]);
             });
@@ -601,7 +601,7 @@ ghostdriver.SessionReqHand = function(session) {
                     }
                 }
             } else if (typeof(postObj.id) === "object" && typeof(postObj.id["ELEMENT"]) === "string") {
-                _log.debug("_postFrameCommand", "Switching to frame ELEMENT: " + JSON.stringify(postObj.id));
+                _log.debug("_postFrameCommand.element", JSON.stringify(postObj.id));
 
                 // Will use the Element JSON to find the frame name
                 frameName = currWindow.evaluate(
@@ -613,7 +613,7 @@ ghostdriver.SessionReqHand = function(session) {
                     "return arguments[0].name || arguments[0].id;",
                     [postObj.id]);
 
-                _log.debug("_postFrameCommand", "Will try to switch to Frame using: "+frameName.value);
+                _log.debug("_postFrameCommand.frameName", frameName.value);
 
                 // If a frame name (or id) is found for the given ELEMENT, we
                 // "re-call" this very function, changing the `post` property

@@ -56,7 +56,7 @@ ghostdriver.RouterReqHand = function() {
         // Invoke parent implementation
         _protoParent.handle.call(this, req, res);
 
-        _log.debug("_handle", "Request => " + JSON.stringify(req, null, "  "));
+        _log.debug("_handle", JSON.stringify(req));
 
         try {
             if (req.urlParsed.chunks.length === 1 && req.urlParsed.file === _const.STATUS) {                 // GET '/status'
@@ -83,7 +83,7 @@ ghostdriver.RouterReqHand = function() {
                 throw _errors.createInvalidReqUnknownCommandEH(req);
             }
         } catch (e) {
-            _log.error("_handle", "Thrown => " + JSON.stringify(e, null, "  "));
+            _log.error("_handle.error", JSON.stringify(e));
 
             if (typeof(e.handle) === "function") {
                 e.handle(res);

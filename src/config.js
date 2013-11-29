@@ -92,7 +92,7 @@ exports.init = function(cliArgs) {
     // Apply/Normalize the Configuration before returning
     apply();
 
-    _log.debug("init", "Configuration => " + JSON.stringify(config));
+    _log.debug("config.init", JSON.stringify(config));
 };
 
 exports.get = function() {

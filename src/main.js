@@ -83,6 +83,6 @@ try {
         phantom.exit(1);
     }
 } catch (e) {
-    _log.error("Main", e.message + " => "+ JSON.stringify(e, null, "  "));
+    _log.error("main.fail", JSON.stringify(e));
     phantom.exit(1);
 }

@@ -280,21 +280,27 @@ ghostdriver.Session = function(desiredCapabilities) {
         // Decorating:
         // 0. Pages lifetime will be managed by Driver, not the pages
         page.ownsPages = false;
+
         // 1. Random Window Handle
         page.windowHandle = require("./third_party/uuid.js").v1();
+
         // 2. Initialize the One-Shot Callbacks
         page["onLoadStarted"] = _oneShotCallbackFactory(page, "onLoadStarted");
         page["onLoadFinished"] = _oneShotCallbackFactory(page, "onLoadFinished");
         page["onUrlChanged"] = _oneShotCallbackFactory(page, "onUrlChanged");
         page["onFilePicker"] = _oneShotCallbackFactory(page, "onFilePicker");
         page["onCallback"] = _oneShotCallbackFactory(page, "onCallback");
+
         // 3. Utility methods
         page.execFuncAndWaitForLoad = _execFuncAndWaitForLoadDecorator;
         page.setOneShotCallback = _setOneShotCallbackDecorator;
+
         // 4. Store every newly created page
         page.onPageCreated = _addNewPage;
+
         // 5. Remove every closing page
         page.onClosing = _deleteClosingPage;
+
         // 6. Applying Page settings received via capabilities
         for (k in _pageSettings) {
             // Apply setting only if really supported by PhantomJS
@@ -302,8 +308,10 @@ ghostdriver.Session = function(desiredCapabilities) {
                 page.settings[k] = _pageSettings[k];
             }
         }
+
         // 7. Applying Page custom headers received via capabilities
         page.customHeaders = _pageCustomHeaders;
+
         // 8. Log Page internal errors
         page.onError = function(errorMsg, errorStack) {
             var stack = '';
@@ -323,6 +331,7 @@ ghostdriver.Session = function(desiredCapabilities) {
             // Register as part of the "browser" log
             page.browserLog.push(_createLogEntry("WARNING", errorMsg + "\n" + stack));
         };
+
         // 9. Log Page console messages
         page.browserLog = [];
         page.onConsoleMessage = function(msg, lineNum, sourceId) {
@@ -332,6 +341,7 @@ ghostdriver.Session = function(desiredCapabilities) {
             // Register as part of the "browser" log
             page.browserLog.push(_createLogEntry("INFO", msg + " (" + sourceId + ":" + lineNum + ")"));
         };
+
         // 10. Log Page network activity
         page.resources = [];
         page.startTime = null;
@@ -343,7 +353,7 @@ ghostdriver.Session = function(desiredCapabilities) {
             page.endTime = new Date();
         });
         page.onResourceRequested = function (req) {
-            _log.debug("page.onResourceRequested", JSON.stringify(req, undefined, 2));
+            _log.debug("page.onResourceRequested", JSON.stringify(req));
 
             // Register HTTP Request
             page.resources[req.id] = {
@@ -354,7 +364,7 @@ ghostdriver.Session = function(desiredCapabilities) {
             };
         };
         page.onResourceReceived = function (res) {
-            _log.debug("page.onResourceReceived", JSON.stringify(res, undefined, 2));
+            _log.debug("page.onResourceReceived", JSON.stringify(res));
 
             // Register HTTP Response
             page.resources[res.id] || (page.resources[res.id] = {});
@@ -365,14 +375,14 @@ ghostdriver.Session = function(desiredCapabilities) {
             }
         };
         page.onResourceError = function(resError) {
-            _log.debug("page.onResourceError", JSON.stringify(resError, undefined, 2));
+            _log.debug("page.onResourceError", JSON.stringify(resError));
 
             // Register HTTP Error
             page.resources[resError.id] || (page.resources[resError.id] = {});
             page.resources[resError.id].error = resError;
         };
         page.onResourceTimeout = function(req) {
-            _log.debug("page.onResourceTimeout", JSON.stringify(req, undefined, 2));
+            _log.debug("page.onResourceTimeout", JSON.stringify(req));
 
             // Register HTTP Timeout
             page.resources[req.id] || (page.resources[req.id] = {});
@@ -385,7 +395,7 @@ ghostdriver.Session = function(desiredCapabilities) {
             }
         };
 
-        _log.info("_decorateNewWindow", "page.settings: " + JSON.stringify(page.settings));
+        _log.info("page.settings", JSON.stringify(page.settings));
         _log.info("page.customHeaders: ", JSON.stringify(page.customHeaders));
 
         return page;
@@ -628,8 +638,8 @@ ghostdriver.Session = function(desiredCapabilities) {
     // Particularly, create the first empty page/window.
     _init();
 
-    _log.info("CONSTRUCTOR", "Desired Capabilities: " + JSON.stringify(desiredCapabilities));
-    _log.info("CONSTRUCTOR", "Negotiated Capabilities: " + JSON.stringify(_negotiatedCapabilities));
+    _log.debug("Session.desiredCapabilities", JSON.stringify(desiredCapabilities));
+    _log.info("Session.negotiatedCapabilities", JSON.stringify(_negotiatedCapabilities));
 
     // public:
     return {

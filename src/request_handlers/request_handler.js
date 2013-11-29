@@ -96,8 +96,6 @@ ghostdriver.RequestHandler = function() {
     },
 
     _respondBasedOnResultDecorator = function(session, req, result) {
-        //console.log("respondBasedOnResult => "+JSON.stringify(result));
-
         // Convert string to JSON
         if (typeof(result) === "string") {
             try {
