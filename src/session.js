@@ -63,7 +63,6 @@ ghostdriver.Session = function(desiredCapabilities) {
         "rotatable" : false,                //< TODO Target is 1.1
         "acceptSslCerts" : false,           //< TODO
         "nativeEvents" : true,              //< TODO Only some commands are Native Events currently
-        "networkLogging": false,
         "proxy" : {                         //< TODO Support more proxy options - PhantomJS does allow setting from command line
             "proxyType" : "direct"
         }
@@ -88,7 +87,6 @@ ghostdriver.Session = function(desiredCapabilities) {
         "cssSelectorsEnabled"       : _defaultCapabilities.cssSelectorsEnabled,
         "webStorageEnabled"         : _defaultCapabilities.webStorageEnabled,
         "rotatable"                 : _defaultCapabilities.rotatable,
-        "networkLogging"            : _defaultCapabilities.networkLogging,
         "acceptSslCerts"            : _defaultCapabilities.acceptSslCerts,
         "nativeEvents"              : _defaultCapabilities.nativeEvents,
         "proxy"                     : typeof(desiredCapabilities.proxy) === "undefined" ?
@@ -278,7 +276,7 @@ ghostdriver.Session = function(desiredCapabilities) {
 
     _decorateNewWindow = function(page) {
         var k;
-        
+
         // Decorating:
         // 0. Pages lifetime will be managed by Driver, not the pages
         page.ownsPages = false;
@@ -290,16 +288,6 @@ ghostdriver.Session = function(desiredCapabilities) {
         page["onUrlChanged"] = _oneShotCallbackFactory(page, "onUrlChanged");
         page["onFilePicker"] = _oneShotCallbackFactory(page, "onFilePicker");
         page["onCallback"] = _oneShotCallbackFactory(page, "onCallback");
-        
-        if(_negotiatedCapabilities.networkLogging) {
-           function logRequest(type, request) {
-               _log.debug('Network request "' + type + '": ' + JSON.stringify(request, undefined, 4));
-           }
-           
-           page["onResourceRequested"] = function(req) { logReqest('onResourceRequested', req); };
-           page["onResourceReceived"] = function(req) { logReqest('onResourceReceived', req); };
-        }
-        
         // 3. Utility methods
         page.execFuncAndWaitForLoad = _execFuncAndWaitForLoadDecorator;
         page.setOneShotCallback = _setOneShotCallbackDecorator;
@@ -355,6 +343,9 @@ ghostdriver.Session = function(desiredCapabilities) {
             page.endTime = new Date();
         });
         page.onResourceRequested = function (req) {
+            _log.debug("page.onResourceRequested", JSON.stringify(req, undefined, 2));
+
+            // Register HTTP Request
             page.resources[req.id] = {
                 request: req,
                 startReply: null,
@@ -363,6 +354,9 @@ ghostdriver.Session = function(desiredCapabilities) {
             };
         };
         page.onResourceReceived = function (res) {
+            _log.debug("page.onResourceReceived", JSON.stringify(res, undefined, 2));
+
+            // Register HTTP Response
             page.resources[res.id] || (page.resources[res.id] = {});
             if (res.stage === 'start') {
                 page.resources[res.id].startReply = res;
@@ -371,8 +365,18 @@ ghostdriver.Session = function(desiredCapabilities) {
             }
         };
         page.onResourceError = function(resError) {
+            _log.debug("page.onResourceError", JSON.stringify(resError, undefined, 2));
+
+            // Register HTTP Error
             page.resources[resError.id] || (page.resources[resError.id] = {});
             page.resources[resError.id].error = resError;
+        };
+        page.onResourceTimeout = function(req) {
+            _log.debug("page.onResourceTimeout", JSON.stringify(req, undefined, 2));
+
+            // Register HTTP Timeout
+            page.resources[req.id] || (page.resources[req.id] = {});
+            page.resources[req.id].error = req;
         };
         page.onNavigationRequested = function(url, type, willNavigate, main) {
             // Clear page log before page loading
