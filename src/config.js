@@ -32,7 +32,8 @@ var defaultConfig = {
         "hub"       : null,
         "logFile"   : null,
         "logLevel"  : "INFO",
-        "logColor"  : false
+        "logColor"  : false,
+        "keepAlive" : false
     },
     config = {
         "ip"        : defaultConfig.ip,
@@ -40,7 +41,8 @@ var defaultConfig = {
         "hub"       : defaultConfig.hub,
         "logFile"   : defaultConfig.logFile,
         "logLevel"  : defaultConfig.logLevel,
-        "logColor"  : defaultConfig.logColor
+        "logColor"  : defaultConfig.logColor,
+        "keepAlive" : defaultConfig.keepAlive
     },
     logOutputFile = null,
     logger = require("./logger.js"),
