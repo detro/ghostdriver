@@ -32,11 +32,13 @@ import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 public class ScriptExecutionTest extends BaseTest {
     @Test
@@ -116,7 +118,12 @@ public class ScriptExecutionTest extends BaseTest {
         // It's a reminder that there is some internal issue in PhantomJS still to address.
 
         WebDriver d = getDriver();
-        String hello = URLEncoder.encode("<h1>hello</h1>");
+        String hello = null;
+        try {
+            hello = URLEncoder.encode("<h1>hello</h1>", "UTF-8");
+        } catch (UnsupportedEncodingException uee) {
+            fail();
+        }
 
         for (int i = 1; i < 5; ++i) {
             d.get("data:text/html;content-type=utf-8,"+hello);

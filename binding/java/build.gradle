@@ -4,7 +4,7 @@ apply plugin: "eclipse"
 apply plugin: "nexus"
 
 task wrapper(type: Wrapper) {
-    gradleVersion   = "1.7"
+    gradleVersion   = "1.10"
     jarFile         = "gradle/gradle-wrapper.jar"
 }
 

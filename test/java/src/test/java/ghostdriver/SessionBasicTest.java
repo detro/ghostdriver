@@ -8,8 +8,9 @@ import org.openqa.selenium.remote.SessionNotFoundException;
 
 import java.net.MalformedURLException;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertNotNull;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class SessionBasicTest extends BaseTest {
 
