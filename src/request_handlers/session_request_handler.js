@@ -308,8 +308,51 @@ ghostdriver.SessionReqHand = function(session) {
     },
 
     _postWindowMaximizeCommand = function(req, res, targetWindow) {
-        // NOTE: Nothing to do! PhantomJS is headless. :)
-        res.success(_session.getId());
+      var
+        platform = require('system').os.name;
+
+        if (platform === 'linux') {
+            // this source work in my ubuntu machine
+            var xrandr    = require('child_process').spawn(
+                'xrandr',
+                [] // not remove this phantomjs throw error
+            );
+            // success
+            xrandr.stdout.on('data', function (data) {
+                var regex = /current (\d+) x (\d+)/,
+                    match  = regex.exec(data);
+                xrandr.kill('SIGHUP');
+                if (match) {
+                    var
+                        width = parseInt(match[1], 10),
+                        height = parseInt(match[2], 10);
+                    targetWindow.viewportSize = {
+                        width: width,
+                        height: height
+                    };
+                    res.success(_session.getId());
+                } else {
+                    throw new Error(
+                        'Error not cant match /current (\d+) x (\d+)/ on: ' + data
+                    );
+                }
+            });
+            // on error
+            xrandr.stderr.on('data', function (data) {
+                xrandr.kill('SIGHUP');
+                throw new Error(data);
+            });
+        } else {
+            /** @fixed You need test for mac */
+            var size = targetWindow.evaluate(function () {
+              return {
+                width: screen.width,
+                height: screen.height
+              };
+            });
+            targetWindow.viewportSize = size;
+            res.success(_session.getId());
+        }
     },
 
     _postKeysCommand = function(req, res) {
