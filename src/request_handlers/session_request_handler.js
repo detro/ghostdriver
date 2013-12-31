@@ -505,7 +505,7 @@ ghostdriver.SessionReqHand = function(session) {
             postObj["type"] = _session.timeoutNames.ASYNC_SCRIPT;
         }
 
-        if (typeof(postObj["type"]) !== "undefined" && typeof(postObj["ms"]) !== "undefined") {
+        if (typeof(postObj["type"]) === "string" && typeof(postObj["ms"]) === "number") {
 
             _log.debug("_postTimeout", JSON.stringify(postObj));
 
@@ -523,6 +523,8 @@ ghostdriver.SessionReqHand = function(session) {
                 case _session.timeoutNames.PAGE_LOAD:
                     _session.setPageLoadTimeout(postObj["ms"]);
                     break;
+                default:
+                    throw _errors.createInvalidReqMissingCommandParameterEH(req);
             }
 
             res.success(_session.getId());
