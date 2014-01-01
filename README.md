@@ -36,7 +36,7 @@ you shouldn't need anything else to get started.
 ## (Java) Bindings
 
 This project provides WebDriver bindings for Java under the name _PhantomJSDriver_.
-[Here is the JavaDoc](http://cdn.ivandemarino.me/phantomjsdriver-javadoc/index.html).
+[Here is the JavaDoc](http://ivandemarino.me/ghostdriver/binding-java/).
 
 Bindings for other languages (C#, Python, Ruby, ...) are developed and maintained
 under the same name within the [Selenium project](http://docs.seleniumhq.org/docs/) itself.
