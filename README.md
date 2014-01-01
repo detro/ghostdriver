@@ -1,4 +1,3 @@
-[![Stories in Ready](https://badge.waffle.io/detro/ghostdriver.png)](https://waffle.io/detro/ghostdriver)
 # Ghost Driver
 
 Ghost Driver is a pure JavaScript implementation of the
