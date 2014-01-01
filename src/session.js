@@ -100,7 +100,7 @@ ghostdriver.Session = function(desiredCapabilities) {
     _timeouts = {
         "script"            : _max32bitInt,
         "async script"      : _max32bitInt,
-        "implicit"          : 50,               //< 50ms
+        "implicit"          : 200,          //< 200ms
         "page load"         : _max32bitInt,
     },
     _windows = {},  //< NOTE: windows are "webpage" in Phantom-dialect
@@ -182,10 +182,8 @@ ghostdriver.Session = function(desiredCapabilities) {
         // Wait 10ms before proceeding any further: in this window of time
         // the page can react and start loading (if it has to).
         setTimeout(function() {
-            var loadingStartedTs,
+            var loadingStartedTs = new Date().getTime(),
                 checkLoadingFinished;
-
-            loadingStartedTs = new Date().getTime();
 
             checkLoadingFinished = function() {
                 if (!_isLoading()) {               //< page finished loading
@@ -215,6 +213,36 @@ ghostdriver.Session = function(desiredCapabilities) {
             };
             checkLoadingFinished();
         }, 10);     //< 10ms
+    },
+
+    /**
+     * Wait for Page to be done Loading before executing of callback.
+     * Also, it considers "Page Timeout" to avoid waiting indefinitely.
+     * NOTE: This is useful for cases where it's not certain a certain action
+     * just executed MIGHT cause a page to start loading.
+     * It's a "best effort" approach and the user is given the use of
+     * "Page Timeout" to tune to their needs.
+     *
+     * @param callback Function to execute when done or timed out
+     */
+    _waitIfLoadingDecorator = function(callback) {
+        var thisPage = this,
+            waitStartedTs = new Date().getTime(),
+            checkDoneLoading;
+
+        checkDoneLoading = function() {
+            if (!_isLoading()             //< Session is not loading (any more?)
+                || (new Date().getTime() - waitStartedTs > _getPageLoadTimeout())) {    //< OR Page Timeout expired
+                callback.call(thisPage);
+                return;
+            }
+
+            _log.debug("_waitIfLoading", "Still loading (wait using Implicit Timeout)");
+
+            // Retry in 10ms
+            setTimeout(checkDoneLoading, 10);
+        };
+        checkDoneLoading();
     },
 
     _oneShotCallbackFactory = function(page, callbackName) {
@@ -294,6 +322,7 @@ ghostdriver.Session = function(desiredCapabilities) {
         // 3. Utility methods
         page.execFuncAndWaitForLoad = _execFuncAndWaitForLoadDecorator;
         page.setOneShotCallback = _setOneShotCallbackDecorator;
+        page.waitIfLoading = _waitIfLoadingDecorator;
 
         // 4. Store every newly created page
         page.onPageCreated = _addNewPage;

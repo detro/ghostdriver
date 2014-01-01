@@ -293,8 +293,10 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
                     _session.inputs.clearModifierKeys(_session);
                 }
 
-                // Return the result of this typing
-                res.respondBasedOnResult(_session, req, typeRes);
+                currWindow.waitIfLoading(function() {
+                    // Return the result of this typing
+                    res.respondBasedOnResult(_session, req, typeRes);
+                });
             }
             return;
         }
