@@ -109,7 +109,7 @@ public class ElementMethodsTest extends BaseTestWithServer {
         formElement.submit();
 
         WebDriverWait wait = new WebDriverWait(d, 30);
-        wait.until(ExpectedConditions.textToBePresentInElement(By.id("result"), "form-onsubmit"));
+        wait.until(ExpectedConditions.textToBePresentInElementLocated(By.id("result"), "form-onsubmit"));
 
         WebElement result = d.findElement(By.id("result"));
         String text = result.getText();

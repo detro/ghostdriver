@@ -72,7 +72,7 @@ public class FileUploadTest extends BaseTest {
         d.switchTo().frame("upload_target");
 
         wait = new WebDriverWait(d, 5);
-        wait.until(ExpectedConditions.textToBePresentInElement(By.xpath("//body"), LOREM_IPSUM_TEXT));
+        wait.until(ExpectedConditions.textToBePresentInElementLocated(By.xpath("//body"), LOREM_IPSUM_TEXT));
 
         // Navigate after file upload to verify callbacks are properly released.
         d.get("http://www.google.com/");
