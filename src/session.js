@@ -72,9 +72,7 @@ ghostdriver.Session = function(desiredCapabilities) {
         "driverName"                : _defaultCapabilities.driverName,
         "driverVersion"             : _defaultCapabilities.driverVersion,
         "platform"                  : _defaultCapabilities.platform,
-        "javascriptEnabled"         : typeof(desiredCapabilities.javascriptEnabled) === "undefined" ?
-            _defaultCapabilities.javascriptEnabled :
-            desiredCapabilities.javascriptEnabled,
+        "javascriptEnabled"         : _defaultCapabilities.javascriptEnabled,
         "takesScreenshot"           : typeof(desiredCapabilities.takesScreenshot) === "undefined" ?
             _defaultCapabilities.takesScreenshot :
             desiredCapabilities.takesScreenshot,
