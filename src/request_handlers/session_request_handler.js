@@ -269,8 +269,8 @@ ghostdriver.SessionReqHand = function(session) {
         }
 
         targetWindow.viewportSize = {
-            width : newWidth,
-            height : newHeight
+            width   : newWidth,
+            height  : newHeight
         };
         res.success(_session.getId());
     },
@@ -308,7 +308,16 @@ ghostdriver.SessionReqHand = function(session) {
     },
 
     _postWindowMaximizeCommand = function(req, res, targetWindow) {
-        // NOTE: Nothing to do! PhantomJS is headless. :)
+        // NOTE: PhantomJS is headless, so there is no "screen" to maximize to
+        // or "window" resize to that.
+        //
+        // NOTE: The most common screen resolution used online is currently: 1366x768
+        // See http://gs.statcounter.com/#resolution-ww-monthly-201307-201312.
+        targetWindow.viewportSize = {
+            width   : 1366,
+            height  : 768
+        };
+
         res.success(_session.getId());
     },
 
