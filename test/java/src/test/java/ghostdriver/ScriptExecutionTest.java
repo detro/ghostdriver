@@ -118,6 +118,7 @@ public class ScriptExecutionTest extends BaseTest {
         // It's a reminder that there is some internal issue in PhantomJS still to address.
 
         WebDriver d = getDriver();
+
         String hello = null;
         try {
             hello = URLEncoder.encode("<h1>hello</h1>", "UTF-8");

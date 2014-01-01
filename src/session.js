@@ -33,7 +33,6 @@ ghostdriver.Session = function(desiredCapabilities) {
     _const = {
         TIMEOUT_NAMES       : {
             SCRIPT              : "script",
-            ASYNC_SCRIPT        : "async script",
             IMPLICIT            : "implicit",
             PAGE_LOAD           : "page load"
         },
@@ -99,7 +98,6 @@ ghostdriver.Session = function(desiredCapabilities) {
     _max32bitInt = Math.pow(2, 31) -1,      //< Max 32bit Int
     _timeouts = {
         "script"            : _max32bitInt,
-        "async script"      : _max32bitInt,
         "implicit"          : 200,          //< 200ms
         "page load"         : _max32bitInt,
     },
@@ -581,10 +579,6 @@ ghostdriver.Session = function(desiredCapabilities) {
         return _getTimeout(_const.TIMEOUT_NAMES.SCRIPT);
     },
 
-    _getAsyncScriptTimeout = function() {
-        return _getTimeout(_const.TIMEOUT_NAMES.ASYNC_SCRIPT);
-    },
-
     _getImplicitTimeout = function() {
         return _getTimeout(_const.TIMEOUT_NAMES.IMPLICIT);
     },
@@ -595,10 +589,6 @@ ghostdriver.Session = function(desiredCapabilities) {
 
     _setScriptTimeout = function(ms) {
         _setTimeout(_const.TIMEOUT_NAMES.SCRIPT, ms);
-    },
-
-    _setAsyncScriptTimeout = function(ms) {
-        _setTimeout(_const.TIMEOUT_NAMES.ASYNC_SCRIPT, ms);
     },
 
     _setImplicitTimeout = function(ms) {
@@ -686,11 +676,9 @@ ghostdriver.Session = function(desiredCapabilities) {
         aboutToDelete : _aboutToDelete,
         inputs : _inputs,
         setScriptTimeout : _setScriptTimeout,
-        setAsyncScriptTimeout : _setAsyncScriptTimeout,
         setImplicitTimeout : _setImplicitTimeout,
         setPageLoadTimeout : _setPageLoadTimeout,
         getScriptTimeout : _getScriptTimeout,
-        getAsyncScriptTimeout : _getAsyncScriptTimeout,
         getImplicitTimeout : _getImplicitTimeout,
         getPageLoadTimeout : _getPageLoadTimeout,
         executePhantomJS : _executePhantomJS,

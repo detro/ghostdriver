@@ -417,7 +417,7 @@ ghostdriver.SessionReqHand = function(session) {
                 "}",
                 postObj.script,
                 postObj.args,
-                _session.getAsyncScriptTimeout());
+                _session.getScriptTimeout());
         } else {
             throw _errors.createInvalidReqMissingCommandParameterEH(req);
         }
@@ -502,7 +502,7 @@ ghostdriver.SessionReqHand = function(session) {
         if (req.urlParsed.file === _const.IMPLICIT_WAIT) {
             postObj["type"] = _session.timeoutNames.IMPLICIT;
         } else if (req.urlParsed.file === _const.ASYNC_SCRIPT) {
-            postObj["type"] = _session.timeoutNames.ASYNC_SCRIPT;
+            postObj["type"] = _session.timeoutNames.SCRIPT;
         }
 
         if (typeof(postObj["type"]) === "string" && typeof(postObj["ms"]) === "number") {
@@ -513,9 +513,6 @@ ghostdriver.SessionReqHand = function(session) {
             switch(postObj["type"]) {
                 case _session.timeoutNames.SCRIPT:
                     _session.setScriptTimeout(postObj["ms"]);
-                    break;
-                case _session.timeoutNames.ASYNC_SCRIPT:
-                    _session.setAsyncScriptTimeout(postObj["ms"]);
                     break;
                 case _session.timeoutNames.IMPLICIT:
                     _session.setImplicitTimeout(postObj["ms"]);
