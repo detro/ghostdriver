@@ -13,7 +13,7 @@ see [releases](https://github.com/detro/ghostdriver/releases)
 * Current _PhantomJS-integrated_ version is `"1.0.4"`:
 contained in PhantomJS `"1.9.2"`
 * Current _PhantomJSDriver Java bindings_ stable version: see
-[Maven](http://mvnrepository.com/artifact/com.github.detro.ghostdriver/phantomjsdriver)
+[Maven](https://oss.sonatype.org/index.html#nexus-search;quick~phantomjsdriver)
 
 For more info, please take a look at the [changelog](https://github.com/detro/ghostdriver/blob/master/CHANGELOG.md).
 
