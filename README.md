@@ -60,7 +60,7 @@ Just add the following to your `build.gradle`:
 ```gradle
 dependencies {
     ...
-    testCompile "com.github.detro.ghostdriver:phantomjsdriver:1.0.4"
+    testCompile "com.github.detro.ghostdriver:phantomjsdriver:LATEST_VERSION_HERE"
     ...
 }
 ```
