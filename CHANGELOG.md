@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## v1.1.0 (2014-01-01) ([issues](https://github.com/detro/ghostdriver/issues?labels=1.1.0&state=closed))
+
+### JavaScript Driver (Core)
+* ENHANCEMENT: `/maximize` window will set the window size to 1336x768,
+currently most common resolution online (see [statcounter](http://gs.statcounter.com/#resolution-ww-monthly-201307-201312))
+* ENHANCEMENT #275: Implemented Browser and Network (HAR) Logging types
+* FIXED #284: Attempt to wait for Page to Load if input causes form submit
+* FIXED #291: Throw exception when attempting to set invalid timeout value
+* FIXED #259: Fix issue regarding mouse clicks
+* ENHANCEMENT #290: Enabled support for "Keep Alive" HTTP connections
+* ENHANCEMENT #262: Allow access to PhantomJS API from WebDriver (Driver part)
+
+### Java Binding
+* MINOR #251: Minor compilation issues for Binding
+* ENHANCEMENT #262: Allow access to PhantomJS API from WebDriver (Java Binding part)
+
 ## v1.0.4 (2013-07-25) ([issues](https://github.com/detro/ghostdriver/issues?labels=1.0.4&state=closed))
 
 ### JavaScript Driver (Core)
@@ -17,7 +33,7 @@
 * ENHANCEMENT #242: Trim URL before trying to load it
 * FIX #247: Implement changes to "HTTP POST /session" as per new WireProtocol specs
 
-### Binding
+### Java Binding
 * ENHANCEMENT/FIX #179: Suppor for `.withLog(logfile)` option when using `PhantomJSDriverService`
 * ENHANCEMENT #228: Support in the Java Bindings to set `page.customheaders` via Capabilities
 * FIX 246: Avoid Cast Exception in Binding when passing `phantomjs.cli.args` through Selenium Server or Grid
@@ -39,7 +55,7 @@
 * FIX: Ensure File exists before attempting Upload
 * ENHANCEMENT: Upgraded WebDriver Atoms to **Selenium 2.31.0**
 
-### Binding
+### Java Binding
 * FIX: Issues with "save_screenshot" method
 * FIX: Java Binding should handle Proxy configuration provided as a Map in the Capabilities (like Ruby or NodeJS bindings do)
 * FIX: `PhantomJSDriver.Builder.withLogFile()` is now implemented correctly and not ignored
@@ -69,7 +85,7 @@
 ### PhantomJS (code in PhantomJS master repo)
 * FIX: Command line argument --webdriver-selenium-grid-hub is not taken into account
 
-### Binding
+### Java Binding
 * BUG: PhantomJSDriverService replaced by DriverService in PhantomJSDriver constructor
 
 
@@ -77,7 +93,7 @@
 ### JavaScript Driver (Core)
 * Implemented all the WireProtocol commands planned for 1.0.0 ([see spreadsheet](https://docs.google.com/spreadsheet/ccc?key=0Am63grtxc7bDdGNqX1ZPX2VoZlE2ZHZhd09lNDkzbkE))
 
-### Binding
+### Java Binding
 * Java Binding `jar` files created in `/binding/java/jars`
 * Bindings committed as _third party library_ into the Selenium project ([commit](https://code.google.com/p/selenium/source/detail?r=18187))
 
