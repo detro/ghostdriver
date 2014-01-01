@@ -74,6 +74,26 @@ $ phantomjs --webdriver=PORT
 Once started, you can use any `RemoteWebDriver` implementation to send commands to it. I advice to take a look to the
 `/test` directory for examples.
 
+## F.A.Q.
+
+### What extra WebDriver `capabilities` GhostDriver offers?
+* GhostDriver extra Capabilities
+    * `phantomjs.page.settings.SETTING = VALUE` - Configure `page.settings`
+    on PhantomJS internal page objects (_windows_ in WebDriver context)
+    (see [reference](https://github.com/ariya/phantomjs/wiki/API-Reference-WebPage#wiki-webpage-settings))
+    * `phantomjs.page.customHeaders.HEADER = VALUE` - Add extra HTTP Headers
+    when loading a URL
+    (see [reference](https://github.com/ariya/phantomjs/wiki/API-Reference-WebPage#wiki-webpage-customHeaders))
+* PhantomJSDriver (Java-binding) Capabilities
+    * `phantomjs.binary.path` - Specify path to PhantomJS executable to use
+    * `phantomjs.ghostdriver.path` - Specify path to GhostDriver `main/src.js`
+    script to use; allows to use a different version of GhostDriver then the one
+    embed in PhantomJS
+    * `phantomjs.cli.args` - Specify command line arguments to pass to the
+    PhantomJS executable
+    * `phantomjs.ghostdriver.cli.args` - Specify command line argument to pass to
+    GhostDriver (works only in tandem with `phantomjs.ghostdriver.path`)
+
 ## Want to help? Read on!
 
 ### Run validation the tests
