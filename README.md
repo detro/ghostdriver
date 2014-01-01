@@ -5,12 +5,15 @@ Ghost Driver is a pure JavaScript implementation of the
 for [PhantomJS](http://phantomjs.org/).
 It's a Remote WebDriver that uses PhantomJS as back-end.
 
-GhostDriver is designed to be integral part of PhantomJS itself, but it's developed in isolation and progress is tracked
-by this Repository.
+**GhostDriver is designed to be integral part of PhantomJS itself, but it's developed in isolation and progress is tracked
+by this Repository.**
 
-* Current _GhostDriver_ stable version is `"1.0.4"`
-* Current _PhantomJS-integrated_ version is `"1.0.4"`: contained in PhantomJS `"1.9.x"`
-* Current _PhantomJSDriver_ (Java binding) stable version is `"1.0.4"`
+* Current _GhostDriver_ stable version:
+see [releases](https://github.com/detro/ghostdriver/releases)
+* Current _PhantomJS-integrated_ version is `"1.0.4"`:
+contained in PhantomJS `"1.9.2"`
+* Current _PhantomJSDriver Java bindings_ stable version: see
+[Maven](http://mvnrepository.com/artifact/com.github.detro.ghostdriver/phantomjsdriver)
 
 For more info, please take a look at the [changelog](https://github.com/detro/ghostdriver/blob/master/CHANGELOG.md).
 
@@ -46,7 +49,7 @@ Just add the following to your `pom.xml`:
 <dependency>
     <groupId>com.github.detro.ghostdriver</groupId>
     <artifactId>phantomjsdriver</artifactId>
-    <version>1.0.4</version>
+    <version>LATEST_VERSION_HERE</version>
 </dependency>
 ```
 
