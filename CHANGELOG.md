@@ -11,6 +11,7 @@ currently most common resolution online (see [statcounter](http://gs.statcounter
 * FIXED #259: Fix issue regarding mouse clicks
 * ENHANCEMENT #290: Enabled support for "Keep Alive" HTTP connections
 * ENHANCEMENT #262: Allow access to PhantomJS API from WebDriver (Driver part)
+* ENHANCEMENT #293: Import Selenium 2.39.0 WebDriver Atoms
 
 ### Java Binding
 * MINOR #251: Minor compilation issues for Binding
