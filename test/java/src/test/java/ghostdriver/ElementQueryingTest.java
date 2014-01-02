@@ -116,7 +116,7 @@ public class ElementQueryingTest extends BaseTestWithServer {
         assertEquals("The Title of The Item", d.findElement(By.className("item")).findElement(By.className("item-title")).getText());
     }
 
-    @Test(expected = ElementNotVisibleException.class)
+    @Test(expected = InvalidElementStateException.class)
     public void throwExceptionWhenInteractingWithInvisibleElement() {
         server.setGetHandler(new HttpRequestCallback() {
             @Override
@@ -127,8 +127,8 @@ public class ElementQueryingTest extends BaseTestWithServer {
                         "        <title>test</title>\n" +
                         "    </head>\n" +
                         "    <body>\n" +
-                        "        <input id=\"visible\">\n" +
-                        "        <input style=\"display:none\" id=\"invisible\">\n" +
+                        "        <input type=\"text\" id=\"visible\">\n" +
+                        "        <input type=\"text\" id=\"invisible\" style=\"display: none;\">\n" +
                         "    </body>" +
                         "</html>");
             }

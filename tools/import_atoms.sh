@@ -70,10 +70,10 @@ pushd $SELENIUM_REPO_PATH
 rm $DESTINATION_DIRECTORY/*
 
 # Import only the Atoms JavaScript files
-JS_LIST="./build/javascript/webdriver/atoms/*.js ./build/javascript/webdriver/atoms/inject/*.js ./build/javascript/phantomjs-driver/*.js"
+JS_LIST="./build/javascript/atoms/fragments/*.js ./build/javascript/chrome-driver/*.js ./build/javascript/webdriver/atoms/fragments/*.js ./build/javascript/webdriver/atoms/fragments/inject/*.js ./build/javascript/phantomjs-driver/*.js"
 for JS in $JS_LIST
 do
-    if [[ $JS != *_exports.js ]] && [[ $JS != *_ie.js ]] && [[ $JS != *_atoms.js ]]
+    if [[ $JS != *_exports.js ]] && [[ $JS != *_ie.js ]] && [[ $JS != *build_atoms.js ]] && [[ $JS != *deps.js ]]
     then
         echo "Importing Atom: $JS"
         cp $JS $DESTINATION_DIRECTORY

@@ -1,7 +1,7 @@
-2013-09-10 19:27:09
+2014-01-02 22:06:54
 
-commit 8df0c6bedf70ff9f22c647788f9fe9c8d22210e2 (HEAD, tag: refs/tags/selenium-2.35.0)
+commit 14fa800511cc5d66d426e08b0b2ab926c7ed7398 (HEAD, tag: refs/tags/selenium-2.39.0)
 Author: Jim Evans <james.h.evans.jr@gmail.com>
-Date:   Mon Aug 12 11:42:44 2013 -0400
+Date:   Mon Dec 16 11:26:02 2013 -0500
 
-    Updating IE prebuilts for 2.35.0
+    Updating .NET CHANGELOG for 2.39.0 release
