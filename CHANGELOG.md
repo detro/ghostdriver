@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v1.1.1 (2014-01-12) ([issues](https://github.com/detro/ghostdriver/issues?labels=1.1.1&state=closed))
+
+### JavaScript Driver (Core)
+* ENHANCEMENT #170: Implement Session Isolation
+
 ## v1.1.0 (2014-01-01) ([issues](https://github.com/detro/ghostdriver/issues?labels=1.1.0&state=closed))
 
 ### JavaScript Driver (Core)

@@ -14,6 +14,6 @@ To update the version, please modify the following files:
 
 * `CHANGELOG.md`
 * `VERSION`
-* `binding/java/build.gradle`
+* `binding/java/build.gradle` (only if a new binding is needed)
 * `src/main.js`
-* `test/java/build.gradle`
+* `test/java/build.gradle` (only if a new binding is needed)
