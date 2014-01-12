@@ -12,6 +12,8 @@ of the details of this software's architecture.
 
 To update the version, please modify the following files:
 
+* `CHANGELOG.md`
 * `VERSION`
 * `binding/java/build.gradle`
 * `src/main.js`
+* `test/java/build.gradle`
