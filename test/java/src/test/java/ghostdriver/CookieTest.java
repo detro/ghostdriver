@@ -89,7 +89,7 @@ public class CookieTest extends BaseTestWithServer {
 
     @Test
     public void gettingAllCookies() {
-        server.setGetHandler(COOKIE_SETTING_CALLBACK);
+        server.setHttpHandler("GET", COOKIE_SETTING_CALLBACK);
         goToPage();
         Cookie[] cookies = getCookies();
 
@@ -110,14 +110,14 @@ public class CookieTest extends BaseTestWithServer {
 
     @Test
     public void gettingAllCookiesOnANonCookieSettingPage() {
-        server.setGetHandler(EMPTY_CALLBACK);
+        server.setHttpHandler("GET", EMPTY_CALLBACK);
         goToPage();
         assertEquals(0, getCookies().length);
     }
 
     @Test
     public void deletingAllCookies() {
-        server.setGetHandler(COOKIE_SETTING_CALLBACK);
+        server.setHttpHandler("GET", COOKIE_SETTING_CALLBACK);
         goToPage();
         driver.manage().deleteAllCookies();
         assertEquals(0, getCookies().length);
@@ -125,7 +125,7 @@ public class CookieTest extends BaseTestWithServer {
 
     @Test
     public void deletingOneCookie() {
-        server.setGetHandler(COOKIE_SETTING_CALLBACK);
+        server.setHttpHandler("GET", COOKIE_SETTING_CALLBACK);
         goToPage();
 
         driver.manage().deleteCookieNamed("test");
@@ -138,7 +138,7 @@ public class CookieTest extends BaseTestWithServer {
 
     @Test
     public void addingACookie() {
-        server.setGetHandler(EMPTY_CALLBACK);
+        server.setHttpHandler("GET", EMPTY_CALLBACK);
         goToPage();
 
         driver.manage().addCookie(new Cookie("newCookie", "newValue"));
@@ -154,7 +154,7 @@ public class CookieTest extends BaseTestWithServer {
 
     @Test
     public void modifyingACookie() {
-        server.setGetHandler(COOKIE_SETTING_CALLBACK);
+        server.setHttpHandler("GET", COOKIE_SETTING_CALLBACK);
         goToPage();
 
         driver.manage().addCookie(new Cookie("test", "newValue", "localhost", "/", null, false));
@@ -176,7 +176,7 @@ public class CookieTest extends BaseTestWithServer {
 
     @Test
     public void shouldRetainCookieInfo() {
-        server.setGetHandler(EMPTY_CALLBACK);
+        server.setHttpHandler("GET", EMPTY_CALLBACK);
         goToPage();
 
         // Added cookie (in a sub-path - allowed)

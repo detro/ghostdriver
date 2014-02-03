@@ -43,7 +43,7 @@ import static org.junit.Assert.*;
 public class ElementFindingTest extends BaseTestWithServer {
     @Test
     public void findChildElement() {
-        server.setGetHandler(new HttpRequestCallback() {
+        server.setHttpHandler("GET", new HttpRequestCallback() {
             @Override
             public void call(HttpServletRequest req, HttpServletResponse res) throws IOException {
                 res.getOutputStream().println("<div id=\"y-masthead\">" +
@@ -63,7 +63,7 @@ public class ElementFindingTest extends BaseTestWithServer {
 
     @Test
     public void findChildElements() {
-        server.setGetHandler(new HttpRequestCallback() {
+        server.setHttpHandler("GET", new HttpRequestCallback() {
             @Override
             public void call(HttpServletRequest req, HttpServletResponse res) throws IOException {
                 res.getOutputStream().println("<div id=\"y-masthead\">" +
@@ -84,7 +84,7 @@ public class ElementFindingTest extends BaseTestWithServer {
 
     @Test
     public void findMultipleElements() {
-        server.setGetHandler(new HttpRequestCallback() {
+        server.setHttpHandler("GET", new HttpRequestCallback() {
             @Override
             public void call(HttpServletRequest req, HttpServletResponse res) throws IOException {
                 res.getOutputStream().println("<div id=\"y-masthead\">" +
@@ -240,7 +240,7 @@ public class ElementFindingTest extends BaseTestWithServer {
     @Test
     public void findElementViaXpathLocator() {
         // Define HTTP response for test
-        server.setGetHandler(new HttpRequestCallback() {
+        server.setHttpHandler("GET", new HttpRequestCallback() {
             @Override
             public void call(HttpServletRequest req, HttpServletResponse res) throws IOException {
                 ServletOutputStream out = res.getOutputStream();

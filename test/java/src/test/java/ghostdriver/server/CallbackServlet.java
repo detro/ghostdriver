@@ -41,10 +41,18 @@ public class CallbackServlet extends HttpServlet {
     }
 
     protected void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
-        if (server.getGetHandler() != null) {
-            server.getGetHandler().call(req, res);
+        if (server.getHttpHandler("GET") != null) {
+            server.getHttpHandler("GET").call(req, res);
         } else {
             super.doGet(req, res);
+        }
+    }
+
+    protected void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
+        if (server.getHttpHandler("POST") != null) {
+            server.getHttpHandler("POST").call(req, res);
+        } else {
+            super.doPost(req, res);
         }
     }
 }

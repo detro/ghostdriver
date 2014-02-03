@@ -231,7 +231,7 @@ public class FrameSwitchingTest extends BaseTestWithServer {
             }
         }
 
-        server.setGetHandler(new SpecialHttpRequestCallback());
+        server.setHttpHandler("GET", new SpecialHttpRequestCallback());
 
         d.get(server.getBaseUrl() + "/common/frameset.html");
         assertEquals(expectedTitle, d.getTitle());
@@ -252,7 +252,7 @@ public class FrameSwitchingTest extends BaseTestWithServer {
     @Test
     public void shouldSwitchBetweenNestedFrames() {
         // Define HTTP response for test
-        server.setGetHandler(new HttpRequestCallback() {
+        server.setHttpHandler("GET", new HttpRequestCallback() {
             @Override
             public void call(HttpServletRequest req, HttpServletResponse res) throws IOException {
                 String pathInfo = req.getPathInfo();
@@ -317,7 +317,7 @@ public class FrameSwitchingTest extends BaseTestWithServer {
     @Test
     public void shouldSwitchBetweenNestedFramesPickedViaWebElement() {
         // Define HTTP response for test
-        server.setGetHandler(new HttpRequestCallback() {
+        server.setHttpHandler("GET", new HttpRequestCallback() {
             @Override
             public void call(HttpServletRequest req, HttpServletResponse res) throws IOException {
                 String pathInfo = req.getPathInfo();
@@ -381,7 +381,7 @@ public class FrameSwitchingTest extends BaseTestWithServer {
 
     @Test
     public void shouldBeAbleToSwitchToIFrameThatHasNoNameNorId() {
-        server.setGetHandler(new HttpRequestCallback() {
+        server.setHttpHandler("GET", new HttpRequestCallback() {
             @Override
             public void call(HttpServletRequest req, HttpServletResponse res) throws IOException {
                 res.getOutputStream().println("<html>" +
@@ -404,7 +404,7 @@ public class FrameSwitchingTest extends BaseTestWithServer {
         final String iFrameId = "iframeId";
 
         // Define HTTP response for test
-        server.setGetHandler(new HttpRequestCallback() {
+        server.setHttpHandler("GET", new HttpRequestCallback() {
             @Override
             public void call(HttpServletRequest req, HttpServletResponse res) throws IOException {
                 String pathInfo = req.getPathInfo();
@@ -417,10 +417,10 @@ public class FrameSwitchingTest extends BaseTestWithServer {
                     // main page
                     out.println("<html>\n" +
                             "<body>\n" +
-                            "  <iframe id='"+iFrameId+"'></iframe>\n" +
+                            "  <iframe id='" + iFrameId + "'></iframe>\n" +
                             "  <script>\n" +
                             "  setTimeout(function() {\n" +
-                            "    document.getElementById('"+iFrameId+"').src='iframe_content.html';\n" +
+                            "    document.getElementById('" + iFrameId + "').src='iframe_content.html';\n" +
                             "  }, 2000);\n" +
                             "  </script>\n" +
                             "</body>\n" +

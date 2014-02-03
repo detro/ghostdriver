@@ -88,7 +88,7 @@ public class ElementQueryingTest extends BaseTestWithServer {
 
     @Test
     public void getTextFromDifferentLocationsOfDOMTree() {
-        server.setGetHandler(new HttpRequestCallback() {
+        server.setHttpHandler("GET", new HttpRequestCallback() {
             @Override
             public void call(HttpServletRequest req, HttpServletResponse res) throws IOException {
                 res.getOutputStream().println("<html><body>" +
@@ -117,7 +117,7 @@ public class ElementQueryingTest extends BaseTestWithServer {
 
     @Test(expected = InvalidElementStateException.class)
     public void throwExceptionWhenInteractingWithInvisibleElement() {
-        server.setGetHandler(new HttpRequestCallback() {
+        server.setHttpHandler("GET", new HttpRequestCallback() {
             @Override
             public void call(HttpServletRequest req, HttpServletResponse res) throws IOException {
                 res.getOutputStream().println("<!DOCTYPE html>" +

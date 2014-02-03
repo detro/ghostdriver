@@ -142,7 +142,7 @@ public class ElementMethodsTest extends BaseTestWithServer {
 
     @Test
     public void shouldWaitForOnClickCallbackToFinishBeforeContinuing() {
-        server.setGetHandler(new HttpRequestCallback() {
+        server.setHttpHandler("GET", new HttpRequestCallback() {
             @Override
             public void call(HttpServletRequest req, HttpServletResponse res) throws IOException {
                 res.getOutputStream().println("<script type=\"text/javascript\">\n" +
@@ -173,7 +173,7 @@ public class ElementMethodsTest extends BaseTestWithServer {
 
     @Test
     public void shouldNotHandleCasesWhenAsyncJavascriptInitiatesAPageLoadFarInTheFuture() {
-        server.setGetHandler(new HttpRequestCallback() {
+        server.setHttpHandler("GET", new HttpRequestCallback() {
             @Override
             public void call(HttpServletRequest req, HttpServletResponse res) throws IOException {
                 res.getOutputStream().println("<script type=\"text/javascript\">\n" +
@@ -201,7 +201,7 @@ public class ElementMethodsTest extends BaseTestWithServer {
     public void shouldHandleCasesWhereJavascriptCodeInitiatesPageLoadsThatFail() throws InterruptedException {
         final String crazyUrl = "http://abcdefghilmnopqrstuvz.zvutsr";
 
-        server.setGetHandler(new HttpRequestCallback() {
+        server.setHttpHandler("GET", new HttpRequestCallback() {
             @Override
             public void call(HttpServletRequest req, HttpServletResponse res) throws IOException {
                 res.getOutputStream().println("<script type=\"text/javascript\">\n" +

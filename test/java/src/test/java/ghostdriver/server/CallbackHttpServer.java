@@ -31,21 +31,28 @@ import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.ServletHolder;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import static java.lang.String.format;
 
 public class CallbackHttpServer {
+
     protected Server server;
+    protected final Map<String, HttpRequestCallback> httpReqCallbacks = new HashMap<String, HttpRequestCallback>();
 
-    public HttpRequestCallback getGetHandler() {
-        return getHandler;
+    public CallbackHttpServer() {
+        // Default HTTP GET request callback: returns files in "test/fixture"
+        setHttpHandler("GET", new GetFixtureHttpRequestCallback());
     }
 
-    public void setGetHandler(HttpRequestCallback getHandler) {
-        this.getHandler = getHandler;
+    public HttpRequestCallback getHttpHandler(String httpMethod) {
+        return httpReqCallbacks.get(httpMethod.toUpperCase());
     }
 
-    // Default HTTP GET Handler
-    protected HttpRequestCallback getHandler = new GetFixtureHttpRequestCallback();
+    public void setHttpHandler(String httpMethod, HttpRequestCallback getHandler) {
+        httpReqCallbacks.put(httpMethod.toUpperCase(), getHandler);
+    }
 
     public void start() throws Exception {
         server = new Server(0);

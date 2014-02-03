@@ -100,7 +100,7 @@ public class MouseCommandsTest extends BaseTestWithServer {
     @Test
     public void handleClickWhenOnClickInlineCodeFails() {
         // Define HTTP response for test
-        server.setGetHandler(new HttpRequestCallback() {
+        server.setHttpHandler("GET", new HttpRequestCallback() {
             @Override
             public void call(HttpServletRequest req, HttpServletResponse res) throws IOException {
                 res.getOutputStream().println("<html>" +

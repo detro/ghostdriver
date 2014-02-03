@@ -72,26 +72,26 @@ public class ElementJQueryEventsTest extends BaseTestWithServer {
     public void shouldBeAbleToClickAndEventsBubbleUpUsingJquery() {
         final String buttonId = "clickme";
 
-        server.setGetHandler(new HttpRequestCallback() {
+        server.setHttpHandler("GET", new HttpRequestCallback() {
             @Override
             public void call(HttpServletRequest req, HttpServletResponse res) throws IOException {
                 res.getOutputStream().println(
                         "<html>\n" +
-                        "<head>\n" +
-                        "<script src=\"//ajax.googleapis.com/ajax/libs/jquery/"+ mJqueryVersion +"/jquery.min.js\"></script>\n" +
-                        "<script type=\"text/javascript\">\n" +
-                        "   var clicked = false;" +
-                        "   $(document).ready(function() {" +
-                        "       $('#"+buttonId+"').bind('click', function(e) {" +
-                        "           clicked = true;" +
-                        "       });" +
-                        "   });\n" +
-                        "</script>\n" +
-                        "</head>\n" +
-                        "<body>\n" +
-                        "    <a href='#' id='"+buttonId+"'>click me</a>\n" +
-                        "</body>\n" +
-                        "</html>");
+                                "<head>\n" +
+                                "<script src=\"//ajax.googleapis.com/ajax/libs/jquery/" + mJqueryVersion + "/jquery.min.js\"></script>\n" +
+                                "<script type=\"text/javascript\">\n" +
+                                "   var clicked = false;" +
+                                "   $(document).ready(function() {" +
+                                "       $('#" + buttonId + "').bind('click', function(e) {" +
+                                "           clicked = true;" +
+                                "       });" +
+                                "   });\n" +
+                                "</script>\n" +
+                                "</head>\n" +
+                                "<body>\n" +
+                                "    <a href='#' id='" + buttonId + "'>click me</a>\n" +
+                                "</body>\n" +
+                                "</html>");
             }
         });
 
