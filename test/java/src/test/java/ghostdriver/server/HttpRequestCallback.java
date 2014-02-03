@@ -32,5 +32,5 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 public interface HttpRequestCallback {
-    void call(HttpServletRequest req, HttpServletResponse res) throws IOException;
+    public void call(HttpServletRequest req, HttpServletResponse res) throws IOException;
 }

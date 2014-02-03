@@ -43,7 +43,8 @@ public class CallbackHttpServer {
         this.getHandler = getHandler;
     }
 
-    protected HttpRequestCallback getHandler;
+    // Default HTTP GET Handler
+    protected HttpRequestCallback getHandler = new GetFixtureHttpRequestCallback();
 
     public void start() throws Exception {
         server = new Server(0);
