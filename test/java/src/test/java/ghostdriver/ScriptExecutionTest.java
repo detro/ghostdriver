@@ -27,6 +27,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package ghostdriver;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
@@ -36,9 +37,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 public class ScriptExecutionTest extends BaseTest {
     @Test
@@ -112,6 +111,7 @@ public class ScriptExecutionTest extends BaseTest {
         d.get("http://www.google.com/");
     }
 
+    @Ignore("Known issue #140 - see https://github.com/detro/ghostdriver/issues/140)")
     @Test
     public void executeAsyncScriptMultipleTimesWithoutCrashing() {
         // NOTE: This test is supposed to fail!

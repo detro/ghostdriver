@@ -27,12 +27,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package ghostdriver;
 
-import java.io.File;
-import java.io.BufferedWriter;
-import java.io.OutputStreamWriter;
-import java.io.FileOutputStream;
-import java.io.IOException;
-
 import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
@@ -40,10 +34,12 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
+import java.io.*;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class FileUploadTest extends BaseTest {
+public class FileUploadTest extends BaseTestWithServer {
     private static final String LOREM_IPSUM_TEXT = "lorem ipsum dolor sit amet";
     private static final String FILE_HTML = "<div>" + LOREM_IPSUM_TEXT + "</div>";
 
@@ -60,7 +56,7 @@ public class FileUploadTest extends BaseTest {
         writer.close();
 
         // Upload the temp file
-        d.get("http://localhost:2310/common/upload.html");
+        d.get(server.getBaseUrl() + "/common/upload.html");
         d.findElement(By.id("upload")).sendKeys(testFile.getAbsolutePath());
         d.findElement(By.id("go")).submit();
 
@@ -83,7 +79,7 @@ public class FileUploadTest extends BaseTest {
         WebDriver d = getDriver();
 
         // Trying to upload a file that doesn't exist
-        d.get("http://localhost:2310/common/upload.html");
+        d.get(server.getBaseUrl() + "/common/upload.html");
         d.findElement(By.id("upload")).sendKeys("file_that_does_not_exist.fake");
         d.findElement(By.id("go")).submit();
 
@@ -100,12 +96,12 @@ public class FileUploadTest extends BaseTest {
         File file = File.createTempFile("test", "txt");
         file.deleteOnExit();
 
-        d.get("http://localhost:2310/common/formPage.html");
+        d.get(server.getBaseUrl() + "/common/formPage.html");
         WebElement uploadElement = d.findElement(By.id("upload"));
         uploadElement.sendKeys(file.getAbsolutePath());
         uploadElement.submit();
 
-        d.get("http://localhost:2310/common/formPage.html");
+        d.get(server.getBaseUrl() + "/common/formPage.html");
         uploadElement = d.findElement(By.id("upload"));
         uploadElement.sendKeys(file.getAbsolutePath());
         uploadElement.submit();
@@ -115,7 +111,7 @@ public class FileUploadTest extends BaseTest {
     public void checkOnChangeEventIsFiredOnFileUpload() throws IOException {
         WebDriver d = getDriver();
 
-        d.get("http://localhost:2310/common/formPage.html");
+        d.get(server.getBaseUrl() + "/common/formPage.html");
         WebElement uploadElement = d.findElement(By.id("upload"));
         WebElement result = d.findElement(By.id("fileResults"));
         assertEquals("", result.getText());

@@ -30,7 +30,6 @@ package ghostdriver;
 import ghostdriver.server.HttpRequestCallback;
 import org.junit.Test;
 import org.openqa.selenium.*;
-import org.openqa.selenium.interactions.internal.Coordinates;
 import org.openqa.selenium.internal.Locatable;
 
 import javax.servlet.http.HttpServletRequest;

@@ -39,7 +39,7 @@ import java.util.Set;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class LogTest extends BaseTest {
+public class LogTest extends BaseTestWithServer {
     @Test
     public void shouldReturnListOfAvailableLogs() {
         WebDriver d = getDriver();
@@ -61,7 +61,7 @@ public class LogTest extends BaseTest {
     @Test
     public void shouldReturnLogTypeBrowser() {
         WebDriver d = getDriver();
-        d.get("http://localhost:2310/common/errors.html");
+        d.get(server.getBaseUrl() + "/common/errors.html");
         // Throw 3 errors that are logged in the Browser's console
         WebElement throwErrorButton = d.findElement(By.cssSelector("input[type='button']"));
         throwErrorButton.click();
@@ -80,7 +80,7 @@ public class LogTest extends BaseTest {
     @Test
     public void shouldReturnLogTypeHar() {
         WebDriver d = getDriver();
-        d.get("http://localhost:2310/common/iframes.html");
+        d.get(server.getBaseUrl() + "/common/iframes.html");
 
         LogEntries logEntries = d.manage().logs().get("har");
         for (LogEntry logEntry : logEntries) {

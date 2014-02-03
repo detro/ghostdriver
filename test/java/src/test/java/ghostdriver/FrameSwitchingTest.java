@@ -28,8 +28,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package ghostdriver;
 
 import com.google.common.base.Predicate;
+import ghostdriver.server.GetFixtureHttpRequestCallback;
 import ghostdriver.server.HttpRequestCallback;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -211,7 +211,29 @@ public class FrameSwitchingTest extends BaseTestWithServer {
         WebDriver d = getDriver();
         String expectedTitle = "Unique title";
 
-        d.get("http://localhost:2310/common/frameset.html");
+        class SpecialHttpRequestCallback extends GetFixtureHttpRequestCallback {
+            @Override
+            public void call(HttpServletRequest req, HttpServletResponse res) throws IOException {
+                if (req.getPathInfo().matches("^.*page/\\d+$")) {
+                    int lastIndex = req.getPathInfo().lastIndexOf('/');
+                    String pageNumber =
+                            (lastIndex == -1 ? "Unknown" : req.getPathInfo().substring(lastIndex + 1));
+                    String resBody = String.format("<html><head><title>Page%s</title></head>" +
+                            "<body>Page number <span id=\"pageNumber\">%s</span>" +
+                            "<p><a href=\"../xhtmlTest.html\" target=\"_top\">top</a>" +
+                            "</body></html>",
+                            pageNumber, pageNumber);
+
+                    res.getOutputStream().println(resBody);
+                } else {
+                    super.call(req, res);
+                }
+            }
+        }
+
+        server.setGetHandler(new SpecialHttpRequestCallback());
+
+        d.get(server.getBaseUrl() + "/common/frameset.html");
         assertEquals(expectedTitle, d.getTitle());
 
         d.switchTo().frame(0);
@@ -425,16 +447,12 @@ public class FrameSwitchingTest extends BaseTestWithServer {
         });
     }
 
-    @Ignore // Ignored because you need to kickstart Python SimpleHTTPServer before it can run
     @Test
-    public void shouldSwitchToTheRightFrame_issue226() {
-        // NOTE: before starting this test,
-        // run `python -m SimpleHTTPServer` from within `test/testcase-issue_226`.
-        // This will launch a minimal webserver to serve the pages for this test.
+    public void shouldSwitchToTheRightFrame() {
         WebDriver d = getDriver();
 
         // Load "outside.html" and check it's the right one
-        d.get("http://localhost:8000/outside.html");
+        d.get(server.getBaseUrl() + "right_frame/outside.html");
         assertTrue(d.getPageSource().contains("Editing testDotAtEndDoesNotDelete"));
         assertEquals(2, d.findElements(By.tagName("iframe")).size());
 

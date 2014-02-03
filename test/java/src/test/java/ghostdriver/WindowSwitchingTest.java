@@ -36,7 +36,7 @@ import javax.annotation.Nullable;
 
 import static org.junit.Assert.*;
 
-public class WindowSwitchingTest extends BaseTest {
+public class WindowSwitchingTest extends BaseTestWithServer {
     @Test
     public void switchBetween3WindowsThenDeleteSecondOne() {
         WebDriver d = getDriver();
@@ -113,7 +113,7 @@ public class WindowSwitchingTest extends BaseTest {
     @Test
     public void switchToSameWindowViaHandle() {
         WebDriver d = getDriver();
-        d.navigate().to("http://localhost:2310/common/frameset.html");
+        d.navigate().to(server.getBaseUrl() + "/common/frameset.html");
 
         // Get handle of the main html page
         String windowHandle = d.getWindowHandle();
@@ -143,7 +143,7 @@ public class WindowSwitchingTest extends BaseTest {
     @Test
     public void shouldBeAbleToClickALinkThatClosesAWindow() throws Exception {
         final WebDriver d = getDriver();
-        d.get("http://localhost:2310/common/javascriptPage.html");
+        d.get(server.getBaseUrl() + "/common/javascriptPage.html");
 
         String handle = d.getWindowHandle();
         d.findElement(By.id("new_window")).click();
@@ -177,7 +177,7 @@ public class WindowSwitchingTest extends BaseTest {
     public void shouldNotBeAbleToSwitchBackToInitialWindowUsingEmptyWindowNameParameter() {
         final WebDriver d = getDriver();
 
-        d.get("http://localhost:2310/common/xhtmlTest.html");
+        d.get(server.getBaseUrl() + "/common/xhtmlTest.html");
 
         // Store the first window handle
         String initialWindowHandle = d.getWindowHandle();

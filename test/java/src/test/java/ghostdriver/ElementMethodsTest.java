@@ -104,7 +104,7 @@ public class ElementMethodsTest extends BaseTestWithServer {
     public void SubmittingFormShouldFireOnSubmitForThatForm() {
         WebDriver d = getDriver();
 
-        d.get("http://localhost:2310/common/javascriptPage.html");
+        d.get(server.getBaseUrl() + "/common/javascriptPage.html");
 
         WebElement formElement = d.findElement(By.id("submitListeningForm"));
         formElement.submit();
