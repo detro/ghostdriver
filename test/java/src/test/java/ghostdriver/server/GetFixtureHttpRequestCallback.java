@@ -10,7 +10,7 @@ import java.nio.file.Path;
 
 public class GetFixtureHttpRequestCallback implements HttpRequestCallback {
 
-    private static final String FIXTURE_PATH = "fixture";
+    private static final String FIXTURE_PATH = "fixtures";
 
     @Override
     public void call(HttpServletRequest req, HttpServletResponse res) throws IOException {
@@ -19,7 +19,7 @@ public class GetFixtureHttpRequestCallback implements HttpRequestCallback {
         if (null != path) {
             try {
                 // Construct path to the file
-                Path filePath = FileSystems.getDefault().getPath("", "..", FIXTURE_PATH, path);
+                Path filePath = FileSystems.getDefault().getPath(FIXTURE_PATH, path);
                 // Set Content Type
                 res.setContentType(filePathToMimeType(filePath.toString()));
                 // Read and write to response
