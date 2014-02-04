@@ -56,11 +56,13 @@ fi
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PHANTOMJS_REPO_PATH=$1
-DESTINATION_PATH="${1}/src/ghostdriver"
+DESTINATION_PATH="${PHANTOMJS_REPO_PATH}/src/ghostdriver"
 DESTINATION_QRC_FILE="ghostdriver.qrc"
 LASTUPDATE_FILE="${DESTINATION_PATH}/lastupdate"
 README_FILE="${DESTINATION_PATH}/README.md"
 GHOSTDRIVER_SOURCE_PATH="${SCRIPT_DIR}/../src"
+TEST_SOURCE_PATH="${SCRIPT_DIR}/../test"
+TEST_DESTINATION_PATH="${PHANTOMJS_REPO_PATH}/test/ghostdriver-test"
 
 #1. Delete the Destination Directory, if any
 if [ -d $DESTINATION_PATH ]; then
@@ -115,6 +117,23 @@ please refer to that project instead: \`https://github.com/detro/ghostdriver\`.
 Thanks,
 [Ivan De Marino](http://ivandemarino.me)
 README_FILE_CONTENT
+
+#7. Delete the Test Destination Directory, if any
+if [ -d $TEST_DESTINATION_PATH ]; then
+    info "Deleting current GhostDriver Tests exported in local PhantomJS source (path: '${TEST_DESTINATION_PATH}')"
+    rm -rf $TEST_DESTINATION_PATH/fixtures
+    rm -rf $TEST_DESTINATION_PATH/java
+fi
+
+#8. Copy all the content of the Test Directory in there
+info "Copying GhostDriver Tests over ('${TEST_SOURCE_PATH}' => '${TEST_DESTINATION_PATH}')"
+mkdir -p $TEST_DESTINATION_PATH
+cp -r $TEST_SOURCE_PATH/fixtures $TEST_DESTINATION_PATH/fixtures
+cp -r $TEST_SOURCE_PATH/java $TEST_DESTINATION_PATH/java
+
+#9. Delete all files from Test Destination Directory that are of no use there
+info "Delete files from GhostDriver Tests that have no use there"
+rm -rf $TEST_DESTINATION_PATH/java/*.iml $TEST_DESTINATION_PATH/java/*.iws $TEST_DESTINATION_PATH/java/*.ipr $TEST_DESTINATION_PATH/java/*.log $TEST_DESTINATION_PATH/java/out $TEST_DESTINATION_PATH/java/.gradle
 
 info "DONE!"
 
