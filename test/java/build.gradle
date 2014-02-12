@@ -37,11 +37,7 @@ tasks.withType(JavaExec) {
 test {
     maxParallelForks = 3
 
-    beforeTest { descriptor ->
-        logger.quiet("Started: " + descriptor + "(" + descriptor.getParent() + ")")
-    }
-
     afterTest { descriptor, result ->
-        logger.quiet("Finished: " + descriptor + " => " + result)
+        logger.quiet(result.toString() + " for " + descriptor + " in " + descriptor.getParent())
     }
 }
