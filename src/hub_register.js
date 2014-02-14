@@ -26,7 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 /* generate node configuration for this node */
-var nodeconf = function(ip, port, hub) {
+var nodeconf = function(ip, port, hub, proxy, version) {
         var ref$, hubHost, hubPort;
 
         ref$ = hub.match(/([\w\d\.]+):(\d+)/);
@@ -36,6 +36,8 @@ var nodeconf = function(ip, port, hub) {
         return {
             capabilities: [{
                 browserName: "phantomjs",
+                version: version,
+                platform: "LINUX",
                 maxInstances: 1,
                 seleniumProtocol: "WebDriver"
             }],
@@ -43,8 +45,9 @@ var nodeconf = function(ip, port, hub) {
                 hub: hub,
                 hubHost: hubHost,
                 hubPort: hubPort,
+                host: ip,
                 port: port,
-                proxy: "org.openqa.grid.selenium.proxy.DefaultRemoteProxy",
+                proxy: proxy,
                 // Note that multiple webdriver sessions or instances within a single
                 // Ghostdriver process will interact in unexpected and undesirable ways.
                 maxSession: 1,
@@ -59,7 +62,7 @@ var nodeconf = function(ip, port, hub) {
     _log = require("./logger.js").create("HUB Register");
 
 module.exports = {
-    register: function(ip, port, hub) {
+    register: function(ip, port, hub, proxy, version) {
         var page;
 
         try {
@@ -72,7 +75,7 @@ module.exports = {
             /* Register with selenium grid server */
             page.open(hub + 'grid/register', {
                 operation: 'post',
-                data: JSON.stringify(nodeconf(ip, port, hub)),
+                data: JSON.stringify(nodeconf(ip, port, hub, proxy, version)),
                 headers: {
                     'Content-Type': 'application/json'
                 }

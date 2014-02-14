@@ -72,11 +72,14 @@ try {
         // If a Selenium Grid HUB was provided, register to it!
         if (ghostdriver.config.hub !== null) {
             _log.info("Main", "registering to Selenium HUB"+
-                " '" + ghostdriver.config.hub + "'" +
-                " using '" + ghostdriver.config.ip + ":" + ghostdriver.config.port + "'");
+                " '" + ghostdriver.config.hub + "' version: " + ghostdriver.config.version +
+                " using '" + ghostdriver.config.ip + ":" + ghostdriver.config.port + "' with " +
+                ghostdriver.config.proxy + " as remote proxy.");
             ghostdriver.hub.register(ghostdriver.config.ip,
                 ghostdriver.config.port,
-                ghostdriver.config.hub);
+                ghostdriver.config.hub,
+                ghostdriver.config.proxy,
+                ghostdriver.config.version);
         }
     } else {
         throw new Error("Could not start Ghost Driver");
