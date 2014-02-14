@@ -27,8 +27,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.openqa.selenium.phantomjs;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Map;
+import java.util.logging.Logger;
+
 import org.openqa.selenium.Capabilities;
 import org.openqa.selenium.Proxy;
 import org.openqa.selenium.WebDriverException;
@@ -37,13 +45,8 @@ import org.openqa.selenium.net.PortProber;
 import org.openqa.selenium.os.CommandLine;
 import org.openqa.selenium.remote.service.DriverService;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Map;
-import java.util.logging.Logger;
-
-import static com.google.common.base.Preconditions.*;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 /**
  * Service that controls the life-cycle of a PhantomJS in Remote WebDriver mode.
@@ -69,6 +72,9 @@ public class PhantomJSDriverService extends DriverService {
      * GhostDriver JavaScript launch file (i.e. <code>"src/main.js"</code>).
      */
     public static final String PHANTOMJS_GHOSTDRIVER_PATH_PROPERTY = "phantomjs.ghostdriver.path";
+
+    /** optional */
+    public static final String PHANTOMJS_LOGFILE_PATH_PROPERTY = "phantomjs.logfile.path";
 
     /**
      * Capability that allows to add custom command line arguments to the
@@ -184,12 +190,15 @@ public class PhantomJSDriverService extends DriverService {
         // Find GhostDriver main JavaScript file
         File ghostDriverfile = findGhostDriver(desiredCapabilities, GHOSTDRIVER_DOC_LINK, GHOSTDRIVER_DOWNLOAD_LINK);
 
+        // Assign the log file
+        File logfile = findDriverLogFile(desiredCapabilities, PHANTOMJS_DEFAULT_LOGFILE);
+
         // Build & return service
         return new Builder().usingPhantomJSExecutable(phantomjsfile)
                 .usingGhostDriver(ghostDriverfile)
                 .usingAnyFreePort()
                 .withProxy(proxy)
-                .withLogFile(new File(PHANTOMJS_DEFAULT_LOGFILE))
+                .withLogFile(logfile)
                 .usingCommandLineArguments(
                         findCLIArgumentsFromCaps(desiredCapabilities, PHANTOMJS_CLI_ARGS))
                 .usingGhostDriverCommandLineArguments(
@@ -297,6 +306,18 @@ public class PhantomJSDriverService extends DriverService {
 
         // This means that no GhostDriver System Property nor Capability was set
         return null;
+    }
+    
+    protected static File findDriverLogFile(Capabilities desiredCapabilities, String defaultLogFile) {
+        String logfilepath = null;
+        if (desiredCapabilities != null && desiredCapabilities.getCapability(PHANTOMJS_LOGFILE_PATH_PROPERTY) != null) {
+            logfilepath = (String) desiredCapabilities.getCapability(PHANTOMJS_LOGFILE_PATH_PROPERTY);
+        } else {
+            logfilepath = PHANTOMJS_DEFAULT_LOGFILE;
+        }
+
+        File logfile = new File(logfilepath);
+        return logfile;
     }
 
     private static String[] findCLIArgumentsFromCaps(Capabilities desiredCapabilities, String capabilityName) {
