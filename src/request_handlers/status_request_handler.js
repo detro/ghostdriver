@@ -43,17 +43,19 @@ ghostdriver.StatusReqHand = function() {
 
     var
     _protoParent = ghostdriver.StatusReqHand.prototype,
+    _mapper = new ghostdriver.MapperHandler(),
 
     _handle = function(req, res) {
-        _protoParent.handle.call(this, req, res);
+       _protoParent.handle.call(this, req, res);
 
-        if (req.method === "GET" && req.urlParsed.file === "status") {
-            res.success(null, _statusObj);
-            return;
-        }
+        return _mapper.dispatch(this, req, res);
+    },
 
-        throw _protoParent.errors.createInvalidReqInvalidCommandMethodEH(req);
+    _getStatusCommand = function(req, res) {
+        res.success(null, _statusObj);
     };
+
+    _mapper.get('/status', _getStatusCommand);
 
     // public:
     return {

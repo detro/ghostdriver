@@ -31,16 +31,6 @@ var ghostdriver = ghostdriver || {};
  * This Class does first level routing: based on the REST Path, sends Request and Response to the right Request Handler.
  */
 ghostdriver.RouterReqHand = function() {
-    // private:
-    const
-    _const = {
-        STATUS          : "status",
-        SESSION         : "session",
-        SESSIONS        : "sessions",
-        SESSION_DIR     : "/session/",
-        SHUTDOWN        : "shutdown"
-    };
-
     var
     _protoParent = ghostdriver.RouterReqHand.prototype,
     _statusRH = new ghostdriver.StatusReqHand(),
@@ -57,31 +47,17 @@ ghostdriver.RouterReqHand = function() {
         _protoParent.handle.call(this, req, res);
 
         _log.debug("_handle", JSON.stringify(req));
-
         try {
-            if (req.urlParsed.chunks.length === 1 && req.urlParsed.file === _const.STATUS) {                 // GET '/status'
-                _statusRH.handle(req, res);
-            } else if (req.urlParsed.chunks.length === 1 && req.urlParsed.file === _const.SHUTDOWN) {        // GET '/shutdown'
-                _shutdownRH.handle(req, res);
-                phantom.exit();
-            } else if ((req.urlParsed.chunks.length === 1 && req.urlParsed.file === _const.SESSION) ||         // POST '/session'
-                (req.urlParsed.chunks.length === 1 && req.urlParsed.file === _const.SESSIONS) ||               // GET '/sessions'
-                req.urlParsed.directory === _const.SESSION_DIR) {       // GET or DELETE '/session/:id'
-                _sessionManRH.handle(req, res);
-            } else if (req.urlParsed.chunks[0] === _const.SESSION) {    // GET, POST or DELETE '/session/:id/...'
-                // Retrieve session
-                session = _sessionManRH.getSession(req.urlParsed.chunks[1]);
-
-                if (session !== null) {
-                    // Create a new Session Request Handler and re-route the request to it
-                    sessionRH = _sessionManRH.getSessionReqHand(req.urlParsed.chunks[1]);
-                    _protoParent.reroute.call(sessionRH, req, res, _const.SESSION_DIR + session.getId());
-                } else {
-                    throw _errors.createInvalidReqVariableResourceNotFoundEH(req);
-                }
-            } else {
-                throw _errors.createInvalidReqUnknownCommandEH(req);
+            if (_statusRH.handle(req, res)) {
+                return;
             }
+            if (_shutdownRH.handle(req, res)) {
+                phantom.exit();
+            }
+            if (_sessionManRH.handle(req, res)) {
+                return;
+            }
+            throw _errors.createInvalidReqUnknownCommandEH(req);
         } catch (e) {
             _log.error("_handle.error", JSON.stringify(e));
 

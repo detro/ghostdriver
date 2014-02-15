@@ -29,174 +29,52 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 var ghostdriver = ghostdriver || {};
 
 ghostdriver.SessionReqHand = function(session) {
-    // private:
     const
-    _const = {
-        URL             : "url",
-        ELEMENT         : "element",
-        ELEMENTS        : "elements",
-        ELEMENT_DIR     : "/element/",
-        ACTIVE          : "active",
-        TITLE           : "title",
-        WINDOW          : "window",
-        CURRENT         : "current",
-        SIZE            : "size",
-        POSITION        : "position",
-        MAXIMIZE        : "maximize",
-        FORWARD         : "forward",
-        BACK            : "back",
-        REFRESH         : "refresh",
-        EXECUTE         : "execute",
-        EXECUTE_ASYNC   : "execute_async",
-        SCREENSHOT      : "screenshot",
-        TIMEOUTS        : "timeouts",
-        TIMEOUTS_DIR    : "/timeouts/",
-        ASYNC_SCRIPT    : "async_script",
-        IMPLICIT_WAIT   : "implicit_wait",
-        WINDOW_HANDLE   : "window_handle",
-        WINDOW_HANDLES  : "window_handles",
-        FRAME           : "frame",
-        SOURCE          : "source",
-        COOKIE          : "cookie",
-        KEYS            : "keys",
-        MOVE_TO         : "moveto",
-        CLICK           : "click",
-        BUTTON_DOWN     : "buttondown",
-        BUTTON_UP       : "buttonup",
-        DOUBLE_CLICK    : "doubleclick",
-        PHANTOM_DIR     : "/phantom/",
-        PHANTOM_EXEC    : "execute",
-        LOG             : "log",
-        TYPES           : "types"
-    };
+      _const = {
+        CURRENT: 'current'
+      };
 
+    // private:
     var
     _session = session,
     _protoParent = ghostdriver.SessionReqHand.prototype,
     _locator = new ghostdriver.WebElementLocator(session),
     _errors = _protoParent.errors,
     _log = ghostdriver.logger.create("SessionReqHand"),
+    _mapper = new ghostdriver.MapperHandler(),
 
     _handle = function(req, res) {
-        var element;
+        var callback = _mapper.match(req);
+        if (callback) {
+            // ADD WINDOW TO
+            var
+                args = [req, res],
+                windowHandle = req.params.windowHandle;
+            if (windowHandle) {
+                var targetWindow = _protoParent.getSessionWindow.call(
+                    this,
+                    windowHandle === _const.CURRENT ? null : windowHandle,
+                    _session,
+                    req
+                );
+                args.push(targetWindow);
+            }
+            callback.apply(this, args);
 
-        _protoParent.handle.call(this, req, res);
-
-        // Handle "/url" GET and POST
-        if (req.urlParsed.file === _const.URL) {                                         //< ".../url"
-            if (req.method === "GET") {
-                _getUrlCommand(req, res);
-            } else if (req.method === "POST") {
-                _postUrlCommand(req, res);
-            }
-            return;
-        } else if (req.urlParsed.file === _const.SCREENSHOT && req.method === "GET") {
-            _getScreenshotCommand(req, res);
-            return;
-        } else if (req.urlParsed.file === _const.WINDOW) {                              //< ".../window"
-            if (req.method === "DELETE") {
-                _deleteWindowCommand(req, res);     //< close window
-            } else if (req.method === "POST") {
-                _postWindowCommand(req, res);       //< change focus to the given window
-            }
-            return;
-        } else if (req.urlParsed.chunks[0] === _const.WINDOW) {
-            _doWindowHandleCommands(req, res);
-            return;
-        } else if (req.urlParsed.file === _const.ELEMENT && req.method === "POST" && req.urlParsed.chunks.length === 1) {    //< ".../element"
-            _locator.handleLocateCommand(req, res, _locator.locateElement);
-            return;
-        } else if (req.urlParsed.file === _const.ELEMENTS && req.method === "POST" && req.urlParsed.chunks.length === 1) {    //< ".../elements"
-            _locator.handleLocateCommand(req, res, _locator.locateElements);
-            return;
-        } else if (req.urlParsed.chunks[0] === _const.ELEMENT && req.urlParsed.chunks[1] === _const.ACTIVE && req.method === "POST") {  //< ".../element/active"
-            _locator.handleLocateCommand(req, res, _locator.locateActiveElement);
-            return;
-        } else if (req.urlParsed.chunks[0] === _const.ELEMENT) {            //< ".../element/:elementId/COMMAND"
-            // Get the WebElementRH and, if found, re-route request to it
-            element = new ghostdriver.WebElementReqHand(req.urlParsed.chunks[1], _session);
-            if (element !== null) {
-                _protoParent.reroute.call(element, req, res, _const.ELEMENT_DIR + req.urlParsed.chunks[1]);
-            } else {
-                throw _errors.createInvalidReqVariableResourceNotFoundEH(req);
-            }
-            return;
-        } else if (req.urlParsed.file === _const.TITLE && req.method === "GET") {       //< ".../title"
-            // Get the current Page title
-            _getTitleCommand(req, res);
-            return;
-        } else if (req.urlParsed.file === _const.KEYS && req.method === "POST") {
-            _postKeysCommand(req, res);
-            return;
-        } else if (req.urlParsed.file === _const.FORWARD && req.method === "POST") {
-            _forwardCommand(req, res);
-            return;
-        } else if (req.urlParsed.file === _const.BACK && req.method === "POST") {
-            _backCommand(req, res);
-            return;
-        } else if (req.urlParsed.file === _const.REFRESH && req.method === "POST") {
-            _refreshCommand(req, res);
-            return;
-        } else if (req.urlParsed.file === _const.EXECUTE && req.urlParsed.directory === "/" && req.method == "POST") {
-            _executeCommand(req, res);
-            return;
-        } else if (req.urlParsed.file === _const.EXECUTE_ASYNC && req.method === "POST") {
-            _executeAsyncCommand(req, res);
-            return;
-        } else if ((req.urlParsed.file === _const.TIMEOUTS || req.urlParsed.directory === _const.TIMEOUTS_DIR) && req.method === "POST") {
-            _postTimeout(req, res);
-            return;
-        } else if (req.urlParsed.file === _const.WINDOW_HANDLE && req.method === "GET") {
-            _getWindowHandle(req, res);
-            return;
-        } else if (req.urlParsed.file === _const.WINDOW_HANDLES && req.method === "GET") {
-            _getWindowHandles(req, res);
-            return;
-        } else if (req.urlParsed.file === _const.FRAME && req.method === "POST") {
-            _postFrameCommand(req, res);
-            return;
-        } else if (req.urlParsed.file === _const.SOURCE && req.method === "GET") {
-            _getSourceCommand(req, res);
-            return;
-        } else if (req.urlParsed.file === _const.MOVE_TO && req.method === "POST") {
-            _postMouseMoveToCommand(req, res);
-            return;
-        } else if (req.urlParsed.file === _const.PHANTOM_EXEC && req.urlParsed.directory === _const.PHANTOM_DIR && req.method === "POST") {
-            _executePhantomJS(req, res);
-            return;
-        } else if (req.urlParsed.file === _const.CLICK && req.method === "POST") {
-            _postMouseClickCommand(req, res, "click");
-            return;
-        } else if (req.urlParsed.file === _const.BUTTON_DOWN && req.method === "POST") {
-            _postMouseClickCommand(req, res, "mousedown");
-            return;
-        } else if (req.urlParsed.file === _const.BUTTON_UP && req.method === "POST") {
-            _postMouseClickCommand(req, res, "mouseup");
-            return;
-        } else if (req.urlParsed.file === _const.DOUBLE_CLICK && req.method === "POST") {
-            _postMouseClickCommand(req, res, "doubleclick");
-            return;
-        } else if (req.urlParsed.chunks[0] === _const.COOKIE) {
-            if (req.method === "POST") {
-                _postCookieCommand(req, res);
-            } else if (req.method === "GET") {
-                _getCookieCommand(req, res);
-            } else if(req.method === "DELETE") {
-                _deleteCookieCommand(req, res);
-            }
-            return;
-        } else if (req.urlParsed.chunks[0] === _const.LOG && req.method === "POST") {  //< ".../log"
-            _postLog(req, res);
-            return;
-        } else if (req.urlParsed.chunks[0] === _const.LOG && req.urlParsed.chunks[1] === _const.TYPES && req.method === "GET") {  //< ".../log/types"
-            _getLogTypes(req, res);
-            return;
-        } else if (req.urlParsed.chunks[0] === _const.LOG && _session.getLogTypes().indexOf(req.urlParsed.chunks[1]) >= 0 && req.method === "GET") {  //< ".../log/LOG_TYPE"
-            _getLog(req, res, req.urlParsed.chunks[1]);
-            return;
+            return true;
         }
 
-        throw _errors.createInvalidReqInvalidCommandMethodEH(req);
+        // HANDLE ELEMENT ROUTER
+        var elementId = req.params.id;
+        if (elementId) {
+            var element = new ghostdriver.WebElementReqHand(elementId, _session);
+            if (element === null) {
+                throw _errors.createInvalidReqVariableResourceNotFoundEH(req);
+            }
+
+            return element.handle(req, res);
+        }
+
     },
 
     _createOnSuccessHandler = function(res) {
@@ -204,50 +82,6 @@ ghostdriver.SessionReqHand = function(session) {
             _log.debug("_SuccessHandler", "status: " + status);
             res.success(_session.getId());
         };
-    },
-
-    _doWindowHandleCommands = function(req, res) {
-        var windowHandle,
-            command,
-            targetWindow;
-
-        _log.debug("_doWindowHandleCommands", JSON.stringify(req));
-
-        // Ensure all the parameters are provided
-        if (req.urlParsed.chunks.length === 3) {
-            windowHandle = req.urlParsed.chunks[1];
-            command = req.urlParsed.chunks[2];
-
-            // Fetch the right window
-            if (windowHandle === _const.CURRENT) {
-                targetWindow = _protoParent.getSessionCurrWindow.call(this, _session, req);
-            } else {
-                targetWindow = _protoParent.getSessionWindow.call(this, windowHandle, _session, req);
-            }
-
-            // Act on the window (page)
-            if(command === _const.SIZE && req.method === "POST") {
-                _postWindowSizeCommand(req, res, targetWindow);
-                return;
-            } else if(command === _const.SIZE && req.method === "GET") {
-                _getWindowSizeCommand(req, res, targetWindow);
-                return;
-            } else if(command === _const.POSITION && req.method === "POST") {
-                _postWindowPositionCommand(req, res, targetWindow);
-                return;
-            } else if(command === _const.POSITION && req.method === "GET") {
-                _getWindowPositionCommand(req, res, targetWindow);
-                return;
-            } else if(command === _const.MAXIMIZE && req.method === "POST") {
-                _postWindowMaximizeCommand(req, res, targetWindow);
-                return;
-            }
-
-            // No command matched: error
-            throw _errors.createInvalidReqInvalidCommandMethodEH(req);
-        } else {
-            throw _errors.createInvalidReqMissingCommandParameterEH(req);
-        }
     },
 
     _postWindowSizeCommand = function(req, res, targetWindow) {
@@ -504,16 +338,8 @@ ghostdriver.SessionReqHand = function(session) {
         }
     },
 
-    _postTimeout = function(req, res) {
-        var postObj = JSON.parse(req.post);
-
-        // Normalize the call: the "type" is read from the URL, not a POST parameter
-        if (req.urlParsed.file === _const.IMPLICIT_WAIT) {
-            postObj["type"] = _session.timeoutNames.IMPLICIT;
-        } else if (req.urlParsed.file === _const.ASYNC_SCRIPT) {
-            postObj["type"] = _session.timeoutNames.SCRIPT;
-        }
-
+    _postTimeoutCommand = function(req, res, postObj) {
+        postObj = postObj || JSON.parse(req.post);
         if (typeof(postObj["type"]) === "string" && typeof(postObj["ms"]) === "number") {
 
             _log.debug("_postTimeout", JSON.stringify(postObj));
@@ -537,6 +363,18 @@ ghostdriver.SessionReqHand = function(session) {
         } else {
             throw _errors.createInvalidReqMissingCommandParameterEH(req);
         }
+    },
+
+    _postAsyncScriptTimeoutCommand = function (req, res) {
+        var postObj = JSON.parse(req.post);
+        postObj.type = _session.timeoutNames.SCRIPT;
+        _postTimeoutCommand(req, res, postObj);
+    },
+
+    _postImplicitWaitTimeoutCommand = function (req, res) {
+        var postObj = JSON.parse(req.post);
+        postObj.type = _session.timeoutNames.IMPLICIT;
+        _postTimeoutCommand(req, res, postObj);
     },
 
     _postFrameCommand = function(req, res) {
@@ -801,13 +639,15 @@ ghostdriver.SessionReqHand = function(session) {
     },
 
     _deleteCookieCommand = function(req, res) {
-        if (req.urlParsed.chunks.length === 2) {
+        var cookieName = req.params.name;
+        if (cookieName) {
             // delete only 1 cookie among the one visible to this page
-            _protoParent.getSessionCurrWindow.call(this, _session, req).deleteCookie(req.urlParsed.chunks[1]);
+            _protoParent.getSessionCurrWindow.call(this, _session, req).deleteCookie(cookieName);
         } else {
             // delete all the cookies visible to this page
             _protoParent.getSessionCurrWindow.call(this, _session, req).clearCookies();
         }
+
         res.success(_session.getId());
     },
 
@@ -875,16 +715,214 @@ ghostdriver.SessionReqHand = function(session) {
         if (!params.type || _session.getLogTypes().indexOf(params.type) < 0) {
             throw _errors.createInvalidReqMissingCommandParameterEH(req);
         }
-        _getLog(req, res, params.type);
+        res.success(_session.getId(), _session.getLog(params.type));
     },
 
     _getLogTypes = function (req, res) {
         res.success(_session.getId(), _session.getLogTypes());
     },
 
-    _getLog = function (req, res, logType) {
-        res.success(_session.getId(), _session.getLog(logType));
+    _getLog = function (req, res) {
+        var params = req.params;
+        if (!params.type || _session.getLogTypes().indexOf(params.type) < 0) {
+            throw _errors.createInvalidReqMissingCommandParameterEH(req);
+        }
+        res.success(_session.getId(), _session.getLog(params.type));
+    },
+    _postFindElement = function (req, res) {
+        _locator.handleLocateCommand(req, res, _locator.locateElement);
+    },
+    _postFindElements = function (req, res) {
+        _locator.handleLocateCommand(req, res, _locator.locateElements);
+    },
+    _postFindActiveElement = function (req, res) {
+      _locator.handleLocateCommand(req, res, _locator.locateActiveElement);
+    },
+    _postMouseUpCommand = function (req, res) {
+        _postMouseClickCommand(req, res, 'mouseup');
+    },
+    _postMouseDownCommand = function (req, res) {
+        _postMouseClickCommand(req, res, 'mousedown');
+    },
+    _postMouseDbClickCommand = function (req, res) {
+        _postMouseClickCommand(req, res, 'doubleclick');
     };
+
+    // ------------ POST --------------
+
+    _mapper.get(
+        '/session/:sessionId/url',
+        _getUrlCommand
+    )
+    .get(
+        '/session/:sessionId/screenshot',
+        _getScreenshotCommand
+    )
+    .get(
+        '/session/:sessionId/title',
+        _getTitleCommand
+    )
+    .get(
+        '/session/:sessionId/window_handle',
+        _getWindowHandle
+    )
+    .get(
+        '/session/:sessionId/window_handles',
+        _getWindowHandles
+    )
+    .get(
+        '/session/:sessionId/source',
+        _getSourceCommand
+    )
+    .get(
+        '/session/:sessionId/window',
+        _postWindowCommand
+    )
+    .get(
+        '/session/:sessionId/window/:windowHandle/size',
+        _getWindowSizeCommand
+    )
+    .get(
+        '/session/:sessionId/window/:windowHandle/position',
+        _getWindowPositionCommand
+    )
+    .get(
+        '/session/:sessionId/cookie',
+        _getCookieCommand
+    )
+    .get(
+        '/session/:sessionId/log/types',
+        _getLogTypes
+    )
+    .get(
+        '/session/:sessionId/log/:type',
+        _getLog
+    )
+    // ------------ POST --------------
+
+    .post(
+        '/session/:sessionId/url',
+        _postUrlCommand
+    )
+    .post(
+        '/session/:sessionId/keys',
+        _postKeysCommand
+    )
+    .post(
+        '/session/:sessionId/forward',
+        _forwardCommand
+    )
+    .post(
+        '/session/:sessionId/back',
+        _backCommand
+    )
+    .post(
+        '/session/:sessionId/refresh',
+        _refreshCommand
+    )
+    .post(
+        '/session/:sessionId/execute',
+        _executeCommand
+    )
+    .post(
+        '/session/:sessionId/execute_async',
+        _executeAsyncCommand
+    )
+    .post(
+        '/session/:sessionId/timeouts',
+        _postTimeoutCommand
+    )
+    .post(
+        '/session/:sessionId/timeouts/implicit_wait',
+        _postImplicitWaitTimeoutCommand
+    )
+    .post(
+        '/session/:sessionId/timeouts/async_script',
+        _postAsyncScriptTimeoutCommand
+    )
+    .post(
+        '/session/:sessionId/moveto',
+        _postMouseMoveToCommand
+    )
+    .post(
+        '/session/:sessionId/frame',
+        _postFrameCommand
+    )
+    .post(
+        '/session/:sessionId/click',
+        _postMouseClickCommand
+    )
+    .post(
+        '/session/:sessionId/buttonup',
+        _postMouseUpCommand
+    )
+    .post(
+        '/session/:sessionId/buttondown',
+        _postMouseDownCommand
+    )
+    .post(
+        '/session/:sessionId/doubleclick',
+        _postMouseDbClickCommand
+    )
+    .post(
+        '/session/:sessionId/cookie',
+        _postCookieCommand
+    )
+    .post(
+        '/session/:sessionId/log',
+        _postLog
+    )
+    .post(
+        '/session/:sessionId/elements',
+        _postFindElements
+    )
+    .post(
+        '/session/:sessionId/element',
+        _postFindElement
+    )
+    .post(
+        '/session/:sessionId/element/active',
+        _postFindActiveElement
+    )
+    .post(
+        '/session/:sessionId/phantom/execute',
+        _executePhantomJS
+    )
+    .post(
+        '/session/:sessionId/window',
+        _postWindowCommand
+    )
+    .post(
+        '/session/:sessionId/window/:windowHandle/size',
+        _postWindowSizeCommand
+    )
+    .post(
+        '/session/:sessionId/window/:windowHandle/position',
+        _postWindowPositionCommand
+    )
+    .post(
+        '/session/:sessionId/window/:windowHandle/maximize',
+        _postWindowMaximizeCommand
+    )
+
+
+    //
+
+    // ------------ DELETE --------------
+
+    .del(
+        '/session/:sessionId/window',
+        _deleteWindowCommand
+    )
+    .del(
+        '/session/:sessionId/cookie',
+        _deleteCookieCommand
+    )
+    .del(
+        '/session/:sessionId/cookie/:name',
+        _deleteCookieCommand
+    );
+
 
     // public:
     return {

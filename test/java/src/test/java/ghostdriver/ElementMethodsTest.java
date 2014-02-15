@@ -72,12 +72,14 @@ public class ElementMethodsTest extends BaseTestWithServer {
     @Test
     public void checkClickOnAHREFCausesPageLoad() {
         WebDriver d = getDriver();
+        // El viejo codigo fallaba por que mi navegador esta en español
+        // The old code was failing because my browser is in Spanish
 
-        d.get("http://www.google.com");
-        WebElement link = d.findElement(By.cssSelector("a[href=\"/intl/en/ads/\"]"));
+        d.get("http://localhost:2310/common/simpleTest.html");
+        WebElement link = d.findElement(By.cssSelector("a[href=\"resultPage.html\"]"));
         link.click();
 
-        assertTrue(d.getTitle().contains("Ads"));
+        assertTrue(d.getTitle().contains("We Arrive Here"));
     }
 
     @Test

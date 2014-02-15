@@ -292,7 +292,7 @@ public class CookieTest extends BaseTestWithServer {
                 "   }" +
                 "   val = ['"+cval+"'];" +
                 "   if (val) {" +
-                "       var d=Array('com','co.jp','ca','fr','de','co.uk','it','es','com.br');" +
+                "       var d=Array('com','co.jp','ca','fr','de','co.uk','it','es','com.br', 'com.co');" +
                 "       for (var i = 0; i < d.length; i++) {" +
                 "           document.cookie = '"+ckey+"='+val+';path=/;domain=.google.'+d[i]+'; ';" +
                 "       }" +
@@ -305,7 +305,7 @@ public class CookieTest extends BaseTestWithServer {
         // Set cookie as empty
         js.executeScript("javascript:(" +
                 "function() {" +
-                "   var d = Array('com','co.jp','ca','fr','de','co.uk','it','cn','es','com.br');" +
+                "   var d = Array('com','co.jp','ca','fr','de','co.uk','it','cn','es','com.br', 'com.co');" +
                 "   for(var i = 0; i < d.length; i++) {" +
                 "       document.cookie='"+ckey+"=;path=/;domain=.google.'+d[i]+'; ';" +
                 "   }" +

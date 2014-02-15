@@ -1,0 +1,12 @@
+{
+  "name": "CommonSeleniumTestPage",
+  "version": "0.0.1",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "devDependencies": {
+    "express": "~3.4.8"
+  }
+}

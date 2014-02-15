@@ -29,28 +29,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 var ghostdriver = ghostdriver || {};
 
 ghostdriver.WebElementReqHand = function(idOrElement, session) {
-    // private:
     const
-    _const = {
-        ELEMENT             : "element",
-        ELEMENTS            : "elements",
-        VALUE               : "value",
-        SUBMIT              : "submit",
-        DISPLAYED           : "displayed",
-        ENABLED             : "enabled",
-        ATTRIBUTE           : "attribute",
-        NAME                : "name",
-        CLICK               : "click",
-        SELECTED            : "selected",
-        CLEAR               : "clear",
-        CSS                 : "css",
-        TEXT                : "text",
-        EQUALS              : "equals",
-        LOCATION            : "location",
-        LOCATION_IN_VIEW    : "location_in_view",
-        SIZE                : "size"
-    };
+      _const = {
+        VALUE: '/value'
+      };
 
+    // private:
     var
     _id = ((typeof(idOrElement) === "object") ? idOrElement["ELEMENT"] : idOrElement),
     _session = session,
@@ -58,69 +42,10 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
     _protoParent = ghostdriver.WebElementReqHand.prototype,
     _errors = _protoParent.errors,
     _log = ghostdriver.logger.create("WebElementReqHand"),
+    _mapper = new ghostdriver.MapperHandler(),
 
     _handle = function(req, res) {
-        _protoParent.handle.call(this, req, res);
-
-        if (req.urlParsed.file === _const.ELEMENT && req.method === "POST") {
-            _locator.handleLocateCommand(req, res, _locator.locateElement, _getJSON());
-            return;
-        } else if (req.urlParsed.file === _const.ELEMENTS && req.method === "POST") {
-            _locator.handleLocateCommand(req, res, _locator.locateElements, _getJSON());
-            return;
-        } else if (req.urlParsed.file === _const.VALUE && req.method === "POST") {
-            _postValueCommand(req, res);
-            return;
-        } else if (req.urlParsed.file === _const.SUBMIT && req.method === "POST") {
-            _postSubmitCommand(req, res);
-            return;
-        } else if (req.urlParsed.file === _const.DISPLAYED && req.method === "GET") {
-            _getDisplayedCommand(req, res);
-            return;
-        } else if (req.urlParsed.file === _const.ENABLED && req.method === "GET") {
-            _getEnabledCommand(req, res);
-            return;
-        } else if (req.urlParsed.chunks[0] === _const.ATTRIBUTE && req.method === "GET") {
-            _getAttributeCommand(req, res);
-            return;
-        } else if (req.urlParsed.file === _const.NAME && req.method === "GET") {
-            _getNameCommand(req, res);
-            return;
-        } else if (req.urlParsed.file === _const.CLICK && req.method === "POST") {
-            _postClickCommand(req, res);
-            return;
-        } else if (req.urlParsed.file === _const.SELECTED && req.method === "GET") {
-            _getSelectedCommand(req, res);
-            return;
-        } else if (req.urlParsed.file === _const.CLEAR && req.method === "POST") {
-            _postClearCommand(req, res);
-            return;
-        } else if (req.urlParsed.chunks[0] === _const.CSS && req.method === "GET") {
-            _getCssCommand(req, res);
-            return;
-        } else if (req.urlParsed.file === _const.TEXT && req.method === "GET") {
-            _getTextCommand(req, res);
-            return;
-        } else if (req.urlParsed.chunks[0] === _const.EQUALS && req.method === "GET") {
-            _getEqualsCommand(req, res);
-            return;
-        } else if (req.urlParsed.file === _const.LOCATION && req.method === "GET") {
-            _getLocationCommand(req, res);
-            return;
-        } else if (req.urlParsed.file === _const.LOCATION_IN_VIEW && req.method === "GET") {
-            _getLocationInViewCommand(req, res);
-            return;
-        } else if (req.urlParsed.file === _const.SIZE && req.method === "GET") {
-            _getSizeCommand(req, res);
-            return;
-        } else if (req.urlParsed.file === "" && req.method === "GET") {         //< GET "/session/:id/element/:id"
-            // The response to this command is not defined in the specs:
-            // here we just return the Element JSON ID.
-            res.success(_session.getId(), _getJSON());
-            return;
-        } // else ...
-
-        throw _errors.createInvalidReqInvalidCommandMethodEH(req);
+        return _mapper.dispatch(this, req, res);
     },
 
     _getDisplayedCommand = function(req, res) {
@@ -213,7 +138,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
     _getSizeCommand = function (req, res) {
         var sizeRes = _getSizeResult(req);
 
-        _log.debug("_getSizeCommand", JSON.stringify(sizeRes))
+        _log.debug("_getSizeCommand", JSON.stringify(sizeRes));
 
         res.respondBasedOnResult(_session, req, sizeRes);
     },
@@ -289,7 +214,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
 
                 // Only clear the modifier keys if this was called using element.sendKeys().
                 // Calling this from the Advanced Interactions API doesn't clear the modifier keys.
-                if (req.urlParsed.file === _const.VALUE) {
+                if (req.url.indexOf(_const.VALUE) !== -1) {
                     _session.inputs.clearModifierKeys(_session);
                 }
 
@@ -320,15 +245,17 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
     },
 
     _getAttributeCommand = function(req, res) {
-        var attributeValueAtom = require("./webdriver_atoms.js").get("get_attribute_value"),
-            result;
+        var
+            attributeValueAtom = require("./webdriver_atoms.js").get("get_attribute_value"),
+            result,
+            attributeName = req.params.name;
 
-        if (typeof(req.urlParsed.file) === "string" && req.urlParsed.file.length > 0) {
+        if (typeof(attributeName) === "string") {
             // Read the attribute
             result = _protoParent.getSessionCurrWindow.call(this, _session, req).evaluate(
                 attributeValueAtom,     // < Atom to read an attribute
                 _getJSON(),             // < Element to read from
-                req.urlParsed.file);    // < Attribute to read
+                attributeName);    // < Attribute to read
 
             res.respondBasedOnResult(_session, req, result);
             return;
@@ -345,13 +272,15 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
     },
 
     _getEqualsCommand = function(req, res) {
-        var result;
+        var
+            result,
+            other = req.params.other;
 
-        if (typeof(req.urlParsed.file) === "string" && req.urlParsed.file.length > 0) {
+        if (typeof(other) === "string") {
             result = _protoParent.getSessionCurrWindow.call(this, _session, req).evaluate(
                 require("./webdriver_atoms.js").get("execute_script"),
                 "return arguments[0].isSameNode(arguments[1]);",
-                [_getJSON(), _getJSON(req.urlParsed.file)]);
+                [_getJSON(), _getJSON(other)]);
 
             res.respondBasedOnResult(_session, req, result);
             return;
@@ -457,7 +386,7 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
     },
 
     _getCssCommand = function(req, res) {
-        var cssPropertyName = req.urlParsed.file,
+        var cssPropertyName = req.params.propertyName,
             result;
 
         // Check that a property name was indeed provided
@@ -472,6 +401,20 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
         }
 
         throw _errors.createInvalidReqMissingCommandParameterEH(req);
+    },
+
+    _getDescribeElementCommand = function (req, res) {
+        // The response to this command is not defined in the specs:
+        // here we just return the Element JSON ID.
+        res.success(_session.getId(), _getJSON());
+    },
+
+    _postFindElementCommand = function (req, res) {
+        _locator.handleLocateCommand(req, res, _locator.locateElement, _getJSON());
+    },
+
+    _postFindElementsCommand = function (req, res) {
+        _locator.handleLocateCommand(req, res, _locator.locateElements, _getJSON());
     },
 
     _getAttribute = function(currWindow, attributeName) {
@@ -511,6 +454,83 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
     _getSession = function() {
         return _session;
     };
+
+    _mapper.get(
+        '/session/:sessionId/element/:id/displayed',
+        _getDisplayedCommand
+    )
+    .get(
+        '/session/:sessionId/element/:id/enabled',
+        _getEnabledCommand
+    )
+    .get(
+        '/session/:sessionId/element/:id/attribute/:name',
+        _getAttributeCommand
+    )
+    .get(
+        '/session/:sessionId/element/:id/name',
+        _getNameCommand
+    )
+    .get(
+        '/session/:sessionId/element/:id/selected',
+        _getSelectedCommand
+    )
+    .get(
+        '/session/:sessionId/element/:id/css/:propertyName',
+        _getCssCommand
+    )
+    .get(
+        '/session/:sessionId/element/:id/text',
+        _getTextCommand
+    )
+    .get(
+        '/session/:sessionId/element/:id/equals/:other',
+        _getEqualsCommand
+    )
+    .get(
+        '/session/:sessionId/element/:id/location',
+        _getLocationCommand
+    )
+    .get(
+        '/session/:sessionId/element/:id/location_in_view',
+        _getLocationInViewCommand
+    )
+    .get(
+        '/session/:sessionId/element/:id/size',
+        _getSizeCommand
+    )
+    .get(
+        '/session/:sessionId/element/:id',
+        _getDescribeElementCommand
+    )
+
+    /* ----------- POST --------- */
+
+    .post(
+        '/session/:sessionId/element/:id/element',
+        _postFindElementCommand
+    )
+    .post(
+        '/session/:sessionId/element/:id/elements',
+        _postFindElementsCommand
+    )
+    .post(
+        '/session/:sessionId/element/:id/value',
+        _postValueCommand
+    )
+    .post(
+        '/session/:sessionId/element/:id/submit',
+        _postSubmitCommand
+    )
+    .post(
+        '/session/:sessionId/element/:id/click',
+        _postClickCommand
+    )
+    .post(
+        '/session/:sessionId/element/:id/clear',
+        _postClearCommand
+    )
+    ;
 
     // public:
     return {

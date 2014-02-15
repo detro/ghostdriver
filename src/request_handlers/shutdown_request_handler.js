@@ -31,31 +31,26 @@ var ghostdriver = ghostdriver || {};
 ghostdriver.ShutdownReqHand = function() {
     // private:
     var
-    _protoParent = ghostdriver.ShutdownReqHand.prototype,
     _log = ghostdriver.logger.create("ShutdownReqHand"),
-
+    _mapper = new ghostdriver.MapperHandler(),
     _handle = function(req, res) {
+        return _mapper.dispatch(this, req, res);
+    },
+
+    _getShutdownCommand = function (req, res) {
         _log.info("_handle", "About to shutdown");
-
-        _protoParent.handle.call(this, req, res);
-
         // Any HTTP Request Method will be accepted for this command. Some drivers like HEAD for example...
-        if (req.urlParsed.file === "shutdown") {
-            res.statusCode = 200;
-            res.setHeader("Content-Type", "text/html;charset=UTF-8");
-            res.setHeader("Content-Length", 36);
-            res.write("<html><body>Closing...</body></html>");
-            res.close();
-            return;
-        }
-
-        throw _protoParent.errors.createInvalidReqInvalidCommandMethodEH(req);
+        res.statusCode = 200;
+        res.setHeader("Content-Type", "text/html;charset=UTF-8");
+        res.setHeader("Content-Length", 36);
+        res.write("<html><body>Closing...</body></html>");
+        res.close();
     };
+
+    _mapper.get('/shutdown', _getShutdownCommand);
 
     // public:
     return {
         handle : _handle
     };
 };
-// prototype inheritance:
-ghostdriver.ShutdownReqHand.prototype = new ghostdriver.RequestHandler();

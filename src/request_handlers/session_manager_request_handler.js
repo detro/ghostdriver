@@ -36,26 +36,26 @@ ghostdriver.SessionManagerReqHand = function() {
     _errors = _protoParent.errors,
     _CLEANUP_WINDOWLESS_SESSIONS_TIMEOUT = 300000, // 5 minutes
     _log = ghostdriver.logger.create("SessionManagerReqHand"),
+    _mapper = new ghostdriver.MapperHandler(),
 
     _handle = function(req, res) {
-        _protoParent.handle.call(this, req, res);
+        // this is no necesary
+        // _protoParent.handle.call(this, req, res);
+        if (!_mapper.dispatch(this, req, res)) {
+            if (req.params.sessionId) {
+                var session = this.getSession(req.params.sessionId);
+                if (session !== null) {
+                    // Create a new Session Request Handler and re-route the request to it
+                    var sessionRH = this.getSessionReqHand(req.params.sessionId);
 
-        if (req.urlParsed.chunks.length === 1 && req.urlParsed.file === "session" && req.method === "POST") {
-            _postNewSessionCommand(req, res);
-            return;
-        } else if (req.urlParsed.chunks.length === 1 && req.urlParsed.file === "sessions" && req.method === "GET") {
-            _getActiveSessionsCommand(req, res);
-            return;
-        } else if (req.urlParsed.directory === "/session/") {
-            if (req.method === "GET") {
-                _getSessionCapabilitiesCommand(req, res);
-            } else if (req.method === "DELETE") {
-                _deleteSessionCommand(req, res);
+                    return sessionRH.handle(req, res);
+                } else {
+                    throw _errors.createInvalidReqVariableResourceNotFoundEH(req);
+                }
             }
-            return;
         }
 
-        throw _errors.createInvalidReqInvalidCommandMethodEH(req);
+        return true;
     },
 
     _postNewSessionCommand = function(req, res) {
@@ -111,7 +111,7 @@ ghostdriver.SessionManagerReqHand = function() {
     },
 
     _deleteSessionCommand = function(req, res) {
-        var sId = req.urlParsed.file;
+        var sId = req.params.sessionId;
 
         if (sId === "")
             throw _errors.createInvalidReqMissingCommandParameterEH(req);
@@ -125,7 +125,7 @@ ghostdriver.SessionManagerReqHand = function() {
     },
 
     _getSessionCapabilitiesCommand = function(req, res) {
-        var sId = req.urlParsed.file,
+        var sId = req.params.sessionId,
             session;
 
         if (sId === "")
@@ -175,12 +175,29 @@ ghostdriver.SessionManagerReqHand = function() {
     // Regularly cleanup un-used sessions
     setInterval(_cleanupWindowlessSessions, _CLEANUP_WINDOWLESS_SESSIONS_TIMEOUT);
 
+    // MAPPER
+
+    _mapper.get(
+        '/session/:sessionId', _getSessionCapabilitiesCommand
+    )
+    .get(
+        '/sessions', _getActiveSessionsCommand
+    )
+    .post(
+        '/session', _postNewSessionCommand
+    )
+    .del(
+        '/session/:sessionId', _deleteSessionCommand
+    );
+
     // public:
     return {
         handle : _handle,
         getSession : _getSession,
         getSessionReqHand : _getSessionReqHand
     };
+
 };
+
 // prototype inheritance:
 ghostdriver.SessionManagerReqHand.prototype = new ghostdriver.RequestHandler();

@@ -45,13 +45,11 @@ _log = ghostdriver.logger.create("GhostDriver");
 require("./config.js").init(ghostdriver.system.args);
 ghostdriver.config = require("./config.js").get();
 
-// Enable "strict mode" for the 'parseURI' library
-require("./third_party/parseuri.js").options.strictMode = true;
-
 // Load all the core dependencies
 // NOTE: We need to provide PhantomJS with the "require" module ASAP. This is a pretty s**t way to load dependencies
 phantom.injectJs("session.js");
 phantom.injectJs("inputs.js");
+phantom.injectJs("request_handlers/mapper_handler.js");
 phantom.injectJs("request_handlers/request_handler.js");
 phantom.injectJs("request_handlers/status_request_handler.js");
 phantom.injectJs("request_handlers/shutdown_request_handler.js");
