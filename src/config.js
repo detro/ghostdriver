@@ -30,6 +30,8 @@ var defaultConfig = {
         "ip"        : "127.0.0.1",
         "port"      : "8910",
         "hub"       : null,
+        "proxy"     : "org.openqa.grid.selenium.proxy.DefaultRemoteProxy",
+        "version"   : "",
         "logFile"   : null,
         "logLevel"  : "INFO",
         "logColor"  : false
@@ -38,6 +40,8 @@ var defaultConfig = {
         "ip"        : defaultConfig.ip,
         "port"      : defaultConfig.port,
         "hub"       : defaultConfig.hub,
+        "proxy"     : defaultConfig.proxy,
+        "version"   : defaultConfig.version,
         "logFile"   : defaultConfig.logFile,
         "logLevel"  : defaultConfig.logLevel,
         "logColor"  : defaultConfig.logColor
