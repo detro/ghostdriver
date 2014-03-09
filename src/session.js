@@ -332,9 +332,11 @@ ghostdriver.Session = function(desiredCapabilities) {
         page.onClosing = _deleteClosingPage;
 
         // 6. Applying Page settings received via capabilities
+        // by default this property is not present in settings
+        var httpAuth = ['userName', 'password'];
         for (k in _pageSettings) {
             // Apply setting only if really supported by PhantomJS
-            if (page.settings.hasOwnProperty(k)) {
+            if (page.settings.hasOwnProperty(k) || httpAuth.indexOf(k) !== -1) {
                 page.settings[k] = _pageSettings[k];
             }
         }
