@@ -107,6 +107,7 @@ ghostdriver.Session = function(desiredCapabilities) {
     _capsPageSettingsPref = "phantomjs.page.settings.",
     _capsPageCustomHeadersPref = "phantomjs.page.customHeaders.",
     _pageSettings = {},
+    _additionalAllowedPageSettings = { userName: 1, password: 1 },
     _pageCustomHeaders = {},
     _log = ghostdriver.logger.create("Session [" + _id + "]"),
     k, settingKey, headerKey;
@@ -334,7 +335,7 @@ ghostdriver.Session = function(desiredCapabilities) {
         // 6. Applying Page settings received via capabilities
         for (k in _pageSettings) {
             // Apply setting only if really supported by PhantomJS
-            if (page.settings.hasOwnProperty(k)) {
+            if (page.settings.hasOwnProperty(k) || _additionalAllowedPageSettings.hasOwnProperty(k)) {
                 page.settings[k] = _pageSettings[k];
             }
         }
