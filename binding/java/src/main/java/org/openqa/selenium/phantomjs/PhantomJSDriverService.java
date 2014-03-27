@@ -462,14 +462,17 @@ public class PhantomJSDriverService extends DriverService {
                 if (proxy != null) {
                     switch (proxy.getProxyType()) {
                         case MANUAL:
-                            if (!proxy.getHttpProxy().isEmpty()) {          //< HTTP proxy
+                            if (proxy.getHttpProxy() != null && !proxy.getHttpProxy().isEmpty()) {          //< HTTP proxy
                                 argsBuilder.add("--proxy-type=http");
                                 argsBuilder.add(String.format("--proxy=%s", proxy.getHttpProxy()));
-                            } else if (!proxy.getSocksProxy().isEmpty()) {  //< SOCKS5 proxy
+                            } else if (proxy.getSocksProxy() != null && !proxy.getSocksProxy().isEmpty()) {  //< SOCKS5 proxy
                                 argsBuilder.add("--proxy-type=socks5");
                                 argsBuilder.add(String.format("--proxy=%s", proxy.getSocksProxy()));
-                                argsBuilder.add(String.format("--proxy-auth=%s:%s", proxy.getSocksUsername(),
-                                        proxy.getSocksPassword()));
+                                if (proxy.getSocksUsername() != null && !proxy.getSocksUsername().isEmpty()
+                                        && proxy.getSocksPassword() != null && !proxy.getSocksPassword().isEmpty()) {
+	                                argsBuilder.add(String.format("--proxy-auth=%s:%s", proxy.getSocksUsername(),
+	                                        proxy.getSocksPassword()));
+                                }
                             } else {
                                 // TODO Not supported yet by PhantomJS
                                 checkArgument(true, "PhantomJS supports only HTTP and Socks5 Proxy currently");
