@@ -16,3 +16,9 @@ build
 
 # vim temp files
 *.swp
+
+# eclipse files
+.settings
+.classpath
+.project
+

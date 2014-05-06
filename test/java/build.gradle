@@ -17,6 +17,7 @@ ext.junitVersion = "4.11"
 ext.jettyVersion = "6.1.21"
 ext.jsr305Version = "2.0.1"
 ext.phantomjsdriverVersion = "1.1.0"
+ext.browsermobProxyVersion = "2.0-beta-7"
 
 dependencies {
     ["selenium-java", "selenium-remote-driver", "selenium-server"].each {
@@ -27,6 +28,7 @@ dependencies {
     testCompile "org.mortbay.jetty:jetty:$jettyVersion"
     testCompile "commons-fileupload:commons-fileupload:$commonsFileUploadVersion"
     testCompile "com.github.detro.ghostdriver:phantomjsdriver:$phantomjsdriverVersion"
+	testCompile "biz.neustar:browsermob-proxy:$browsermobProxyVersion"
 }
 
 tasks.withType(JavaExec) {
