@@ -31,7 +31,7 @@ apply plugin: "eclipse"
 apply plugin: "nexus"
 
 task wrapper(type: Wrapper) {
-    gradleVersion   = "1.10"
+    gradleVersion   = "1.12"
     jarFile         = "gradle/gradle-wrapper.jar"
 }
 
@@ -51,10 +51,10 @@ ext.projectLongName         = "PhantomJS Driver (GhostDriver)"
 ext.projectArtefactDir      = "jars/"
 ext.projectMainClass        = "org.openqa.selenium.phantomjs.PhantomJSDriver"
 ext.projectCreator          = "Ivan De Marino (https://github.com/detro)"
-ext.seleniumVersion         = "2.39.0"
+ext.seleniumVersion         = "2.41.0"
 
 dependencies {
-    ["selenium-java", "selenium-remote-driver", "selenium-server"].each {
+    ["selenium-java", "selenium-remote-driver"].each {
         compile "org.seleniumhq.selenium:$it:$seleniumVersion"
     }
 }
