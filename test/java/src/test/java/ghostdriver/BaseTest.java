@@ -119,8 +119,7 @@ public abstract class BaseTest {
     }
 
     @Before
-    public void prepareDriver() throws Exception
-    {
+    public void prepareDriver() throws Exception {
         // Which driver to use? (default "phantomjs")
         String driver = sConfig.getProperty("driver", DRIVER_PHANTOMJS);
 
