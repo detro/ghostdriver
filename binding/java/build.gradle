@@ -28,7 +28,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 apply plugin: "java"
 apply plugin: "idea"
 apply plugin: "eclipse"
-apply plugin: "nexus"
+apply plugin: "maven"
+apply plugin: "signing"
 
 task wrapper(type: Wrapper) {
     gradleVersion   = "1.12"
@@ -45,12 +46,15 @@ compileJava {
 }
 
 project.archivesBaseName    = project.name
-project.version             = "1.1.0"
+project.version             = "1.2.0"
 
+ext.projectGroupId          = "com.github.detro"
+ext.projectArtifactId       = "phantomjsdriver"
 ext.projectLongName         = "PhantomJS Driver (GhostDriver)"
 ext.projectArtefactDir      = "jars/"
 ext.projectMainClass        = "org.openqa.selenium.phantomjs.PhantomJSDriver"
 ext.projectCreator          = "Ivan De Marino (https://github.com/detro)"
+
 ext.seleniumVersion         = "2.41.0"
 
 dependencies {
@@ -59,121 +63,151 @@ dependencies {
     }
 }
 
+// Forces Java 6 compile source/target
+compileJava {
+    sourceCompatibility = 1.6
+    targetCompatibility = 1.6
+}
+
 tasks.withType(JavaExec) {
     classpath = configurations.compile + sourceSets.test.output
     args project.hasProperty("args") ? project.args.split("\\s") : []
 }
 
+// Binary Jar
 jar {
     destinationDir      = file(projectArtefactDir)
+    version             = project.version
     manifest {
         attributes(
             "Implementation-Title"      : projectLongName,
             "Implementation-Version"    : project.version,
             "Gradle-Version"            : project.gradle.gradleVersion,
-            "Main-Class"                : projectMainClass,
             "Created-By"                : projectCreator
         )
     }
 }
 
-task sourceJarBuild(type: Jar, dependsOn: classes) {
+// Source Jar
+task sourceJar(type: Jar, dependsOn: classes) {
     classifier = "sources"
     from sourceSets.main.allSource
 
     destinationDir      = file(projectArtefactDir)
+    version             = project.version
     manifest {
         attributes(
             "Implementation-Title"      : projectLongName,
             "Implementation-Version"    : project.version,
             "Gradle-Version"            : project.gradle.gradleVersion,
-            "Main-Class"                : projectMainClass,
             "Created-By"                : projectCreator
         )
     }
 }
 
-task javadocJarBuild(type: Jar, dependsOn: javadoc) {
+// JavaDoc Jar
+task javadocJar(type: Jar, dependsOn: javadoc) {
     classifier = "javadoc"
     from javadoc.destinationDir
 
     destinationDir      = file(projectArtefactDir)
+    version             = project.version
     manifest {
         attributes(
             "Implementation-Title"      : projectLongName,
             "Implementation-Version"    : project.version,
             "Gradle-Version"            : project.gradle.gradleVersion,
-            "Main-Class"                : projectMainClass,
             "Created-By"                : projectCreator
         )
     }
 }
 
-//task jars {
-//    dependsOn jar, sourceJarBuild, javadocJarBuild
-//}
-
-//signing {
-//    sign jar
-//    sign sourceJarBuild
-//    sign javadocJarBuild
-//}
-
-task signJars {
-    dependsOn jars
-    dependsOn signJar, signJavadocJarBuild, signSourceJarBuild
+// Make all Jars
+task jars {
+    dependsOn jar, sourceJar, javadocJar
 }
 
-buildscript {
+// Store JavaDoc
+task storeJavadoc(type: Sync, dependsOn: javadoc) {
+    from project.docsDir
+    into "docs"
+}
+
+// Artifact-making Tasks
+artifacts {
+    archives jar
+    archives javadocJar
+    archives sourceJar
+}
+
+// Sign artifacts
+signing {
+    sign configurations.archives
+}
+
+// Upload archives to OSS Sonatype
+//
+// NOTE: requires you to first setup
+// 1) ~/.gnupg/* with a PGP key to sign the artifacts
+// 2) ~/.gradle/gradle.properties defining
+//
+//    signing.keyId=<YOUR PGP KEY ID>
+//    signing.password=<PASSWORD TO PGP SECRET RING>
+//    signing.secretKeyRingFile=<FULLPATH TO PGP SECRET RING>
+//    ossrhUsername=<OSS Sonatype Username>
+//    ossrhPassword=<OSS Sonatype Password>
+//
+uploadArchives {
     repositories {
-        mavenCentral()
-    }
-
-    dependencies {
-        classpath "org.gradle.api.plugins:gradle-nexus-plugin:0.2"
-    }
-}
-
-nexus {
-    sign = true
-}
-
-modifyPom {
-    project {
-        name            "PhantomJSDriver"
-        description     """
-                        PhantomJSDriver is a Java binding for the PhantomJS WebDriver, GhostDriver.
-                        The binding is developed within the GhostDriver project, and distributed through public Maven repository
-                        and Selenium official .zip package.
-                        """
-        url             "https://github.com/detro/ghostdriver"
-        inceptionYear   "2013"
-        groupId         "com.github.detro.ghostdriver"
-
-        scm {
-            url                     "git@github.com:detro/ghostdriver.git"
-            connection              "scm:git:git@github.com:detro/ghostdriver.git"
-            developerConnection     "scm:git:git@github.com:detro/ghostdriver.git"
-        }
-
-        licenses {
-            license {
-                name            "The BSD 2-Clause License"
-                url             "http://opensource.org/licenses/BSD-2-Clause"
-                distribution    "repo"
+        mavenDeployer {
+            beforeDeployment {
+                MavenDeployment deployment -> signing.signPom(deployment)
             }
-        }
 
-        developers {
-            developer {
-                id          "detro"
-                name        "Ivan De Marino"
-                email       "detronizator@gmail.com"
-                url         "http://ivandemarino.me"
-                roles {
-                    role    "Developer"
+            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                authentication(userName: ossrhUsername, password: ossrhPassword)
+            }
+
+            pom.project {
+                name            "PhantomJSDriver"
+                description     """
+                                PhantomJSDriver is a Java binding for the PhantomJS WebDriver, GhostDriver.
+                                The binding is developed within the GhostDriver project, and distributed through public Maven repository
+                                and Selenium official .zip package.
+                                """
+                groupId         projectGroupId
+                artifactId      projectArtifactId
+                version         project.version
+                packaging       "jar"
+                url             "https://github.com/detro/ghostdriver"
+                inceptionYear   "2012"
+
+                scm {
+                    url                     "https://github.com/detro/ghostdriver"
+                    connection              "scm:git:git@github.com:detro/ghostdriver.git"
+                    developerConnection     "scm:git:git@github.com:detro/ghostdriver.git"
                 }
-                timezone    "GMT"
+
+                licenses {
+                    license {
+                        name            "The BSD 2-Clause License"
+                        url             "http://opensource.org/licenses/BSD-2-Clause"
+                        distribution    "repo"
+                    }
+                }
+
+                developers {
+                    developer {
+                        id          "detro"
+                        name        "Ivan De Marino"
+                        email       "detronizator@gmail.com"
+                        url         "http://ivandemarino.me"
+                        roles {
+                            role    "Developer"
+                        }
+                        timezone    "GMT"
+                    }
+                }
             }
         }
     }
