@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## v1.2.0 (?-?-?) ([issues](https://github.com/detro/ghostdriver/issues?labels=1.2.0&state=closed))
+## v1.2.0 (?-?-?) ([issues](https://github.com/detro/ghostdriver/issues?labels=1.2.0&state=closed)) **NOT RELEASED YET**
 
 ### JavaScript Driver (Core)
 
