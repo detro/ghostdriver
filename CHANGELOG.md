@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v1.2.0 (?-?-?) ([issues](https://github.com/detro/ghostdriver/issues?labels=1.2.0&state=closed))
+
+### JavaScript Driver (Core)
+
+### Java Binding
+
 ## v1.1.1 (2014-01-12) ([issues](https://github.com/detro/ghostdriver/issues?labels=1.1.1&state=closed))
 
 ### JavaScript Driver (Core)
