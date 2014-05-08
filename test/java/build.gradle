@@ -44,6 +44,7 @@ ext.junitVersion = "4.11"
 ext.jettyVersion = "6.1.21"
 ext.jsr305Version = "2.0.1"
 ext.browsermobProxyClientVersion = "0.1.3"
+ext.phantomjsdriverVersion = "1.2.0"
 
 dependencies {
     // Test Dependencies
@@ -57,7 +58,8 @@ dependencies {
     testCompile "com.github.detro:browsermob-proxy-client:$browsermobProxyClientVersion"
 
     // Library under test (PhantomJS Driver, aka "PhantomJS WebDriver Java Binding")
-    testCompile files("../../binding/java/jars/phantomjsdriver-1.2.0.jar")
+//    testCompile files("../../binding/java/jars/phantomjsdriver-1.2.0.jar")
+    testCompile "com.github.detro:phantomjsdriver:$phantomjsdriverVersion"
 }
 
 tasks.withType(JavaExec) {
