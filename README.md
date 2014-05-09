@@ -65,6 +65,9 @@ dependencies {
 }
 ```
 
+### Search Maven
+For other options on how to include the PhantomJSDriver dependency into your project, click [here](http://search.maven.org/#search%7Cga%7C1%7Ccom.github.detro.ghostdriver).
+
 ### Alternative: how to use it via `RemoteWebDriver`
 
 Launching PhantomJS in Remote WebDriver mode it's simple:
@@ -96,7 +99,14 @@ Once started, you can use any `RemoteWebDriver` implementation to send commands 
 
 ## Want to help? Read on!
 
-### Run validation the tests
+GhostDriver pushed the evolution of PhantomJS from the start. All the features required by PhantomJS to fit GhostDriver were designed to still feel "consistent" and "at home" with PhantomJS alone.
+
+To drive that effort, I worked on a [PhantomJS fork](https://github.com/detro/phantomjs-ghostdriver), and then
+pushed changes to PhantomJS master once agreed with the rest of the team on the changes.
+
+If you are planning to contribute, that is the PhantomJS you should use.
+
+### Run validation tests
 
 Here I show how to clone this repo and kick start the (Java) tests. You need
 [Java SDK](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
