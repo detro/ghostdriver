@@ -19,6 +19,8 @@ For more info, please take a look at the [changelog](https://github.com/detro/gh
 
 The project was created and is lead by [Ivan De Marino](https://github.com/detro).
 
+IRC channel: [#phantomjs-ghostdriver](http://webchat.freenode.net/?channels=%23phantomjs-ghostdriver).
+
 ## Setup
 
 * Download latest stable PhantomJS from [here](http://phantomjs.org/download.html)
