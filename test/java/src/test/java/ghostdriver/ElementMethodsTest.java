@@ -119,27 +119,6 @@ public class ElementMethodsTest extends BaseTestWithServer {
     }
 
     @Test
-    public void shouldWaitForPossiblePageLoadOnlyWhenClickingOnSomeElement() {
-        WebDriver d = getDriver();
-
-        d.get("http://duckduckgo.com");
-        WebElement inputTextEl = d.findElement(By.id("search_form_input_homepage"));
-        WebElement submitSearchDivWrapperEl = d.findElement(By.id("search_wrapper_homepage"));
-        WebElement submitSearchInputEl = d.findElement(By.id("search_button_homepage"));
-
-        // Enter a query
-        inputTextEl.sendKeys("GhostDriver");
-
-        assertFalse(d.getTitle().contains("GhostDriver"));
-        // Ensure clicking on the Button DIV wrapper DOESN'T expect a pageload
-        submitSearchDivWrapperEl.click();
-        assertFalse(d.getTitle().contains("GhostDriver"));
-        // Instead, clicking on the actual Input element DOES
-        submitSearchInputEl.click();
-        assertTrue(d.getTitle().contains("GhostDriver"));
-    }
-
-    @Test
     public void shouldWaitForOnClickCallbackToFinishBeforeContinuing() {
         server.setHttpHandler("GET", new HttpRequestCallback() {
             @Override
