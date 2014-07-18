@@ -101,7 +101,22 @@ public class ParallelDriversTest {
         } else if (driver.equals(DRIVER_FIREFOX)) {
             return new FirefoxDriver(sCaps);
         } else if (driver.equals(DRIVER_CHROME)) {
-            return new ChromeDriver(sCaps);
+            out.println(String.format("DISPLAY env variable: %s", System.getenv("DISPLAY")));
+
+            ChromeOptions opts = new ChromeOptions();
+            opts.addArguments(
+                    "--no-sandbox",
+                    "--enable-experimental-extension-apis",
+                    "--allow-http-screen-capture");
+            sCaps.setCapability(ChromeOptions.CAPABILITY, opts);
+
+            ChromeDriverService service = new ChromeDriverService.Builder()
+                    .usingAnyFreePort()
+                    .withEnvironment(ImmutableMap.of("DISPLAY", ":10"))
+                    .usingDriverExecutable(new File("/usr/bin/chromedriver"))
+                    .build();
+
+            return new ChromeDriver(service, sCaps);
         } else {
             return new PhantomJSDriver(sCaps);
         }
@@ -164,10 +179,12 @@ public class ParallelDriversTest {
                     if (null != d) d.quit();
                 }
             }).start();
+            out.print(".");
         }
 
         // Wait for all threads to be finished
         ThreadUtils.waitFor(t -> finishedThreads.get() == concurrentBrowsers);
+        out.println();
 
         // Average it
         BigInteger driverStartupTimeAverage = average(driverStartupTimes);
