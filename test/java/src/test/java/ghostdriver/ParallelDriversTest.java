@@ -6,6 +6,7 @@ import org.junit.Test;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeDriverService;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.phantomjs.PhantomJSDriver;
 import org.openqa.selenium.phantomjs.PhantomJSDriverService;
@@ -19,9 +20,7 @@ import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.Clock;
-import java.util.ArrayList;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -108,6 +107,10 @@ public class ParallelDriversTest {
                     .usingAnyFreePort()
                     .build();
             service.start();
+
+            Map<String, Object> chromeOptions = new HashMap<String, Object>();
+            chromeOptions.put("binary", " /opt/google/chrome-beta/chrome");
+            sCaps.setCapability(ChromeOptions.CAPABILITY, chromeOptions);
 
             return new ChromeDriver(service, sCaps);
         } else {
