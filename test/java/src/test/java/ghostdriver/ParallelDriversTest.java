@@ -12,6 +12,7 @@ import org.openqa.selenium.phantomjs.PhantomJSDriverService;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -102,6 +103,7 @@ public class ParallelDriversTest {
             return new FirefoxDriver(sCaps);
         } else if (driver.equals(DRIVER_CHROME)) {
             ChromeDriverService service = new ChromeDriverService.Builder()
+                    .usingDriverExecutable(new File("/usr/bin/chromedriver"))
                     .withEnvironment(ImmutableMap.of("DISPLAY", ":10"))
                     .usingAnyFreePort()
                     .build();
