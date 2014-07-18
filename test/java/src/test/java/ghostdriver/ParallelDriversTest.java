@@ -102,7 +102,7 @@ public class ParallelDriversTest {
             return new FirefoxDriver(sCaps);
         } else if (driver.equals(DRIVER_CHROME)) {
             ChromeDriverService service = new ChromeDriverService.Builder()
-                    .withEnvironment(ImmutableMap.of("DISPLAY", System.getProperty("DISPLAY")))
+                    .withEnvironment(ImmutableMap.of("DISPLAY", ":10"))
                     .usingAnyFreePort()
                     .build();
             service.start();
