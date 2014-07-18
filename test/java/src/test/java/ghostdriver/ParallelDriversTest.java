@@ -105,9 +105,20 @@ public class ParallelDriversTest {
 
             ChromeOptions opts = new ChromeOptions();
             opts.addArguments(
-//                    "--no-sandbox",
+                    "--no-sandbox",
+                    "--disable-hang-monitor",
+                    "--disable-metrics",
+                    "--disable-popup-blocking",
+                    "--disable-prompt-on-repost",
+                    "--start-maximized",
+                    "--no-first-run",
+                    "--activate-on-launch",
+                    "--no-default-browser-check",
+                    "--disable-translate",
+                    "--disable-web-security",
                     "--enable-experimental-extension-apis",
                     "--allow-http-screen-capture");
+            sCaps = DesiredCapabilities.chrome();
             sCaps.setCapability(ChromeOptions.CAPABILITY, opts);
 
 //            ChromeDriverService service = new ChromeDriverService.Builder()
