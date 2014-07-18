@@ -33,6 +33,7 @@ import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.io.IOUtils;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
@@ -119,11 +120,12 @@ public class FileUploadTest extends BaseTestWithServer {
 
     @Test
     public void checkFileUploadFailsIfFileDoesNotExist() throws InterruptedException {
+        assumePhantomJS();
         WebDriver d = getDriver();
 
         // Trying to upload a file that doesn't exist
         d.get(server.getBaseUrl() + "/common/upload.html");
-        d.findElement(By.id("upload")).sendKeys("file_that_does_not_exist.fake");
+        d.findElement(By.id("upload")).sendKeys("/file_that_does_not_exist.fake");
         d.findElement(By.id("go")).submit();
 
         // Uploading files across a network may take a while, even if they're really small.

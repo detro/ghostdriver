@@ -27,6 +27,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package ghostdriver;
 
+import org.junit.Assume;
 import org.junit.Test;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.NoSuchWindowException;
@@ -55,6 +56,8 @@ public class SessionBasicTest extends BaseTest {
 
     @Test(expected = NoSuchWindowException.class)
     public void closeShouldNotTerminatePhantomJSProcess() throws MalformedURLException {
+        assumePhantomJS();
+
         // By default, 1 window is created when Driver is launched
         WebDriver d = getDriver();
         assertEquals(1, d.getWindowHandles().size());

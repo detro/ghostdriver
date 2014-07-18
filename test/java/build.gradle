@@ -68,7 +68,7 @@ tasks.withType(JavaExec) {
 }
 
 test {
-    maxParallelForks = 3
+    maxParallelForks = 256
 
     afterTest { descriptor, result ->
         logger.quiet(result.toString() + " for " + descriptor + " in " + descriptor.getParent())

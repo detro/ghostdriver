@@ -28,6 +28,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package ghostdriver;
 
 import ghostdriver.server.HttpRequestCallback;
+import org.junit.Assume;
 import org.junit.Test;
 import org.openqa.selenium.*;
 import org.openqa.selenium.internal.Locatable;
@@ -39,6 +40,8 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 public class ElementQueryingTest extends BaseTestWithServer {
     @Test
@@ -115,7 +118,7 @@ public class ElementQueryingTest extends BaseTestWithServer {
         assertEquals("The Title of The Item", d.findElement(By.className("item")).findElement(By.className("item-title")).getText());
     }
 
-    @Test(expected = InvalidElementStateException.class)
+    @Test
     public void throwExceptionWhenInteractingWithInvisibleElement() {
         server.setHttpHandler("GET", new HttpRequestCallback() {
             @Override
@@ -143,6 +146,15 @@ public class ElementQueryingTest extends BaseTestWithServer {
         visibleInput.sendKeys(textToType);
         assertEquals(textToType, visibleInput.getAttribute("value"));
 
-        invisibleInput.sendKeys(textToType);
+        try {
+            invisibleInput.sendKeys(textToType);
+            fail();
+        } catch (ElementNotVisibleException enve) {
+            assumeNotPhantomJS();
+            failIfPhantomJS();
+        } catch (InvalidElementStateException iese) {
+            assumePhantomJS();
+            failIfNotPhantomJS();
+        }
     }
 }

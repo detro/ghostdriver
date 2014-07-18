@@ -27,11 +27,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package ghostdriver;
 
-import static org.junit.Assert.assertTrue;
-
+import org.junit.Assume;
+import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.phantomjs.PhantomJSDriverService;
+
+import static org.junit.Assert.assertTrue;
 
 public class AuthBasicTest extends BaseTest {
 
@@ -47,7 +50,13 @@ public class AuthBasicTest extends BaseTest {
         super.prepareDriver();
     }
 
+    @Before
+    public void checkPreconditions() {
+        assumePhantomJS();
+    }
+
     @Test
+    @Ignore
     public void simpleBasicAuthShouldWork() {
         // Get Driver Instance
         WebDriver driver = getDriver();

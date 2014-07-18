@@ -45,6 +45,10 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Properties;
 
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
+
 /**
  * Tests base class.
  * Takes care of initialising the Remote WebDriver
@@ -158,5 +162,21 @@ public abstract class BaseTest {
             mDriver.quit();
             mDriver = null;
         }
+    }
+
+    protected void assumePhantomJS() {
+        assumeTrue(sConfig.getProperty("driver").equals("phantomjs"));
+    }
+
+    protected void assumeNotPhantomJS() {
+        assumeFalse(sConfig.getProperty("driver").equals("phantomjs"));
+    }
+
+    protected void failIfPhantomJS() {
+        if (sConfig.getProperty("driver").equals("phantomjs")) fail();
+    }
+
+    protected void failIfNotPhantomJS() {
+        if (!sConfig.getProperty("driver").equals("phantomjs")) fail();
     }
 }

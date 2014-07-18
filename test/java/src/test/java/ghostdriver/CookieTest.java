@@ -89,6 +89,7 @@ public class CookieTest extends BaseTestWithServer {
 
     @Test
     public void gettingAllCookies() {
+        assumePhantomJS();
         server.setHttpHandler("GET", COOKIE_SETTING_CALLBACK);
         goToPage();
         Cookie[] cookies = getCookies();
@@ -125,6 +126,7 @@ public class CookieTest extends BaseTestWithServer {
 
     @Test
     public void deletingOneCookie() {
+        assumePhantomJS();
         server.setHttpHandler("GET", COOKIE_SETTING_CALLBACK);
         goToPage();
 
@@ -154,6 +156,7 @@ public class CookieTest extends BaseTestWithServer {
 
     @Test
     public void modifyingACookie() {
+        assumePhantomJS();
         server.setHttpHandler("GET", COOKIE_SETTING_CALLBACK);
         goToPage();
 
@@ -176,6 +179,7 @@ public class CookieTest extends BaseTestWithServer {
 
     @Test
     public void shouldRetainCookieInfo() {
+        assumePhantomJS();
         server.setHttpHandler("GET", EMPTY_CALLBACK);
         goToPage();
 

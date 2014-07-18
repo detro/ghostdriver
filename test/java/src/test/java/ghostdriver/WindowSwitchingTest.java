@@ -175,6 +175,7 @@ public class WindowSwitchingTest extends BaseTestWithServer {
 
     @Test
     public void shouldNotBeAbleToSwitchBackToInitialWindowUsingEmptyWindowNameParameter() {
+        assumePhantomJS();
         final WebDriver d = getDriver();
 
         d.get(server.getBaseUrl() + "/common/xhtmlTest.html");

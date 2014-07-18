@@ -28,6 +28,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package ghostdriver;
 
 import ghostdriver.server.HttpRequestCallback;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
@@ -64,6 +65,7 @@ public class WindowHandlesTest extends BaseTestWithServer {
     }
 
     @Test
+    @Ignore
     public void openPopupAndGetCurrentUrl() throws InterruptedException {
         server.setHttpHandler("GET", new HttpRequestCallback() {
             @Override

@@ -54,6 +54,7 @@ public class ScriptExecutionTest extends BaseTest {
     @Test
     public void setTimeoutAsynchronously() {
         WebDriver d = getDriver();
+        d.manage().timeouts().setScriptTimeout(2, TimeUnit.SECONDS);
         d.get("http://www.google.com");
         String res = (String)((JavascriptExecutor) d).executeAsyncScript(
                 "window.setTimeout(arguments[arguments.length - 1], arguments[0], 'done');",
@@ -89,9 +90,10 @@ public class ScriptExecutionTest extends BaseTest {
         assertEquals("abc", stringResult);
     }
 
-    @Ignore("Known issue #140 - see https://github.com/detro/ghostdriver/issues/140)")
+//    @Ignore("Known issue #140 - see https://github.com/detro/ghostdriver/issues/140)")
     @Test
     public void shouldBeAbleToExecuteMultipleAsyncScriptsSequentiallyWithNavigation() {
+        assumeNotPhantomJS();
         // NOTE: This test is supposed to fail!
         // It's a reminder that there is some internal issue in PhantomJS still to address.
 
@@ -112,9 +114,10 @@ public class ScriptExecutionTest extends BaseTest {
         d.get("http://www.google.com/");
     }
 
-    @Ignore("Known issue #140 - see https://github.com/detro/ghostdriver/issues/140)")
+//    @Ignore("Known issue #140 - see https://github.com/detro/ghostdriver/issues/140)")
     @Test
     public void executeAsyncScriptMultipleTimesWithoutCrashing() {
+        assumeNotPhantomJS();
         // NOTE: This test is supposed to fail!
         // It's a reminder that there is some internal issue in PhantomJS still to address.
 

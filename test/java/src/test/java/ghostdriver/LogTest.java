@@ -79,6 +79,7 @@ public class LogTest extends BaseTestWithServer {
 
     @Test
     public void shouldReturnLogTypeHar() {
+        assumePhantomJS();
         WebDriver d = getDriver();
         d.get(server.getBaseUrl() + "/common/iframes.html");
 

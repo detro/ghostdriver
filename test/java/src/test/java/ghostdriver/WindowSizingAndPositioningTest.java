@@ -59,7 +59,7 @@ public class WindowSizingAndPositioningTest extends BaseTest {
 
         d.manage().window().setPosition(new Point(0, 0));
         assertTrue(d.manage().window().getPosition().x == 0);
-        assertTrue(d.manage().window().getPosition().y == 0);
+        assertTrue(d.manage().window().getPosition().y >= 0); //< some desktops top of the screen has menu (i.e. OSX)
     }
 
     @Test
