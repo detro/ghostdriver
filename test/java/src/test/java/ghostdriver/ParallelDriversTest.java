@@ -105,18 +105,19 @@ public class ParallelDriversTest {
 
             ChromeOptions opts = new ChromeOptions();
             opts.addArguments(
-                    "--no-sandbox",
+//                    "--no-sandbox",
                     "--enable-experimental-extension-apis",
                     "--allow-http-screen-capture");
             sCaps.setCapability(ChromeOptions.CAPABILITY, opts);
 
-            ChromeDriverService service = new ChromeDriverService.Builder()
-                    .usingAnyFreePort()
-                    .withEnvironment(ImmutableMap.of("DISPLAY", ":10"))
-                    .usingDriverExecutable(new File("/usr/bin/chromedriver"))
-                    .build();
+//            ChromeDriverService service = new ChromeDriverService.Builder()
+//                    .usingAnyFreePort()
+//                    .withEnvironment(ImmutableMap.of("DISPLAY", ":10"))
+//                    .usingDriverExecutable(new File("/usr/bin/chromedriver"))
+//                    .build();
 
-            return new ChromeDriver(service, sCaps);
+//            return new ChromeDriver(service, sCaps);
+            return new ChromeDriver(sCaps);
         } else {
             return new PhantomJSDriver(sCaps);
         }
