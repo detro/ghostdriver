@@ -1,9 +1,11 @@
 package ghostdriver;
 
+import com.google.common.collect.ImmutableMap;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeDriverService;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.phantomjs.PhantomJSDriver;
 import org.openqa.selenium.phantomjs.PhantomJSDriverService;
@@ -99,7 +101,13 @@ public class ParallelDriversTest {
         } else if (driver.equals(DRIVER_FIREFOX)) {
             return new FirefoxDriver(sCaps);
         } else if (driver.equals(DRIVER_CHROME)) {
-            return new ChromeDriver(sCaps);
+            ChromeDriverService service = new ChromeDriverService.Builder()
+                    .withEnvironment(ImmutableMap.of("DISPLAY", System.getProperty("DISPLAY")))
+                    .usingAnyFreePort()
+                    .build();
+            service.start();
+
+            return new ChromeDriver(service, sCaps);
         } else {
             return new PhantomJSDriver(sCaps);
         }
