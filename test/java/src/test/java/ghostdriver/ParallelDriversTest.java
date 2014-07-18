@@ -101,18 +101,7 @@ public class ParallelDriversTest {
         } else if (driver.equals(DRIVER_FIREFOX)) {
             return new FirefoxDriver(sCaps);
         } else if (driver.equals(DRIVER_CHROME)) {
-            ChromeDriverService service = new ChromeDriverService.Builder()
-                    .usingDriverExecutable(new File("/usr/bin/chromedriver"))
-                    .withEnvironment(ImmutableMap.of("DISPLAY", ":10"))
-                    .usingAnyFreePort()
-                    .build();
-            service.start();
-
-            Map<String, Object> chromeOptions = new HashMap<String, Object>();
-            chromeOptions.put("binary", " /opt/google/chrome-beta/chrome");
-            sCaps.setCapability(ChromeOptions.CAPABILITY, chromeOptions);
-
-            return new ChromeDriver(service, sCaps);
+            return new ChromeDriver(sCaps);
         } else {
             return new PhantomJSDriver(sCaps);
         }
