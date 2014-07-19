@@ -165,24 +165,28 @@ public class ParallelDriversTest {
 
         for (int i = 0; i < concurrentBrowsers; ++i) {
             new Thread(() -> {
-                WebDriver d = null;
+                WebDriver driver = null;
                 long startTime = clock.millis();
                 try {
-                    d = buildDriver();
+                    driver = buildDriver();
+                    final WebDriver fDriver = driver;
+
                     // Establish Driver Startup Time
                     driverStartupTimes.add(clock.millis() - startTime);
 
                     startTime = clock.millis();
-                    d.get(url);
+                    driver.get(url);
 
                     // Do validate script
-                    final WebDriver finalD = d;
-                    ThreadUtils.waitFor(t -> finalD.findElements(By.name("q")).size() > 0, TimeUnit.SECONDS, 1);
-                    WebElement queryField = d.findElement(By.name("q"));
+                    ThreadUtils.waitFor(t -> fDriver.findElements(By.name("q")).size() > 0,
+                            TimeUnit.SECONDS, 2);
+                    WebElement queryField = driver.findElement(By.name("q"));
                     queryField.sendKeys("New Relic");
                     queryField.submit();
 
-                    WebElement firstResult = d.findElement(By.cssSelector("#search a:first-child"));
+                    ThreadUtils.waitFor(t -> fDriver.findElements(By.cssSelector("#search a:first-child")).size() > 0,
+                            TimeUnit.SECONDS, 2);
+                    WebElement firstResult = driver.findElement(By.cssSelector("#search a:first-child"));
                     assertTrue(firstResult.getText().toLowerCase().contains("new relic"));
                     // DONE
                 } catch (Exception e) {
@@ -193,7 +197,7 @@ public class ParallelDriversTest {
                     // Thread is done
                     finishedThreads.incrementAndGet();
 
-                    if (null != d) d.quit();
+                    if (null != driver) driver.quit();
                 }
             }).start();
         }
