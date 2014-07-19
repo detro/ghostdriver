@@ -1,11 +1,11 @@
 package ghostdriver;
 
-import com.google.common.collect.ImmutableMap;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.chrome.ChromeDriverService;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.phantomjs.PhantomJSDriver;
@@ -13,18 +13,21 @@ import org.openqa.selenium.phantomjs.PhantomJSDriverService;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
-import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.Clock;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.lang.System.out;
+import static org.junit.Assert.assertTrue;
 
 public class ParallelDriversTest {
     private static final String CONFIG_FILE        = "../config.ini";
@@ -101,8 +104,6 @@ public class ParallelDriversTest {
         } else if (driver.equals(DRIVER_FIREFOX)) {
             return new FirefoxDriver(sCaps);
         } else if (driver.equals(DRIVER_CHROME)) {
-            out.println(String.format("DISPLAY env variable: %s", System.getenv("DISPLAY")));
-
             ChromeOptions opts = new ChromeOptions();
             opts.addArguments(
                     "--no-sandbox",
@@ -121,13 +122,6 @@ public class ParallelDriversTest {
             sCaps = DesiredCapabilities.chrome();
             sCaps.setCapability(ChromeOptions.CAPABILITY, opts);
 
-//            ChromeDriverService service = new ChromeDriverService.Builder()
-//                    .usingAnyFreePort()
-//                    .withEnvironment(ImmutableMap.of("DISPLAY", ":10"))
-//                    .usingDriverExecutable(new File("/usr/bin/chromedriver"))
-//                    .build();
-
-//            return new ChromeDriver(service, sCaps);
             return new ChromeDriver(sCaps);
         } else {
             return new PhantomJSDriver(sCaps);
@@ -180,6 +174,17 @@ public class ParallelDriversTest {
 
                     startTime = clock.millis();
                     d.get(url);
+
+                    // Do validate script
+                    final WebDriver finalD = d;
+                    ThreadUtils.waitFor(t -> finalD.findElements(By.name("q")).size() > 0, TimeUnit.SECONDS, 1);
+                    WebElement queryField = d.findElement(By.name("q"));
+                    queryField.sendKeys("New Relic");
+                    queryField.submit();
+
+                    WebElement firstResult = d.findElement(By.cssSelector("#search a:first-child"));
+                    assertTrue(firstResult.getText().toLowerCase().contains("new relic"));
+                    // DONE
                 } catch (Exception e) {
                     e.printStackTrace();
                 } finally {
@@ -191,7 +196,6 @@ public class ParallelDriversTest {
                     if (null != d) d.quit();
                 }
             }).start();
-            out.print(".");
         }
 
         // Wait for all threads to be finished
