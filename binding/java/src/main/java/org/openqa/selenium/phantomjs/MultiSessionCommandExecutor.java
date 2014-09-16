@@ -31,7 +31,7 @@ import org.openqa.selenium.remote.HttpCommandExecutor;
 
 /**
  * A specialized {@link org.openqa.selenium.remote.HttpCommandExecutor} that will use a
- * {@link PhantomJSDriverService}. Unlike {@Link PhantomJSCommandExecutor} the lifecycle
+ * {@link PhantomJSDriverService}. Unlike {@link PhantomJSCommandExecutor} the lifecycle
  * of the service is to be managed by the caller, allowing the use of one single service
  * by multiple drivers.
  */
