@@ -45,13 +45,23 @@ under the same name within the [Selenium project](http://docs.seleniumhq.org/doc
 
 ### Include Java Bindings in your Maven project
 
-Just add the following to your `pom.xml`:
+For versions >= 1.2.0, add the following to your `pom.xml`:
+
+```xml
+<dependency>
+    <groupId>com.github.detro</groupId>
+    <artifactId>phantomjsdriver</artifactId>
+    <version>1.2.0</version>
+</dependency>
+```
+
+For versions < 1.2.0, add the following to your `pom.xml`:
 
 ```xml
 <dependency>
     <groupId>com.github.detro.ghostdriver</groupId>
     <artifactId>phantomjsdriver</artifactId>
-    <version>LATEST_VERSION_HERE</version>
+    <version>1.1.0</version>
 </dependency>
 ```
 
@@ -85,10 +95,10 @@ Once started, you can use any `RemoteWebDriver` implementation to send commands 
 * GhostDriver extra Capabilities
     * `phantomjs.page.settings.SETTING = VALUE` - Configure `page.settings`
     on PhantomJS internal page objects (_windows_ in WebDriver context)
-    (see [reference](https://github.com/ariya/phantomjs/wiki/API-Reference-WebPage#wiki-webpage-settings))
+    (see [reference](http://phantomjs.org/api/webpage/property/settings.html))
     * `phantomjs.page.customHeaders.HEADER = VALUE` - Add extra HTTP Headers
     when loading a URL
-    (see [reference](https://github.com/ariya/phantomjs/wiki/API-Reference-WebPage#wiki-webpage-customHeaders))
+    (see [reference](http://phantomjs.org/api/webpage/property/custom-headers.html))
 * PhantomJSDriver (Java-binding) Capabilities
     * `phantomjs.binary.path` - Specify path to PhantomJS executable to use
     * `phantomjs.ghostdriver.path` - Specify path to GhostDriver `main/src.js`
