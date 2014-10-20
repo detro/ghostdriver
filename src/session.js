@@ -113,6 +113,7 @@ ghostdriver.Session = function(desiredCapabilities) {
     _capsPageSettingsProxyPref = "proxy",
     _pageSettings = {},
     _additionalPageSettings = {
+        resourceTimeout: null,
         userName: null,
         password: null
     },
