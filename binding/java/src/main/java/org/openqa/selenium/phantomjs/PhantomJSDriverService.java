@@ -108,14 +108,14 @@ public class PhantomJSDriverService extends DriverService {
     /**
      * Set capabilities with this prefix to apply it to the PhantomJS <code>page.settings.*</code> object.
      * Every PhantomJS WebPage Setting can be used.
-     * See <a href="https://github.com/ariya/phantomjs/wiki/API-Reference#wiki-webpage-settings">PhantomJS docs/a>.
+     * See <a href="http://phantomjs.org/api/webpage/property/settings.html">PhantomJS docs/a>.
      */
     public static final String PHANTOMJS_PAGE_SETTINGS_PREFIX = "phantomjs.page.settings.";
 
     /**
      * Set capabilities with this prefix to apply it to the PhantomJS <code>page.customHeaders.*</code> object.
      * Any header can be used.
-     * See <a href="https://github.com/ariya/phantomjs/wiki/API-Reference-WebPage#wiki-webpage-customHeaders">PhantomJS docs/a>.
+     * See <a href="http://phantomjs.org/api/webpage/property/custom-headers.html">PhantomJS docs/a>.
      */
     public static final String PHANTOMJS_PAGE_CUSTOMHEADERS_PREFIX = "phantomjs.page.customHeaders.";
 

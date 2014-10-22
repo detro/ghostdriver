@@ -128,7 +128,7 @@ public class PhantomJSDriver extends RemoteWebDriver implements TakesScreenshot 
      * Execute a PhantomJS fragment.  Provides extra functionality not found in WebDriver
      * but available in PhantomJS.
      * <p/>
-     * See the <a href="https://github.com/ariya/phantomjs/wiki/API-Reference">PhantomJS API<</a>
+     * See the <a href="http://phantomjs.org/api/">PhantomJS API<</a>
      * for details on what is available.
      * <p/>
      * A 'page' variable pointing to currently selected page is available for use.
