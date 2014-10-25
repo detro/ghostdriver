@@ -32,7 +32,7 @@ apply plugin: "maven"
 apply plugin: "signing"
 
 task wrapper(type: Wrapper) {
-    gradleVersion   = "1.12"
+    gradleVersion   = "2.1"
     jarFile         = "gradle/gradle-wrapper.jar"
 }
 
