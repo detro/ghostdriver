@@ -34,11 +34,16 @@ import org.openqa.selenium.Capabilities;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriverException;
-import org.openqa.selenium.remote.*;
+import org.openqa.selenium.remote.CommandInfo;
+import org.openqa.selenium.remote.DesiredCapabilities;
+import org.openqa.selenium.remote.DriverCommand;
+import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.remote.internal.WebElementToJsonConverter;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import static org.openqa.selenium.remote.http.HttpMethod.POST;
 
 /**
  * A {@link org.openqa.selenium.WebDriver} implementation that controls a PhantomJS running in Remote WebDriver mode.
@@ -164,7 +169,7 @@ public class PhantomJSDriver extends RemoteWebDriver implements TakesScreenshot 
         Map<String, CommandInfo> customCommands = new HashMap<String, CommandInfo>();
 
         customCommands.put(COMMAND_EXECUTE_PHANTOM_SCRIPT,
-                new CommandInfo("/session/:sessionId/phantom/execute", HttpVerb.POST));
+                new CommandInfo("/session/:sessionId/phantom/execute", POST));
 
         return customCommands;
     }
