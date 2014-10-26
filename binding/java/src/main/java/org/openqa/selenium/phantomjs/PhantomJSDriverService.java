@@ -32,7 +32,6 @@ import com.google.common.collect.ImmutableMap;
 import org.openqa.selenium.Capabilities;
 import org.openqa.selenium.Proxy;
 import org.openqa.selenium.WebDriverException;
-import org.openqa.selenium.browserlaunchers.Proxies;
 import org.openqa.selenium.net.PortProber;
 import org.openqa.selenium.os.CommandLine;
 import org.openqa.selenium.remote.service.DriverService;
@@ -175,7 +174,7 @@ public class PhantomJSDriverService extends DriverService {
         // Look for Proxy configuration within the Capabilities
         Proxy proxy = null;
         if (desiredCapabilities != null) {
-            proxy = Proxies.extractProxy(desiredCapabilities);
+            proxy = Proxy.extractFrom(desiredCapabilities);
         }
 
         // Find PhantomJS executable
