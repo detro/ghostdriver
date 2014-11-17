@@ -30,6 +30,7 @@ package org.openqa.selenium.phantomjs;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+
 import org.openqa.selenium.Capabilities;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
@@ -37,6 +38,7 @@ import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.remote.CommandInfo;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.DriverCommand;
+import org.openqa.selenium.remote.HttpCommandExecutor;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.remote.internal.WebElementToJsonConverter;
 
@@ -113,6 +115,16 @@ public class PhantomJSDriver extends RemoteWebDriver implements TakesScreenshot 
      */
     public PhantomJSDriver(PhantomJSDriverService service, Capabilities desiredCapabilities) {
         super(new PhantomJSCommandExecutor(service), desiredCapabilities);
+    }
+
+    /**
+     * Creates a new PhantomJSDriver instance using the given HttpCommandExecutor.
+     *
+     * @param service             The command executor to use
+     * @param desiredCapabilities The capabilities required from PhantomJS/GhostDriver.
+     */
+    public PhantomJSDriver(HttpCommandExecutor executor, Capabilities desiredCapabilities) {
+        super(executor, desiredCapabilities);
     }
 
     /**
