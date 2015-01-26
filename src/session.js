@@ -94,7 +94,7 @@ ghostdriver.Session = function(desiredCapabilities) {
         "proxy"                     : typeof(desiredCapabilities.proxy) === "undefined" ?
             _defaultCapabilities.proxy :
             desiredCapabilities.proxy,
-        "webSecurityEnabled"       : typeof(desiredCapabilities.webSecurityEnabled) === "undefined" ?
+        "webSecurityEnabled"        : typeof(desiredCapabilities.webSecurityEnabled) === "undefined" ?
             _defaultCapabilities.webSecurityEnabled :
             desiredCapabilities.webSecurityEnabled
     },
