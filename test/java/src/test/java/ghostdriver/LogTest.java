@@ -90,5 +90,9 @@ public class LogTest extends BaseTestWithServer {
         for (LogEntry logEntry : logEntries) {
             System.out.println(logEntry);
         }
+
+        String firstRequestMessage = logEntries.getAll().get(0).getMessage();
+        String secondRequestMessage = d.manage().logs().get("har").getAll().get(0).getMessage();
+        assertTrue(secondRequestMessage.length() < firstRequestMessage.length());
     }
 }

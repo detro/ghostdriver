@@ -680,6 +680,7 @@ ghostdriver.Session = function(desiredCapabilities) {
             tmp.push(_createLogEntry(
                 "INFO",
                 JSON.stringify(har.createHar(page, page.resources))));
+            page.resources = [];
             return tmp;
         }
 
