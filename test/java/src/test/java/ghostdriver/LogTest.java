@@ -75,6 +75,10 @@ public class LogTest extends BaseTestWithServer {
         for (LogEntry logEntry : logEntries) {
             System.out.println(logEntry);
         }
+
+        // Clears logs
+        logEntries = d.manage().logs().get("browser");
+        assertEquals(0, logEntries.getAll().size());
     }
 
     @Test
