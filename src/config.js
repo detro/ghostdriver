@@ -78,7 +78,7 @@ function apply () {
 
 exports.init = function(cliArgs) {
     var i, k,
-        regexp = new RegExp("^--([a-z]+)=([a-z0-9_/\\\\:.]+)$", "i"),
+        regexp = new RegExp("^--([a-z]+)=([a-z0-9_\\-/\\\\:.]+)$", "i"),
         regexpRes;
 
     // Loop over all the Command Line Arguments
