@@ -227,7 +227,7 @@ Any **help is welcome**, but bear in mind the following base principles:
 * Squash your commits by theme: I prefer a clean, readable log
 * Maintain consistency with the code-style you are surrounded by
 * If you are going to make a big, substantial change, let's discuss it first
-* I **HATE** CoffeeScript: assume I'm going to laugh off any "contribution" that contains such _aberrating crap_!
+* I **HATE** CoffeeScript: assume I'm going to laugh off any "contribution" that contains such _aberrational crap_!
 * Open Source is NOT a democracy (and I mean it!)
 
 ## License
