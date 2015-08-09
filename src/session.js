@@ -680,12 +680,16 @@ ghostdriver.Session = function(desiredCapabilities) {
             tmp.push(_createLogEntry(
                 "INFO",
                 JSON.stringify(har.createHar(page, page.resources))));
+            page.resources = [];
             return tmp;
         }
 
         // Return Browser Console Log
         if (type === _const.LOG_TYPES.BROWSER) {
-            return _getCurrentWindow().browserLog;
+            page = _getCurrentWindow();
+            tmp = page.browserLog;
+            page.browserLog = [];
+            return tmp;
         }
 
         // Return empty Log
