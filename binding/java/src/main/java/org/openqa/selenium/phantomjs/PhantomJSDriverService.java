@@ -65,7 +65,7 @@ public class PhantomJSDriverService extends DriverService {
     public static final String PHANTOMJS_EXECUTABLE_PATH_PROPERTY = "phantomjs.binary.path";
     /**
      * Optional System property/capability that defines the location of the
-     * GhostDriver JavaScript launch file (i.e. <code>"src/main.js"</code>).
+     * GhostDriver JavaScript launch file (i.e. {@code "src/main.js"}).
      */
     public static final String PHANTOMJS_GHOSTDRIVER_PATH_PROPERTY = "phantomjs.ghostdriver.path";
 
@@ -75,7 +75,7 @@ public class PhantomJSDriverService extends DriverService {
      *
      * <p>
      * Set this capability with a list of of argument strings to add, e.g.
-     * <code>new String[] { "--ignore-ssl-errors=yes", "--load-images=no" }</code>.
+     * {@code new String[] { "--ignore-ssl-errors=yes", "--load-images=no" }}.
      * </p>
      */
     public static final String PHANTOMJS_CLI_ARGS = "phantomjs.cli.args";
@@ -87,32 +87,32 @@ public class PhantomJSDriverService extends DriverService {
      *
      * <p>
      * Set this capability with a list of of argument strings to add, e.g.
-     * <code>new String[] { "--logFile=PATH", "--logLevel=DEBUG" }</code>.
+     * {@code new String[] { "--logFile=PATH", "--logLevel=DEBUG" }}.
      * </p>
      *
      * <p>
      * Acceptable arguments:
      * <ul>
-     *     <li><code>--ip=IP_GHOSTDRIVER_SHOULD_LISTEN_ON</code></li>
-     *     <li><code>--port=PORT_GHOSTDRIVER_SHOULD_LISTEN_ON</code></li>
-     *     <li><code>--hub=HTTP_ADDRESS_TO_SELENIUM_HUB</code></li>
-     *     <li><code>--logFile=PATH_TO_LOGFILE</code></li>
-     *     <li><code>--logLevel=(INFO|DEBUG|WARN|ERROR)</code></li>
-     *     <li><code>--logColor=(false|true)</code></li>
+     *     <li>{@code --ip=IP_GHOSTDRIVER_SHOULD_LISTEN_ON}</li>
+     *     <li>{@code --port=PORT_GHOSTDRIVER_SHOULD_LISTEN_ON}</li>
+     *     <li>{@code --hub=HTTP_ADDRESS_TO_SELENIUM_HUB}</li>
+     *     <li>{@code --logFile=PATH_TO_LOGFILE}</li>
+     *     <li>{@code --logLevel=(INFO|DEBUG|WARN|ERROR)}</li>
+     *     <li>{@code --logColor=(false|true)}</li>
      * </ul>
      * </p>
      */
     public static final String PHANTOMJS_GHOSTDRIVER_CLI_ARGS = "phantomjs.ghostdriver.cli.args";
 
     /**
-     * Set capabilities with this prefix to apply it to the PhantomJS <code>page.settings.*</code> object.
+     * Set capabilities with this prefix to apply it to the PhantomJS {@code page.settings.*} object.
      * Every PhantomJS WebPage Setting can be used.
      * See <a href="http://phantomjs.org/api/webpage/property/settings.html">PhantomJS docs/a>.
      */
     public static final String PHANTOMJS_PAGE_SETTINGS_PREFIX = "phantomjs.page.settings.";
 
     /**
-     * Set capabilities with this prefix to apply it to the PhantomJS <code>page.customHeaders.*</code> object.
+     * Set capabilities with this prefix to apply it to the PhantomJS {@code page.customHeaders.*} object.
      * Any header can be used.
      * See <a href="http://phantomjs.org/api/webpage/property/custom-headers.html">PhantomJS docs/a>.
      */
@@ -247,7 +247,7 @@ public class PhantomJSDriverService extends DriverService {
     }
 
     /**
-     * Find the GhostDriver main file (i.e. <code>"main.js"</code>).
+     * Find the GhostDriver main file (i.e. {@code "main.js"}).
      * <p/>
      * Looks into the Capabilities and the System Properties for
      * {@link PhantomJSDriverService#PHANTOMJS_GHOSTDRIVER_PATH_PROPERTY}.
@@ -343,7 +343,7 @@ public class PhantomJSDriverService extends DriverService {
         /**
          * Sets which GhostDriver the builder will use.
          *
-         * @param file The GhostDriver's <code>main.js</code> to use.
+         * @param file The GhostDriver's {@code main.js} to use.
          * @return A self reference.
          */
         public Builder usingGhostDriver(File file) {

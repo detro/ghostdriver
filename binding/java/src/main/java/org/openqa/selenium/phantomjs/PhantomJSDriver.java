@@ -34,7 +34,6 @@ import com.google.common.collect.Lists;
 import org.openqa.selenium.Capabilities;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
-import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.remote.CommandInfo;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.DriverCommand;
@@ -59,7 +58,7 @@ import static org.openqa.selenium.remote.http.HttpMethod.POST;
  * </ul>
  * <p/>
  * {@link PhantomJSDriverService#PHANTOMJS_EXECUTABLE_PATH_PROPERTY} is required only if the executable
- * <code>phantomjs</code> is not available through the <code>$PATH</code> environment variable:
+ * {@code phantomjs} is not available through the {@code $PATH} environment variable:
  * you can provide it either via the {@link Capabilities} construction parameter object,
  * or via {@link System} Property.
  * <p/>
@@ -120,7 +119,7 @@ public class PhantomJSDriver extends RemoteWebDriver implements TakesScreenshot 
     /**
      * Creates a new PhantomJSDriver instance using the given HttpCommandExecutor.
      *
-     * @param service             The command executor to use
+     * @param executor            The command executor to use
      * @param desiredCapabilities The capabilities required from PhantomJS/GhostDriver.
      */
     public PhantomJSDriver(HttpCommandExecutor executor, Capabilities desiredCapabilities) {
@@ -132,10 +131,9 @@ public class PhantomJSDriver extends RemoteWebDriver implements TakesScreenshot 
      *
      * @param target The target type/format of the Screenshot
      * @return Screenshot of current window, in the requested format
-     * @see TakesScreenshot#getScreenshotAs(org.openqa.selenium.OutputType)
      */
     @Override
-    public <X> X getScreenshotAs(OutputType<X> target) throws WebDriverException {
+    public <X> X getScreenshotAs(OutputType<X> target) {
         // Get the screenshot as base64 and convert it to the requested type (i.e. OutputType<T>)
         String base64 = (String) execute(DriverCommand.SCREENSHOT).getValue();
         return target.convertFromBase64Png(base64);
