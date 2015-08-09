@@ -224,7 +224,7 @@ public class PhantomJSDriverService extends DriverService {
     @SuppressWarnings("deprecation")
     protected static File findPhantomJS(Capabilities desiredCapabilities, String docsLink,
                                         String downloadLink) {
-        String phantomjspath = null;
+        String phantomjspath;
         if (desiredCapabilities != null &&
                 desiredCapabilities.getCapability(PHANTOMJS_EXECUTABLE_PATH_PROPERTY) != null) {
             phantomjspath = (String) desiredCapabilities.getCapability(PHANTOMJS_EXECUTABLE_PATH_PROPERTY);
@@ -262,23 +262,15 @@ public class PhantomJSDriverService extends DriverService {
      */
     protected static File findGhostDriver(Capabilities desiredCapabilities, String docsLink, String downloadLink) {
         // Recover path to GhostDriver from the System Properties or the Capabilities
-        String ghostdriverpath = null;
+        String ghostdriverpath;
         if (desiredCapabilities != null &&
-                (String) desiredCapabilities.getCapability(PHANTOMJS_GHOSTDRIVER_PATH_PROPERTY) != null) {
+                desiredCapabilities.getCapability(PHANTOMJS_GHOSTDRIVER_PATH_PROPERTY) != null) {
             ghostdriverpath = (String) desiredCapabilities.getCapability(PHANTOMJS_GHOSTDRIVER_PATH_PROPERTY);
         } else {
-            ghostdriverpath = System.getProperty(PHANTOMJS_GHOSTDRIVER_PATH_PROPERTY, ghostdriverpath);
+            ghostdriverpath = System.getProperty(PHANTOMJS_GHOSTDRIVER_PATH_PROPERTY);
         }
 
         if (ghostdriverpath != null) {
-            checkState(ghostdriverpath != null,
-                    "The path to the driver executable must be set by the '%s' capability/system property;"
-                            + " for more information, see %s. "
-                            + "The latest version can be downloaded from %s",
-                    PHANTOMJS_GHOSTDRIVER_PATH_PROPERTY,
-                    docsLink,
-                    downloadLink);
-
             // Check few things on the file before returning it
             File ghostdriver = new File(ghostdriverpath);
             checkState(ghostdriver.exists(),
