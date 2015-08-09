@@ -114,8 +114,10 @@ ghostdriver.Session = function(desiredCapabilities) {
     _inputs = ghostdriver.Inputs(),
     _capsPageSettingsPref = "phantomjs.page.settings.",
     _capsPageCustomHeadersPref = "phantomjs.page.customHeaders.",
+    _capsPageZoomFactor = "phantomjs.page.zoomFactor",
     _capsPageSettingsProxyPref = "proxy",
     _pageSettings = {},
+    _pageZoomFactor = 1,
     _additionalPageSettings = {
         resourceTimeout: null,
         userName: null,
@@ -148,7 +150,7 @@ ghostdriver.Session = function(desiredCapabilities) {
         return proxySettings;
     };
 
-    // Searching for `phantomjs.settings.* and phantomjs.customHeaders.*` in the Desired Capabilities and merging with the Negotiated Capabilities
+    // Searching for `phantomjs.settings.* and phantomjs.customHeaders.* phantomjs.page.zoomFactor` in the Desired Capabilities and merging with the Negotiated Capabilities
     // Possible values for settings: @see http://phantomjs.org/api/webpage/property/settings.html.
     // Possible values for customHeaders: @see http://phantomjs.org/api/webpage/property/custom-headers.html.
     for (k in desiredCapabilities) {
@@ -165,6 +167,10 @@ ghostdriver.Session = function(desiredCapabilities) {
                 _negotiatedCapabilities[k] = desiredCapabilities[k];
                 _pageCustomHeaders[headerKey] = desiredCapabilities[k];
             }
+        }
+        if (k.indexOf(_capsPageZoomFactor) === 0){
+            _negotiatedCapabilities[k] = desiredCapabilities[k];
+            _pageZoomFactor = desiredCapabilities[k];
         }
         if (k.indexOf(_capsPageSettingsProxyPref) === 0) {
             proxySettings = _getProxySettingsFromCapabilities(desiredCapabilities[k]);
@@ -382,8 +388,11 @@ ghostdriver.Session = function(desiredCapabilities) {
 
         // 7. Applying Page custom headers received via capabilities
         page.customHeaders = _pageCustomHeaders;
+        
+        // 8. Applying Page zoomFactor
+        page.zoomFactor = _pageZoomFactor;
 
-        // 8. Log Page internal errors
+        // 9. Log Page internal errors
         page.onError = function(errorMsg, errorStack) {
             var stack = '';
 
@@ -403,7 +412,7 @@ ghostdriver.Session = function(desiredCapabilities) {
             page.browserLog.push(_createLogEntry("WARNING", errorMsg + "\n" + stack));
         };
 
-        // 9. Log Page console messages
+        // 10. Log Page console messages
         page.browserLog = [];
         page.onConsoleMessage = function(msg, lineNum, sourceId) {
             // Log as debug
@@ -413,7 +422,7 @@ ghostdriver.Session = function(desiredCapabilities) {
             page.browserLog.push(_createLogEntry("INFO", msg + " (" + sourceId + ":" + lineNum + ")"));
         };
 
-        // 10. Log Page network activity
+        // 11. Log Page network activity
         page.resources = [];
         page.startTime = null;
         page.endTime = null;
@@ -468,6 +477,7 @@ ghostdriver.Session = function(desiredCapabilities) {
 
         _log.info("page.settings", JSON.stringify(page.settings));
         _log.info("page.customHeaders: ", JSON.stringify(page.customHeaders));
+        _log.info("page.zoomFactor: ", JSON.stringify(page.zoomFactor));
 
         return page;
     },
