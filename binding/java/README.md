@@ -2,9 +2,9 @@
 
 * Remember to build jars with:
 ```
-$ JAVA_HOME=/path/to/java/1.6.x/home ./gradlew jars
+$ JAVA_HOME=/path/to/java/1.7.x/home ./gradlew jars
 ```
-Selenium requires JAVA 6.
+Selenium requires JAVA 7.
 
 # Uploading Jars to Sonatype OSS
 
