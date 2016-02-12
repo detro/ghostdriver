@@ -497,11 +497,13 @@ public class PhantomJSDriverService extends DriverService {
                     // Add the canonical path to GhostDriver
                     argsBuilder.add(ghostdriver.getCanonicalPath());
 
-                    // Add the port to listed on
-                    argsBuilder.add(String.format("--port=%d", port));
+                    // Add the port to listen on (if not specified in command line args)
+                    if (!argsContains(this.ghostdriverCommandLineArguments, "port")) {
+                        argsBuilder.add(String.format("--port=%d", port));
+                    }
 
-                    // Add Log File
-                    if (logFile != null) {
+                    // Add Log File (if not specified in command line args)
+                    if (logFile != null && !argsContains(this.ghostdriverCommandLineArguments, "logFile")) {
                         argsBuilder.add(String.format("--logFile=%s", logFile.getAbsolutePath()));
                     }
 
@@ -511,11 +513,13 @@ public class PhantomJSDriverService extends DriverService {
                     }
                 } else { //< Path to GhostDriver not provided: use PhantomJS's internal GhostDriver (default behaviour)
 
-                    // Append required parameters
-                    argsBuilder.add(String.format("--webdriver=%d", port));
+                    // Append required parameters (if not specified in command line args)
+                    if (!argsContains(this.commandLineArguments, "webdriver")) {
+                        argsBuilder.add(String.format("--webdriver=%d", port));
+                    }
 
-                    // Add Log File
-                    if (logFile != null) {
+                    // Add Log File (if not specified in command line args)
+                    if (logFile != null && !argsContains(this.commandLineArguments, "webdriver-logfile")) {
                         argsBuilder.add(String.format("--webdriver-logfile=%s", logFile.getAbsolutePath()));
                     }
                 }
@@ -525,6 +529,19 @@ public class PhantomJSDriverService extends DriverService {
             } catch (IOException e) {
                 throw new WebDriverException(e);
             }
+        }
+
+        private boolean argsContains(String[] args, String targetArg) {
+            if (args != null) {
+                for (int i = 0; i < args.length; i++) {
+                    String arg = args[i];
+                    if (arg.startsWith("--" + targetArg + "=")) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
     }
 }
