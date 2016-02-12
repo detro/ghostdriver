@@ -1,14 +1,20 @@
 # HELP NEEDED
-I have been away from this project for almost 2 years. Family and change or more intense and demanding work, made it impossible to maintain this properly.
+I have been away from this project for 2+ years. Family and change or more intense and demanding work, made it impossible to maintain this properly.
 
 Lots has changed: PhantomJS is now 2.x and lots of this code should be revised, tested and validated to work with latest PhantomJS **whilst** conforming to latest WebDriver specs.
 All of this requires a big effort and commitment that I can't make.
 
-I have been merging some obviously good PR, but not testing them (I assume that you, the submitter, are doing it!).
+I have been merging some obviously good PR, but not testing them: I have to assume that submitters did it!.
 
 __GhostDriver__ needs a proper maintainer. Someone that can prove she/he can understand this codebase and bring it forward. There are many MANY things that need to be done to make this project survive.
 
 **Are you out there?**
+
+---
+
+### Alternatives
+
+If you need a better maintained WebDriver implementation, and write your code in Java, why not checkout [Machine Publishers' jBrowserDriver](https://github.com/MachinePublishers/jBrowserDriver/)? Tell [Dan Hollingsworth](https://github.com/hollingsworthd) I sent you.
 
 ---
 
