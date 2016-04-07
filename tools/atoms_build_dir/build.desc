@@ -32,10 +32,10 @@
 #    * Atoms purposely built for GhostDriver, still based on the default WebDriver Atoms
 #
 
-js_deps(name = "deps",
-  srcs = "*.js",
-  deps = ["//javascript/atoms:deps",
-          "//javascript/webdriver/atoms:deps"])
+js_library(name = "deps",
+  srcs = [ "*.js" ],
+  deps = [ "//javascript/atoms:all_js",
+           "//javascript/webdriver/atoms:all_js" ])
 
 # Atoms created specifically for GhostDriver
 js_fragment(name = "focus_on_element",
@@ -94,7 +94,7 @@ js_fragment(name = "rotate",
   deps = [ ":deps" ])
 
 # List of Atoms that will be compiled for GhostDriver
-js_deps(name = "build_atoms",
+js_library(name = "build_atoms",
   deps = [
     ":focus_on_element",
     ":move_mouse",
@@ -108,11 +108,11 @@ js_deps(name = "build_atoms",
     ":pinch",
     ":rotate",
 
+    "//javascript/atoms/fragments:get_effective_style",
     "//javascript/atoms/fragments:execute_script",
     "//javascript/atoms/fragments:execute_async_script",
     "//javascript/atoms/fragments:get_location",
     "//javascript/atoms/fragments:get_current_position",
-    "//javascript/atoms/fragments:is_online",
 
     "//javascript/chrome-driver:get_location_in_view",
 
