@@ -55,7 +55,7 @@ ext.projectArtefactDir      = "jars/"
 ext.projectMainClass        = "org.openqa.selenium.phantomjs.PhantomJSDriver"
 ext.projectCreator          = "Ivan De Marino (https://github.com/detro)"
 
-ext.seleniumVersion         = "2.44.0"
+ext.seleniumVersion         = "2.47.1"
 
 dependencies {
     ["selenium-java", "selenium-remote-driver"].each {
@@ -63,10 +63,10 @@ dependencies {
     }
 }
 
-// Forces Java 6 compile source/target
+// Forces Java 7 compile source/target
 compileJava {
-    sourceCompatibility = 1.6
-    targetCompatibility = 1.6
+    sourceCompatibility = 1.7
+    targetCompatibility = 1.7
 }
 
 tasks.withType(JavaExec) {
@@ -103,6 +103,10 @@ task sourceJar(type: Jar, dependsOn: classes) {
             "Created-By"                : projectCreator
         )
     }
+}
+
+javadoc {
+    failOnError = false
 }
 
 // JavaDoc Jar
