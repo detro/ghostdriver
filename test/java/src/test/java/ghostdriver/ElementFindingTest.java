@@ -30,6 +30,8 @@ package ghostdriver;
 import ghostdriver.server.HttpRequestCallback;
 import org.junit.Test;
 import org.openqa.selenium.*;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -124,11 +126,12 @@ public class ElementFindingTest extends BaseTestWithServer {
     }
 
     @Test
-    public void findActiveElement() {
+    public void findActiveElement() throws InterruptedException {
         WebDriver d = getDriver();
 
-        d.get("http://www.google.com");
+        d.get("https://www.google.com");
         WebElement inputField = d.findElement(By.cssSelector("input[name='q']"));
+        inputField.click();
         WebElement active = d.switchTo().activeElement();
 
         assertEquals(inputField.getTagName(), active.getTagName());
