@@ -175,6 +175,7 @@ public class PhantomJSDriverService extends DriverService {
      *
      * Each service created by this method will be configured to find and use a free port on the current system.
      *
+     * @param desiredCapabilities Capabilities in which we will look for the path to PhantomJS
      * @return A new ChromeDriverService using the default configuration.
      */
     public static PhantomJSDriverService createDefaultService(Capabilities desiredCapabilities) {
@@ -569,5 +570,6 @@ public class PhantomJSDriverService extends DriverService {
             }
 
             return false;
+        }
     }
 }
