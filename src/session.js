@@ -387,8 +387,11 @@ ghostdriver.Session = function(desiredCapabilities) {
         }
 
         // 7. Applying Page custom headers received via capabilities
-        page.customHeaders = _pageCustomHeaders;
-        
+        // fix custom headers per ariya/phantomjs#13621 and detro/ghostdriver#489
+        for(var k in _pageCustomHeaders) {
+            page.customHeaders[k] = _pageCustomHeaders[k];
+        }
+
         // 8. Applying Page zoomFactor
         page.zoomFactor = _pageZoomFactor;
 
