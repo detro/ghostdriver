@@ -108,7 +108,6 @@ js_library(name = "build_atoms",
     ":pinch",
     ":rotate",
 
-    "//javascript/atoms/fragments:get_effective_style",
     "//javascript/atoms/fragments:execute_script",
     "//javascript/atoms/fragments:execute_async_script",
     "//javascript/atoms/fragments:get_location",

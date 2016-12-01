@@ -1,7 +1,13 @@
-2016-04-07 08:32:09
+2016-10-14 09:40:53
 
-commit 35ae25b1534ae328c771e0856c93e187490ca824 (HEAD, tag: refs/tags/selenium-2.53.0)
+commit 350cf60be65d3e67407d1eaf0a2b8d3f8153e84d (HEAD, tag: refs/tags/selenium-3.0.0)
 Author: Luke Inman-Semerau <luke.semerau@gmail.com>
-Date:   Tue Mar 15 09:39:24 2016 -0700
+Date:   Thu Oct 13 09:36:33 2016 -0700
 
-    bumping version numbers and updating changelog for 2.53 (python & java)
+    py-chrome tests are flaky due to an issue with chromedriver
+    
+    on alert handling we are encountering this bug:
+    https://bugs.chromium.org/p/chromedriver/issues/detail?id=1500
+    
+    seems to occur at random. We either need to ignore the chrome alert tests
+    or wrap every alert call handling the error. until the chromedriver bug is fixed
