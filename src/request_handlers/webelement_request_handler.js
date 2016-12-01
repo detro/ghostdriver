@@ -253,7 +253,9 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
             currWindow = _protoParent.getSessionCurrWindow.call(this, _session, req),
             typeRes,
             text,
-            fsModule = require("fs");
+            fsModule = require("fs"),
+            abortCallback = false,
+            multiFileText;
 
         // Ensure all required parameters are available
         if (typeof(postObj) === "object" && typeof(postObj.value) === "object") {
@@ -262,10 +264,44 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
 
             // Detect if it's an Input File type (that requires special behaviour), and the File actually exists
             if (_getTagName(currWindow).toLowerCase() === "input" &&
-                _getAttribute(currWindow, "type").toLowerCase() === "file" &&
-                fsModule.exists(text)) {
+                _getAttribute(currWindow, "type").toLowerCase() === "file") {
+
+
+                if (_getAttribute(currWindow, "multiple")) {
+                    // split files by \n like chromedriver
+                    multiFileText = text.split("\n");
+
+                    // abort if file does not exist
+                    for (var i = 0; i < multiFileText.length; ++i) {
+                        if (!fsModule.exists(multiFileText[i])) {
+                            _log.debug("File does not exist: " + multiFileText[i]);
+                            res.success(_session.getId());
+                            return;
+                        }
+                    }
+
+                    // this indirectly clicks on the head element
+                    // hack to workaround phantomjs uploadFile api which requires a selector
+                    currWindow.uploadFile("head", multiFileText);
+
+                    // Click on the element!
+                    typeRes = currWindow.evaluate(require("./webdriver_atoms.js").get("click"), _getJSON());
+                    res.respondBasedOnResult(_session, req, typeRes);
+                    return;
+                }
+
+                // abort if file does not exist
+                if (!fsModule.exists(text)) {
+                    _log.debug("File does not exist: " + text);
+                     res.success(_session.getId());
+                    return;
+                }
+
                 // Register a one-shot-callback to fill the file picker once invoked by clicking on the element
                 currWindow.setOneShotCallback("onFilePicker", function(oldFile) {
+                    if (abortCallback) {
+                        return;
+                    }
                     // Send the response as soon as we are done setting the value in the "input[type=file]" element
                     setTimeout(function() {
                         res.respondBasedOnResult(_session, req, typeRes);
@@ -276,6 +312,12 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
 
                 // Click on the element!
                 typeRes = currWindow.evaluate(require("./webdriver_atoms.js").get("click"), _getJSON());
+                typeRes = JSON.parse(typeRes);
+                if (typeRes && typeRes.status !== 0) {
+                    abortCallback = true;
+                    res.respondBasedOnResult(_session, req, typeRes);
+                    return;
+                }
             } else {
                 // Normalize for special characters
                 text = _normalizeSpecialChars(text);
@@ -283,6 +325,11 @@ ghostdriver.WebElementReqHand = function(idOrElement, session) {
                 // Execute the "type" atom on an empty string only to force focus to the element.
                 // TODO: This is a hack that needs to be corrected with a proper method to set focus.
                 typeRes = currWindow.evaluate(require("./webdriver_atoms.js").get("type"), _getJSON(), "");
+                typeRes = JSON.parse(typeRes);
+                if (typeRes && typeRes.status !== 0) {
+                    res.respondBasedOnResult(_session, req, typeRes);
+                    return;
+                }
 
                 // Send keys to the page, using Native Events
                 _session.inputs.sendKeys(_session, text);
