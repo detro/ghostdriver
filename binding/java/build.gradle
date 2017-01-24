@@ -45,8 +45,9 @@ compileJava {
     options.compilerArgs.add("-Xlint:deprecation")
 }
 
+ext.seleniumVersion         = "3.0.0"
 project.archivesBaseName    = project.name
-project.version             = "1.3.0"
+project.version             = "$seleniumVersion-SNAPSHOT"
 
 ext.projectGroupId          = "com.github.detro"
 ext.projectArtifactId       = "phantomjsdriver"
@@ -55,18 +56,15 @@ ext.projectArtefactDir      = "jars/"
 ext.projectMainClass        = "org.openqa.selenium.phantomjs.PhantomJSDriver"
 ext.projectCreator          = "Ivan De Marino (https://github.com/detro)"
 
-ext.seleniumVersion         = "2.44.0"
 
 dependencies {
-    ["selenium-java", "selenium-remote-driver"].each {
-        compile "org.seleniumhq.selenium:$it:$seleniumVersion"
-    }
+    compile "org.seleniumhq.selenium:selenium-remote-driver:$seleniumVersion"
 }
 
-// Forces Java 6 compile source/target
+// Forces Java 8 compile source/target
 compileJava {
-    sourceCompatibility = 1.6
-    targetCompatibility = 1.6
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
 }
 
 tasks.withType(JavaExec) {
