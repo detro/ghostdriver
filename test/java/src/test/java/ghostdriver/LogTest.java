@@ -33,6 +33,11 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.logging.LogEntries;
 import org.openqa.selenium.logging.LogEntry;
+import org.openqa.selenium.logging.LogType;
+import org.openqa.selenium.logging.LoggingPreferences;
+import org.openqa.selenium.remote.CapabilityType;
+import java.util.logging.Level;
+import org.junit.BeforeClass;
 
 import java.util.Set;
 
@@ -40,6 +45,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class LogTest extends BaseTestWithServer {
+
+    @BeforeClass
+    public static void setCustomHeaders() {
+        LoggingPreferences logPrefs = new LoggingPreferences();
+        logPrefs.enable(LogType.BROWSER, Level.ALL);
+        logPrefs.enable("har", Level.ALL);
+        sCaps.setCapability(CapabilityType.LOGGING_PREFS, logPrefs);
+    }
+
     @Test
     public void shouldReturnListOfAvailableLogs() {
         WebDriver d = getDriver();

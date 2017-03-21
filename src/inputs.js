@@ -317,7 +317,7 @@ ghostdriver.Inputs = function () {
     },
 
     _mouseButtonUp = function (session, button) {
-        _mouseButtonEvent(session, "mouseUp", button);
+        _mouseButtonEvent(session, "mouseup", button);
     },
 
     _keyEvent = function (session, eventType, keyCode) {

@@ -54,6 +54,7 @@ public class CookieTest extends BaseTestWithServer {
             javax.servlet.http.Cookie cookie = new javax.servlet.http.Cookie("test", "test");
             cookie.setDomain(".localhost");
             cookie.setMaxAge(360);
+
             res.addCookie(cookie);
 
             cookie = new javax.servlet.http.Cookie("test2", "test2");
@@ -90,24 +91,25 @@ public class CookieTest extends BaseTestWithServer {
     public void gettingAllCookies() {
         server.setHttpHandler("GET", COOKIE_SETTING_CALLBACK);
         goToPage();
+        Cookie[] cookies = getCookies();
 
-        assertEquals(2, getCookies().length);
+        assertEquals(2, cookies.length);
 
         Cookie cookie = driver.manage().getCookieNamed("test");
-
         assertEquals("test", cookie.getName());
         assertEquals("test", cookie.getValue());
         assertEquals(".localhost", cookie.getDomain());
         assertEquals("/", cookie.getPath());
         assertTrue(cookie.getExpiry() != null);
         assertEquals(false, cookie.isSecure());
-        cookie = driver.manage().getCookieNamed("test2");
-        assertEquals("test2", cookie.getName());
-        assertEquals("test2", cookie.getValue());
-        assertEquals(".localhost", cookie.getDomain());
-        assertEquals("/", cookie.getPath());
-        assertEquals(false, cookie.isSecure());
-        assertTrue(cookie.getExpiry() == null);
+
+        Cookie cookie2 = driver.manage().getCookieNamed("test2");
+        assertEquals("test2", cookie2.getName());
+        assertEquals("test2", cookie2.getValue());
+        assertEquals(".localhost", cookie2.getDomain());
+        assertEquals("/", cookie2.getPath());
+        assertEquals(false, cookie2.isSecure());
+        assertTrue(cookie2.getExpiry() == null);
     }
 
     @Test
@@ -143,7 +145,7 @@ public class CookieTest extends BaseTestWithServer {
         server.setHttpHandler("GET", EMPTY_CALLBACK);
         goToPage();
 
-        driver.manage().addCookie(new Cookie("newCookie", "newValue", ".localhost", "/", null));
+        driver.manage().addCookie(new Cookie("newCookie", "newValue", ".localhost", "/", null, false, false));
 
         Cookie[] cookies = getCookies();
         assertEquals(1, cookies.length);
@@ -152,6 +154,7 @@ public class CookieTest extends BaseTestWithServer {
         assertEquals(".localhost", cookies[0].getDomain());
         assertEquals("/", cookies[0].getPath());
         assertEquals(false, cookies[0].isSecure());
+        assertEquals(false, cookies[0].isHttpOnly());
     }
 
     @Test
@@ -159,24 +162,21 @@ public class CookieTest extends BaseTestWithServer {
         server.setHttpHandler("GET", COOKIE_SETTING_CALLBACK);
         goToPage();
 
-        driver.manage().addCookie(new Cookie("test", "newValue", ".localhost", "/", null, false));
+        driver.manage().addCookie(new Cookie("test", "newValue", "localhost", "/", null, false));
 
-        assertEquals(2, getCookies().length);
+        Cookie[] cookies = getCookies();
+        assertEquals(2, cookies.length);
+        assertEquals("test", cookies[1].getName());
+        assertEquals("newValue", cookies[1].getValue());
+        assertEquals(".localhost", cookies[1].getDomain());
+        assertEquals("/", cookies[1].getPath());
+        assertEquals(false, cookies[1].isSecure());
 
-        Cookie cookie = driver.manage().getCookieNamed("test");
-
-        assertEquals("test", cookie.getName());
-        assertEquals("newValue", cookie.getValue());
-        assertEquals(".localhost", cookie.getDomain());
-        assertEquals("/", cookie.getPath());
-        assertEquals(false, cookie.isSecure());
-
-        cookie = driver.manage().getCookieNamed("test2");
-        assertEquals("test2", cookie.getName());
-        assertEquals("test2", cookie.getValue());
-        assertEquals(".localhost", cookie.getDomain());
-        assertEquals("/", cookie.getPath());
-        assertEquals(false, cookie.isSecure());
+        assertEquals("test2", cookies[0].getName());
+        assertEquals("test2", cookies[0].getValue());
+        assertEquals(".localhost", cookies[0].getDomain());
+        assertEquals("/", cookies[0].getPath());
+        assertEquals(false, cookies[0].isSecure());
     }
 
     @Test
@@ -189,7 +189,7 @@ public class CookieTest extends BaseTestWithServer {
                 new Cookie.Builder("fish", "cod")
                         .expiresOn(new Date(System.currentTimeMillis() + 100 * 1000)) //< now + 100sec
                         .path("/404")
-                        .domain(".localhost")
+                        .domain("localhost")
                         .build();
         driver.manage().addCookie(addedCookie);
 
@@ -318,5 +318,25 @@ public class CookieTest extends BaseTestWithServer {
         c = d.manage().getCookieNamed(ckey);
         assertNotNull(c);
         assertEquals("", c.getValue());
+    }
+
+    @Test
+    public void addingACookieWithDefaults() {
+        server.setHttpHandler("GET", EMPTY_CALLBACK);
+        goToPage();
+        long startTime = new Date().getTime();
+
+        driver.manage().addCookie(new Cookie("newCookie", "newValue"));
+
+        Cookie[] cookies = getCookies();
+        assertEquals(1, cookies.length);
+        assertEquals("newCookie", cookies[0].getName());
+        assertEquals("newValue", cookies[0].getValue());
+        assertEquals(".localhost", cookies[0].getDomain());
+        assertEquals("/", cookies[0].getPath());
+        assertEquals(false, cookies[0].isSecure());
+        assertEquals(false, cookies[0].isHttpOnly());
+        // expiry > 19 years in the future
+        assertTrue(startTime + 599184000000L <= cookies[0].getExpiry().getTime());
     }
 }

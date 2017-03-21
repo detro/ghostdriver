@@ -34,77 +34,98 @@ goog.provide('phantomjs.atoms.inject.action');
 goog.require('bot.action');
 goog.require('bot.inject');
 goog.require('goog.dom.selection');
+goog.require('goog.style');
 goog.require('webdriver.atoms.element');
+goog.require('webdriver.chrome');
 
 /**
- * Focuses on the given element if it is not already the active element.
+ * Test if an element is a file input element.
+ *
+ * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to test.
+ * @return {(string|{status: bot.ErrorCode.<number>, value: *})} A stringified {@link bot.response.ResponseObject}.
+ */
+phantomjs.atoms.inject.action.isFileInput = function(element) {
+    return bot.inject.executeScript(function(e) {
+        if (e.tagName.toLowerCase() === "input") {
+            return e.type.toLowerCase() === "file";
+        }
+        return false;
+    }, [element], true);
+};
+
+/**
+ * Test if an element is a content editable
+ *
+ * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to test.
+ * @return {(string|{status: bot.ErrorCode.<number>, value: *})} A stringified {@link bot.response.ResponseObject}.
+ */
+phantomjs.atoms.inject.action.isContentEditable = function(element) {
+    return bot.inject.executeScript(function(e) {
+        return e.isContentEditable;
+    }, [element], true);
+};
+
+/**
+ * Test if two elements are the same node.
+ *
+ * @param {!{bot.inject.ELEMENT_KEY:string}} elementa The first element
+ * @param {!{bot.inject.ELEMENT_KEY:string}} elementb The second element
+ * @return {(string|{status: bot.ErrorCode.<number>, value: *})} A stringified {@link bot.response.ResponseObject}.
+ */
+phantomjs.atoms.inject.action.equals = function(elementa, elementb) {
+    return bot.inject.executeScript(function(a, b) {
+        return a.isSameNode(b);
+    }, [elementa, elementb], true);
+};
+
+/**
+ * Get the frame name or set the value if it does not exist
+ *
+ * @param {!{bot.inject.ELEMENT_KEY:string}} element The frame element
+ * @return {(string|{status: bot.ErrorCode.<number>, value: *})} A stringified {@link bot.response.ResponseObject}.
+ */
+phantomjs.atoms.inject.action.frameName = function(element) {
+    return bot.inject.executeScript(function(e) {
+        if (!e.name && !e.id) {
+            e.name = 'random_name_id_' + new Date().getTime();
+            e.id = e.name;
+        }
+        return e.name || e.id;
+    }, [element], true);
+};
+
+/**
+ * Get the elements tag name.
  *
  * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to focus on.
  * @return {(string|{status: bot.ErrorCode.<number>, value: *})} A stringified {@link bot.response.ResponseObject}.
- * @see bot.action.focusOnElement
  */
-phantomjs.atoms.inject.action.focusOnElement = function(element) {
-    return bot.inject.executeScript(bot.action.focusOnElement, [element], true);
+phantomjs.atoms.inject.action.getName = function(element) {
+    return bot.inject.executeScript(function(e) {
+        return e.tagName.toLowerCase();
+    }, [element], true);
 };
 
 /**
- * Moves the mouse over the given {@code element} with a virtual mouse.
+ * Get the current location
  *
- * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to move to.
- * @param {!{x:number,y:number}} opt_coords Mouse position relative to the element (optional).
+ * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to focus on.
  * @return {(string|{status: bot.ErrorCode.<number>, value: *})} A stringified {@link bot.response.ResponseObject}.
  */
-phantomjs.atoms.inject.action.moveMouse = function(element, opt_coords) {
-    return bot.inject.executeScript(bot.action.moveMouse, [element, opt_coords], true);
+phantomjs.atoms.inject.action.getLocation = function(element) {
+    return bot.inject.executeScript(goog.style.getPageOffset, [element], true);
 };
 
 /**
- * Right-clicks on the given {@code element} with a virtual mouse.
+ * Get the current location in view
  *
- * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to right-click.
- * @param {!{x:number,y:number}} opt_coords Mouse position relative to the element (optional).
+ * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to focus on.
  * @return {(string|{status: bot.ErrorCode.<number>, value: *})} A stringified {@link bot.response.ResponseObject}.
  */
-phantomjs.atoms.inject.action.rightClick = function(element, opt_coords) {
-    return bot.inject.executeScript(bot.action.rightClick, [element, opt_coords], true);
+phantomjs.atoms.inject.action.getLocationInView = function(element) {
+    return bot.inject.executeScript(webdriver.chrome.getLocationInView, [element], true);
 };
 
-/**
- * Double-clicks on the given {@code element} with a virtual mouse.
- *
- * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to double-click.
- * @param {!{x:number,y:number}} opt_coords Mouse position relative to the element (optional).
- * @return {(string|{status: bot.ErrorCode.<number>, value: *})} A stringified {@link bot.response.ResponseObject}.
- */
-phantomjs.atoms.inject.action.doubleClick = function(element, opt_coords) {
-    return bot.inject.executeScript(bot.action.doubleClick, [element, opt_coords], true);
-};
-
-/**
- * Scrolls the mouse wheel on the given {@code element} with a virtual mouse.
- *
- * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to scroll the mouse wheel on.
- * @param {number} ticks Number of ticks to scroll the mouse wheel;
- *   a positive number scrolls down and a negative scrolls up.
- * @param {!{x:number,y:number}} opt_coords Mouse position relative to the element (optional).
- * @return {(string|{status: bot.ErrorCode.<number>, value: *})} A stringified {@link bot.response.ResponseObject}.
- */
-phantomjs.atoms.inject.action.scrollMouse = function(element, ticks, opt_coords) {
-    return bot.inject.executeScript(bot.action.scrollMouse, [element, ticks, opt_coords], true);
-};
-
-/**
- * Drags the given {@code element} by (dx, dy) with a virtual mouse.
- *
- * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to drag.
- * @param {number} dx Increment in x coordinate.
- * @param {number} dy Increment in y coordinate.
- * @param {!{x:number,y:number}} opt_coords Drag start position relative to the element.
- * @return {(string|{status: bot.ErrorCode.<number>, value: *})} A stringified {@link bot.response.ResponseObject}.
- */
-phantomjs.atoms.inject.action.drag = function(element, dx, dy, opt_coords) {
-    return bot.inject.executeScript(bot.action.drag, [element, dx, dy, opt_coords], true);
-};
 
 /**
  * Scrolls the given {@code element} in to the current viewport. Aims to do the
@@ -118,59 +139,4 @@ phantomjs.atoms.inject.action.drag = function(element, dx, dy, opt_coords) {
  */
 phantomjs.atoms.inject.action.scrollIntoView = function(element, opt_coords) {
     return bot.inject.executeScript(bot.action.scrollIntoView, [element, opt_coords], true);
-};
-
-/**
- * Taps on the given {@code element} with a virtual touch screen.
- *
- * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to tap.
- * @param {!{x:number,y:number}} opt_coords Finger position relative to the target.
- * @return {(string|{status: bot.ErrorCode.<number>, value: *})} A stringified {@link bot.response.ResponseObject}.
- */
-phantomjs.atoms.inject.action.tap = function(element, opt_coords) {
-    return bot.inject.executeScript(bot.action.tap, [element, opt_coords], true);
-};
-
-/**
- * Swipes the given {@code element} by (dx, dy) with a virtual touch screen.
- *
- * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to swipe.
- * @param {number} dx Increment in x coordinate.
- * @param {number} dy Increment in y coordinate.
- * @param {!{x:number,y:number}} opt_coords Swipe start position relative to the element.
- * @return {(string|{status: bot.ErrorCode.<number>, value: *})} A stringified {@link bot.response.ResponseObject}.
- */
-phantomjs.atoms.inject.action.swipe = function(element, dx, dy, opt_coords) {
-    return bot.inject.executeScript(bot.action.swipe, [element, dx, dy, opt_coords], true);
-};
-
-/**
- * Pinches the given {@code element} by the given distance with a virtual touch
- * screen. A positive distance moves two fingers inward toward each and a
- * negative distances spreds them outward. The optional coordinate is the point
- * the fingers move towards (for positive distances) or away from (for negative
- * distances); and if not provided, defaults to the center of the element.
- *
- * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to pinch.
- * @param {number} distance The distance by which to pinch the element.
- * @param {!{x:number,y:number}} opt_coords Position relative to the element at the center of the pinch.
- * @return {(string|{status: bot.ErrorCode.<number>, value: *})} A stringified {@link bot.response.ResponseObject}.
- */
-phantomjs.atoms.inject.action.pinch = function(element, distance, opt_coords) {
-    return bot.inject.executeScript(bot.action.pinch, [element, distance, opt_coords], true);
-};
-
-/**
- * Rotates the given {@code element} by the given angle with a virtual touch
- * screen. A positive angle moves two fingers clockwise and a negative angle
- * moves them counter-clockwise. The optional coordinate is the point to
- * rotate around; and if not provided, defaults to the center of the element.
- *
- * @param {!{bot.inject.ELEMENT_KEY:string}} element The element to rotate.
- * @param {number} angle The angle by which to rotate the element.
- * @param {!{x:number,y:number}} opt_coords Position relative to the element at the center of the rotation.
- * @return {(string|{status: bot.ErrorCode.<number>, value: *})} A stringified {@link bot.response.ResponseObject}.
- */
-phantomjs.atoms.inject.action.rotate = function(element, angle, opt_coords) {
-    return bot.inject.executeScript(bot.action.rotate, [element, angle, opt_coords], true);
 };

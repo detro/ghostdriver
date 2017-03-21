@@ -39,27 +39,37 @@ repositories {
 }
 
 ext.commonsFileUploadVersion = "1.3"
-ext.seleniumVersion = "2.41.0"
-ext.junitVersion = "4.11"
+ext.seleniumVersion = "3.0.0"
 ext.jettyVersion = "6.1.21"
 ext.jsr305Version = "2.0.1"
 ext.browsermobProxyClientVersion = "0.1.3"
-ext.phantomjsdriverVersion = "1.2.0"
+ext.phantomjsdriverVersion = "2.0.0"
+
+configurations {
+    // introduces a transitive dependency on selenium 2.53
+    // cyclic dependency on selenium-java
+    all*.exclude group: 'com.codeborne', module: 'phantomjsdriver'
+
+    // not included in selenium 3.+
+    all*.exclude group: 'org.seleniumhq.selenium', module: 'selenium-htmlunit-driver'
+}
 
 dependencies {
     // Test Dependencies
-    ["selenium-java", "selenium-remote-driver"].each {
-        testCompile "org.seleniumhq.selenium:$it:$seleniumVersion"
-    }
+    testCompile "org.seleniumhq.selenium:selenium-chrome-driver:$seleniumVersion"
+    testCompile "org.seleniumhq.selenium:selenium-edge-driver:$seleniumVersion"
+    testCompile "org.seleniumhq.selenium:selenium-firefox-driver:$seleniumVersion"
+    testCompile "org.seleniumhq.selenium:selenium-ie-driver:$seleniumVersion"
+    testCompile "org.seleniumhq.selenium:selenium-opera-driver:$seleniumVersion"
+    testCompile "org.seleniumhq.selenium:selenium-safari-driver:$seleniumVersion"
+    testCompile "org.seleniumhq.selenium:selenium-support:$seleniumVersion"
     testCompile "com.google.code.findbugs:jsr305:$jsr305Version"
-    testCompile "junit:junit-dep:$junitVersion"
     testCompile "org.mortbay.jetty:jetty:$jettyVersion"
     testCompile "commons-fileupload:commons-fileupload:$commonsFileUploadVersion"
     testCompile "com.github.detro:browsermob-proxy-client:$browsermobProxyClientVersion"
 
     // Library under test (PhantomJS Driver, aka "PhantomJS WebDriver Java Binding")
-//    testCompile files("../../binding/java/jars/phantomjsdriver-1.2.0.jar")
-    testCompile "com.github.detro:phantomjsdriver:$phantomjsdriverVersion"
+    testCompile files("../../binding/java/jars/phantomjsdriver-${phantomjsdriverVersion}.jar")
 }
 
 tasks.withType(JavaExec) {

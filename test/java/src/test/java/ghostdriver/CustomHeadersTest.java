@@ -1,8 +1,7 @@
 /*
 This file is part of the GhostDriver by Ivan De Marino <http://ivandemarino.me>.
 
-Copyright (c) 2017, Jason Gowan
-Copyright (c) 2012-2014, Ivan De Marino <http://ivandemarino.me>
+Copyright (c) 2016, Jason Gowan
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -28,28 +27,25 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package ghostdriver;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
+import org.junit.BeforeClass;
 import org.junit.Test;
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebElement;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.phantomjs.PhantomJSDriverService;
-import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.WebDriverException;
-import org.junit.BeforeClass;
+import org.openqa.selenium.By;
 
 import ghostdriver.server.HttpRequestCallback;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-public class AuthBasicTest extends BaseTestWithServer {
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertEquals;
 
-    // credentials for testing, no one would ever use these
-    private final static String userName = "admin";
-    private final static String password = "admin";
+public class CustomHeadersTest extends BaseTestWithServer {
+
+    private static final String CUSTOM_HEADER_NAME = "My-Custom-Header";
+    private static final String CUSTOM_HEADER = "my value";
 
     @BeforeClass
     public static void setCustomHeaders() {
@@ -57,60 +53,39 @@ public class AuthBasicTest extends BaseTestWithServer {
                 "phantomjs.page.customHeaders.Accept-Encoding",
                 "gzip, deflate"
                 );
+        sCaps.setCapability(
+                "phantomjs.page.customHeaders."+CUSTOM_HEADER_NAME,
+                CUSTOM_HEADER
+        );
     }
 
-    @Override
-    public void prepareDriver() throws Exception {
-        sCaps.setCapability(PhantomJSDriverService.PHANTOMJS_PAGE_SETTINGS_PREFIX + "userName", userName);
-        sCaps.setCapability(PhantomJSDriverService.PHANTOMJS_PAGE_SETTINGS_PREFIX + "password", password);
-
-        super.prepareDriver();
+    // regression test for detro/ghostdriver#489
+    @Test
+    public void testAcceptEncodingHeader() {
+        WebDriver d = getDriver();
+        d.get("https://cn.bing.com");
+        assertFalse(d.getTitle().isEmpty());
     }
 
     @Test
-    public void simpleBasicAuthShouldWork() {
-        // Get Driver Instance
-        WebDriver driver = getDriver();
-
-        // wrong password
-        driver.get(String.format("http://httpbin.org/basic-auth/%s/Wrong%s", userName, password));
-        assertTrue(!driver.getPageSource().contains("authenticated"));
-
-        // we should be authorized
-        driver.get(String.format("http://httpbin.org/basic-auth/%s/%s", userName, password));
-        assertTrue(driver.getPageSource().contains("authenticated"));
-    }
-
-    // we should be able to interact with pages that have content security policies
-    // @Ignore
-    @Test
-    public void canSendKeysAndClickOnPageWithCSP() {
+    public void testCustomHeaders() {
         server.setHttpHandler("GET", new HttpRequestCallback() {
             @Override
             public void call(HttpServletRequest req, HttpServletResponse res) throws IOException {
-                res.addHeader("Content-Security-Policy", "default-src 'self'; script-src 'self';");
                 res.getOutputStream().println(
                         "<html>\n" +
                                 "<head>\n" +
                                 "</head>\n" +
                                 "<body>\n" +
-                                "<input id='username' />\n" +
+                                "<div name=\"" + CUSTOM_HEADER_NAME + "\" value=\"" + req.getHeader(CUSTOM_HEADER_NAME) + "\"></div>\n" +
                                 "</body>\n" +
                                 "</html>");
             }
         });
 
-        // Get Driver Instance
         WebDriver d = getDriver();
         d.get(server.getBaseUrl());
-
-        WebElement element = d.findElement(By.id("username"));
-        element.sendKeys("jesg");
-        element.click();
-        try {
-            ((JavascriptExecutor) d).executeScript("1+1");
-            fail("we should not be able to eval javascript on csp page");
-        } catch (WebDriverException e) {}
+        String actualCustomHeader = d.findElement(By.name(CUSTOM_HEADER_NAME)).getAttribute("value");
+        assertEquals(CUSTOM_HEADER, actualCustomHeader);
     }
-
 }

@@ -74,7 +74,7 @@ public class ElementMethodsTest extends BaseTestWithServer {
         WebDriver d = getDriver();
 
         d.get("http://www.google.com");
-        WebElement link = d.findElement(By.cssSelector("a[href=\"/intl/en/ads/\"]"));
+        WebElement link = d.findElement(By.cssSelector("a[href*=\"/intl/en/ads/\"]"));
         link.click();
 
         assertTrue(d.getTitle().contains("Ads"));

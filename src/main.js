@@ -34,8 +34,9 @@ ghostdriver = {
     system  : require("system"),
     hub     : require("./hub_register.js"),
     logger  : require("./logger.js"),
+    webdriver_logger  : require("./webdriver_logger.js"),
     config  : null,                         //< this will be set below
-    version : "1.2.0"
+    version : "2.0.0"
 };
 
 // create logger
@@ -62,6 +63,7 @@ phantom.injectJs("request_handlers/router_request_handler.js");
 phantom.injectJs("webelementlocator.js");
 
 try {
+    _log.info("Main", "Ghost Driver Version " + ghostdriver.version);
     // HTTP Request Router
     router = new ghostdriver.RouterReqHand();
 
@@ -74,12 +76,14 @@ try {
             _log.info("Main", "registering to Selenium HUB"+
                 " '" + ghostdriver.config.hub + "' version: " + ghostdriver.config.version +
                 " using '" + ghostdriver.config.ip + ":" + ghostdriver.config.port + "' with " +
+                (ghostdriver.config.remoteHost ? "remoteHost:" + ghostdriver.config.remoteHost + " " : "") +
                 ghostdriver.config.proxy + " as remote proxy.");
             ghostdriver.hub.register(ghostdriver.config.ip,
                 ghostdriver.config.port,
                 ghostdriver.config.hub,
                 ghostdriver.config.proxy,
-                ghostdriver.config.version);
+                ghostdriver.config.version,
+                ghostdriver.config.remoteHost);
         }
     } else {
         throw new Error("Could not start Ghost Driver");

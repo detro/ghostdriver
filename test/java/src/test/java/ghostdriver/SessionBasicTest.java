@@ -31,7 +31,7 @@ import org.junit.Test;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.NoSuchWindowException;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.remote.SessionNotFoundException;
+import org.openqa.selenium.NoSuchSessionException;
 
 import java.net.MalformedURLException;
 
@@ -40,7 +40,7 @@ import static org.junit.Assert.assertNotNull;
 
 public class SessionBasicTest extends BaseTest {
 
-    @Test(expected = SessionNotFoundException.class)
+    @Test(expected = NoSuchSessionException.class)
     public void quitShouldTerminatePhantomJSProcess() throws MalformedURLException {
         // Get Driver Instance
         WebDriver d = getDriver();

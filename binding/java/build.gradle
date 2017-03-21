@@ -29,7 +29,8 @@ apply plugin: "java"
 apply plugin: "idea"
 apply plugin: "eclipse"
 apply plugin: "maven"
-apply plugin: "signing"
+
+group "com.github.detro"
 
 task wrapper(type: Wrapper) {
     gradleVersion   = "2.5"
@@ -38,6 +39,8 @@ task wrapper(type: Wrapper) {
 
 repositories {
     mavenCentral()
+    jcenter()
+    maven { url "https://jitpack.io" }
 }
 
 compileJava {
@@ -45,8 +48,9 @@ compileJava {
     options.compilerArgs.add("-Xlint:deprecation")
 }
 
+ext.seleniumVersion         = "3.0.0"
 project.archivesBaseName    = project.name
-project.version             = "1.3.0"
+project.version             = "2.0.0"
 
 ext.projectGroupId          = "com.github.detro"
 ext.projectArtifactId       = "phantomjsdriver"
@@ -55,18 +59,15 @@ ext.projectArtefactDir      = "jars/"
 ext.projectMainClass        = "org.openqa.selenium.phantomjs.PhantomJSDriver"
 ext.projectCreator          = "Ivan De Marino (https://github.com/detro)"
 
-ext.seleniumVersion         = "2.44.0"
 
 dependencies {
-    ["selenium-java", "selenium-remote-driver"].each {
-        compile "org.seleniumhq.selenium:$it:$seleniumVersion"
-    }
+    compile "org.seleniumhq.selenium:selenium-remote-driver:$seleniumVersion"
 }
 
-// Forces Java 6 compile source/target
+// Forces Java 8 compile source/target
 compileJava {
-    sourceCompatibility = 1.6
-    targetCompatibility = 1.6
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
 }
 
 tasks.withType(JavaExec) {
@@ -140,75 +141,60 @@ artifacts {
     archives sourceJar
 }
 
-// Sign artifacts
-signing {
-    sign configurations.archives
-}
+// To specify a license in the pom:
+install {
+  repositories.mavenInstaller {
+    pom.project {
+        name            "PhantomJSDriver"
+        description     """
+        PhantomJSDriver is a Java binding for the PhantomJS WebDriver, GhostDriver.
+        The binding is developed within the GhostDriver project, and distributed through public Maven repository
+        and Selenium official .zip package.
+        """
+        groupId         projectGroupId
+        artifactId      projectArtifactId
+        version         project.version
+        packaging       "jar"
+        url             "https://github.com/detro/ghostdriver"
+        inceptionYear   "2012"
 
-// Upload archives to OSS Sonatype
-//
-// NOTE: requires you to first setup
-// 1) ~/.gnupg/* with a PGP key to sign the artifacts
-// 2) ~/.gradle/gradle.properties defining
-//
-//    signing.keyId=<YOUR PGP KEY ID>
-//    signing.password=<PASSWORD TO PGP SECRET RING>
-//    signing.secretKeyRingFile=<FULLPATH TO PGP SECRET RING>
-//    ossrhUsername=<OSS Sonatype Username>
-//    ossrhPassword=<OSS Sonatype Password>
-//
-uploadArchives {
-    repositories {
-        mavenDeployer {
-            beforeDeployment {
-                MavenDeployment deployment -> signing.signPom(deployment)
-            }
-
-            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
-                authentication(userName: ossrhUsername, password: ossrhPassword)
-            }
-
-            pom.project {
-                name            "PhantomJSDriver"
-                description     """
-                                PhantomJSDriver is a Java binding for the PhantomJS WebDriver, GhostDriver.
-                                The binding is developed within the GhostDriver project, and distributed through public Maven repository
-                                and Selenium official .zip package.
-                                """
-                groupId         projectGroupId
-                artifactId      projectArtifactId
-                version         project.version
-                packaging       "jar"
-                url             "https://github.com/detro/ghostdriver"
-                inceptionYear   "2012"
-
-                scm {
-                    url                     "https://github.com/detro/ghostdriver"
-                    connection              "scm:git:git@github.com:detro/ghostdriver.git"
-                    developerConnection     "scm:git:git@github.com:detro/ghostdriver.git"
-                }
-
-                licenses {
-                    license {
-                        name            "The BSD 2-Clause License"
-                        url             "http://opensource.org/licenses/BSD-2-Clause"
-                        distribution    "repo"
-                    }
-                }
-
-                developers {
-                    developer {
-                        id          "detro"
-                        name        "Ivan De Marino"
-                        email       "detronizator@gmail.com"
-                        url         "http://ivandemarino.me"
-                        roles {
-                            role    "Developer"
-                        }
-                        timezone    "GMT"
-                    }
-                }
-            }
+        scm {
+            url                     "https://github.com/detro/ghostdriver"
+            connection              "scm:git:git@github.com:detro/ghostdriver.git"
+            developerConnection     "scm:git:git@github.com:detro/ghostdriver.git"
         }
+
+      licenses {
+        license {
+            name            "The BSD 2-Clause License"
+            url             "http://opensource.org/licenses/BSD-2-Clause"
+            distribution    "repo"
+        }
+      }
+
+      developers {
+        developer {
+            id          "detro"
+            name        "Ivan De Marino"
+            email       "detronizator@gmail.com"
+            url         "http://ivandemarino.me"
+            roles {
+                role    "Owner"
+                role    "Developer"
+            }
+            timezone    "GMT"
+        }
+        developer {
+            id          "jesg"
+            name        "Jason Gowan"
+            email       "gowanjason@gmail.com"
+            url         "http://github.com/jesg"
+            roles {
+              role    "Developer"
+            }
+            timezone    "America/Los_Angeles"
+        }
+      }
     }
+  }
 }

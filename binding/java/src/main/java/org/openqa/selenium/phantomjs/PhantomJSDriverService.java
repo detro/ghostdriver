@@ -48,7 +48,6 @@ import static com.google.common.base.Preconditions.*;
  * Service that controls the life-cycle of a PhantomJS in Remote WebDriver mode.
  * The Remote WebDriver is implemented via GhostDriver.
  *
- * NOTE: Yes, the design of this class is heavily inspired by {@link org.openqa.selenium.chrome.ChromeDriverService}.
  *
  * @author Ivan De Marino http://ivandemarino.me
  */
@@ -90,17 +89,16 @@ public class PhantomJSDriverService extends DriverService {
      * {@code new String[] { "--logFile=PATH", "--logLevel=DEBUG" }}.
      * </p>
      *
-     *
+     * <br>
      * Acceptable arguments:
-     *  <ul>
-     *      <li><code>--ip=IP_GHOSTDRIVER_SHOULD_LISTEN_ON</code></li>
-     *      <li><code>--port=PORT_GHOSTDRIVER_SHOULD_LISTEN_ON</code></li>
-     *      <li><code>--hub=HTTP_ADDRESS_TO_SELENIUM_HUB</code></li>
-     *      <li><code>--logFile=PATH_TO_LOGFILE</code></li>
-     *      <li><code>--logLevel=(INFO|DEBUG|WARN|ERROR)</code></li>
-     *      <li><code>--logColor=(false|true)</code></li>
-     *  </ul>
-     *
+     * <ul>
+     *     <li>{@code --ip=IP_GHOSTDRIVER_SHOULD_LISTEN_ON}</li>
+     *     <li>{@code --port=PORT_GHOSTDRIVER_SHOULD_LISTEN_ON}</li>
+     *     <li>{@code --hub=HTTP_ADDRESS_TO_SELENIUM_HUB}</li>
+     *     <li>{@code --logFile=PATH_TO_LOGFILE}</li>
+     *     <li>{@code --logLevel=(INFO|DEBUG|WARN|ERROR)}</li>
+     *     <li>{@code --logColor=(false|true)}</li>
+     * </ul>
      */
     public static final String PHANTOMJS_GHOSTDRIVER_CLI_ARGS = "phantomjs.ghostdriver.cli.args";
 
@@ -163,6 +161,8 @@ public class PhantomJSDriverService extends DriverService {
     /**
      * Configures and returns a new {@link PhantomJSDriverService} using the default configuration.
      *
+     *
+     * <br>
      * In this configuration, the service will use the PhantomJS executable identified by the the
      * following capability, system property or PATH environment variables:
      * <ul>
@@ -172,8 +172,10 @@ public class PhantomJSDriverService extends DriverService {
      *          (Optional - without will use GhostDriver internal to PhantomJS)
      *      </li>
      * </ul>
-     *
+     * <br>
      * Each service created by this method will be configured to find and use a free port on the current system.
+     * <br>
+     * @param desiredCapabilities desired capabilities
      *
      * @return A new ChromeDriverService using the default configuration.
      */
@@ -206,7 +208,7 @@ public class PhantomJSDriverService extends DriverService {
 
     /**
      * Same as {@link PhantomJSDriverService#createDefaultService(org.openqa.selenium.Capabilities)}.
-     *
+     * <br>
      * In this case PhantomJS or GhostDriver can't be searched within the Capabilities, only System
      * Properties.
      *
@@ -219,7 +221,7 @@ public class PhantomJSDriverService extends DriverService {
     /**
      * Looks into the Capabilities, the current $PATH and the System Properties for
      * {@link PhantomJSDriverService#PHANTOMJS_EXECUTABLE_PATH_PROPERTY}.
-     *
+     * <br>
      * NOTE: If the Capability, the $PATH and the System Property are set, the Capability takes
      * priority over the System Property, that in turn takes priority over the $PATH.
      *
@@ -264,10 +266,10 @@ public class PhantomJSDriverService extends DriverService {
 
     /**
      * Find the GhostDriver main file (i.e. {@code "main.js"}).
-     *
+     * <br>
      * Looks into the Capabilities and the System Properties for
      * {@link PhantomJSDriverService#PHANTOMJS_GHOSTDRIVER_PATH_PROPERTY}.
-     *
+     * <br>
      * NOTE: If both the Capability and the System Property are set, the Capability takes priority.
      *
      * @param desiredCapabilities Capabilities in which we will look for the path to GhostDriver
@@ -416,7 +418,7 @@ public class PhantomJSDriverService extends DriverService {
 
         /**
          * Configures the service to use a specific Proxy configuration.
-         *
+         * <br>
          * NOTE: Usually the proxy configuration is passed to the Remote WebDriver via WireProtocol
          * Capabilities. PhantomJS doesn't yet support protocol configuration at runtime: it
          * requires it to be defined on launch.
@@ -569,5 +571,6 @@ public class PhantomJSDriverService extends DriverService {
             }
 
             return false;
+        }
     }
 }

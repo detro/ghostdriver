@@ -34,7 +34,8 @@ var defaultConfig = {
         "version"   : "",
         "logFile"   : null,
         "logLevel"  : "INFO",
-        "logColor"  : false
+        "logColor"  : false,
+        "remoteHost": null
     },
     config = {
         "ip"        : defaultConfig.ip,
@@ -44,7 +45,8 @@ var defaultConfig = {
         "version"   : defaultConfig.version,
         "logFile"   : defaultConfig.logFile,
         "logLevel"  : defaultConfig.logLevel,
-        "logColor"  : defaultConfig.logColor
+        "logColor"  : defaultConfig.logColor,
+        "remoteHost": defaultConfig.remoteHost
     },
     logOutputFile = null,
     logger = require("./logger.js"),

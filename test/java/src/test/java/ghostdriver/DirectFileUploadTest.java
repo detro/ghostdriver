@@ -34,6 +34,7 @@ import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.io.IOUtils;
 import org.junit.Test;
+import org.junit.Ignore;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -45,6 +46,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.util.List;
 
+@Ignore
 public class DirectFileUploadTest extends BaseTestWithServer {
     private static final String LOREM_IPSUM_TEXT = "lorem ipsum dolor sit amet";
     private static final String FILE_HTML = "<div>" + LOREM_IPSUM_TEXT + "</div>";

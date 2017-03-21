@@ -26,7 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 /* generate node configuration for this node */
-var nodeconf = function(ip, port, hub, proxy, version) {
+var nodeconf = function(ip, port, hub, proxy, version, remoteHost) {
         var ref$, hubHost, hubPort;
 
         ref$ = hub.match(/([\w\d\.]+):(\d+)/);
@@ -43,6 +43,10 @@ var nodeconf = function(ip, port, hub, proxy, version) {
             platform = "LINUX";
         }
 
+        var returnHost = "http://" + ip + ":" + port;
+        if (remoteHost) {
+            returnHost = remoteHost;
+        }
 
         return {
             capabilities: [{
@@ -66,14 +70,14 @@ var nodeconf = function(ip, port, hub, proxy, version) {
                 registerCycle: 5000,
                 role: "wd",
                 url: "http://" + ip + ":" + port,
-                remoteHost: "http://" + ip + ":" + port
+                remoteHost: returnHost
             }
         };
     },
     _log = require("./logger.js").create("HUB Register");
 
 module.exports = {
-    register: function(ip, port, hub, proxy, version) {
+    register: function(ip, port, hub, proxy, version, remoteHost) {
         var page;
 
         try {
@@ -86,7 +90,7 @@ module.exports = {
             /* Register with selenium grid server */
             page.open(hub + 'grid/register', {
                 operation: 'post',
-                data: JSON.stringify(nodeconf(ip, port, hub, proxy, version)),
+                data: JSON.stringify(nodeconf(ip, port, hub, proxy, version, remoteHost)),
                 headers: {
                     'Content-Type': 'application/json'
                 }

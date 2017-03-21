@@ -1,0 +1,5 @@
+jdk:
+  - oraclejdk8
+install:
+   - echo "Running GhostDriver java client install command"
+   - ./binding/java/gradlew --build-file=binding/java/build.gradle install

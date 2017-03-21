@@ -32,107 +32,69 @@
 #    * Atoms purposely built for GhostDriver, still based on the default WebDriver Atoms
 #
 
+js_library(name = "chrome-deps",
+  deps = [ "//javascript/chrome-driver:get_first_client_rect:chrome",
+           "//javascript/chrome-driver:get_location_in_view:chrome",
+           "//javascript/chrome-driver:get_page_zoom:chrome",
+           "//javascript/chrome-driver:is_element_clickable:chrome" ])
+
 js_library(name = "deps",
   srcs = [ "*.js" ],
   deps = [ "//javascript/atoms:all_js",
+           ":chrome-deps",
            "//javascript/webdriver/atoms:all_js" ])
 
 # Atoms created specifically for GhostDriver
-js_fragment(name = "focus_on_element",
-  module = "phantomjs.atoms.inject.action",
-  function = "phantomjs.atoms.inject.action.focusOnElement",
-  deps = [ ":deps" ])
-
-js_fragment(name = "move_mouse",
-  module = "phantomjs.atoms.inject.action",
-  function = "phantomjs.atoms.inject.action.moveMouse",
-  deps = [ ":deps" ])
-
-js_fragment(name = "right_click",
-  module = "phantomjs.atoms.inject.action",
-  function = "phantomjs.atoms.inject.action.rightClick",
-  deps = [ ":deps" ])
-
-js_fragment(name = "double_click",
-  module = "phantomjs.atoms.inject.action",
-  function = "phantomjs.atoms.inject.action.doubleClick",
-  deps = [ ":deps" ])
-
-js_fragment(name = "scroll_mouse",
-  module = "phantomjs.atoms.inject.action",
-  function = "phantomjs.atoms.inject.action.scrollMouse",
-  deps = [ ":deps" ])
-
-js_fragment(name = "drag",
-  module = "phantomjs.atoms.inject.action",
-  function = "phantomjs.atoms.inject.action.drag",
-  deps = [ ":deps" ])
-
 js_fragment(name = "scroll_into_view",
   module = "phantomjs.atoms.inject.action",
   function = "phantomjs.atoms.inject.action.scrollIntoView",
   deps = [ ":deps" ])
 
-js_fragment(name = "tap",
+js_fragment(name = "is_file_input",
   module = "phantomjs.atoms.inject.action",
-  function = "phantomjs.atoms.inject.action.tap",
+  function = "phantomjs.atoms.inject.action.isFileInput",
   deps = [ ":deps" ])
 
-js_fragment(name = "swipe",
+js_fragment(name = "is_content_editable",
   module = "phantomjs.atoms.inject.action",
-  function = "phantomjs.atoms.inject.action.swipe",
+  function = "phantomjs.atoms.inject.action.isContentEditable",
   deps = [ ":deps" ])
 
-js_fragment(name = "pinch",
+js_fragment(name = "get_name",
   module = "phantomjs.atoms.inject.action",
-  function = "phantomjs.atoms.inject.action.pinch",
+  function = "phantomjs.atoms.inject.action.getName",
   deps = [ ":deps" ])
 
-js_fragment(name = "rotate",
+js_fragment(name = "get_location",
   module = "phantomjs.atoms.inject.action",
-  function = "phantomjs.atoms.inject.action.rotate",
+  function = "phantomjs.atoms.inject.action.getLocation",
+  deps = [ ":deps" ])
+
+js_fragment(name = "get_location_in_view",
+  module = "phantomjs.atoms.inject.action",
+  function = "phantomjs.atoms.inject.action.getLocationInView",
+  deps = [ ":deps" ])
+
+js_fragment(name = "frame_name",
+  module = "phantomjs.atoms.inject.action",
+  function = "phantomjs.atoms.inject.action.frameName",
   deps = [ ":deps" ])
 
 # List of Atoms that will be compiled for GhostDriver
 js_library(name = "build_atoms",
   deps = [
-    ":focus_on_element",
-    ":move_mouse",
-    ":right_click",
-    ":double_click",
-    ":scroll_mouse",
-    ":drag",
     ":scroll_into_view",
-    ":tap",
-    ":swipe",
-    ":pinch",
-    ":rotate",
+    ":is_file_input",
+    ":is_content_editable",
+    ":get_name",
+    ":get_location",
+    ":get_location_in_view",
+    ":frame_name",
 
-    "//javascript/atoms/fragments:get_effective_style",
     "//javascript/atoms/fragments:execute_script",
     "//javascript/atoms/fragments:execute_async_script",
-    "//javascript/atoms/fragments:get_location",
-    "//javascript/atoms/fragments:get_current_position",
-
-    "//javascript/chrome-driver:get_location_in_view",
-
-    "//javascript/webdriver/atoms/fragments:get_attribute",
 
     "//javascript/webdriver/atoms/fragments/inject:type",
-    "//javascript/webdriver/atoms/fragments/inject:set_local_storage_item",
-    "//javascript/webdriver/atoms/fragments/inject:get_local_storage_item",
-    "//javascript/webdriver/atoms/fragments/inject:get_local_storage_keys",
-    "//javascript/webdriver/atoms/fragments/inject:remove_local_storage_item",
-    "//javascript/webdriver/atoms/fragments/inject:clear_local_storage",
-    "//javascript/webdriver/atoms/fragments/inject:get_local_storage_size",
-    "//javascript/webdriver/atoms/fragments/inject:set_session_storage_item",
-    "//javascript/webdriver/atoms/fragments/inject:get_session_storage_item",
-    "//javascript/webdriver/atoms/fragments/inject:get_session_storage_keys",
-    "//javascript/webdriver/atoms/fragments/inject:remove_session_storage_item",
-    "//javascript/webdriver/atoms/fragments/inject:clear_session_storage",
-    "//javascript/webdriver/atoms/fragments/inject:get_session_storage_size",
-    "//javascript/webdriver/atoms/fragments/inject:execute_sql",
-    "//javascript/webdriver/atoms/fragments/inject:get_appcache_status",
     "//javascript/webdriver/atoms/fragments/inject:active_element",
     "//javascript/webdriver/atoms/fragments/inject:submit",
     "//javascript/webdriver/atoms/fragments/inject:clear",

@@ -1,7 +1,7 @@
 /*
 This file is part of the GhostDriver by Ivan De Marino <http://ivandemarino.me>.
 
-Copyright (c) 2012-2014, Ivan De Marino <http://ivandemarino.me>
+Copyright (c) 2017, Jason Gowan <gowanjason@gmail.com>
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -25,32 +25,45 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-package ghostdriver;
+const
+log_levels = [
+    "OFF",
+    "SEVERE",
+    "WARNING",
+    "INFO",
+    "CONFIG",
+    "FINE",
+    "FINER",
+    "FINEST",
+    "ALL"
+];
 
-import org.junit.Test;
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.ui.WebDriverWait;
-import org.openqa.selenium.support.ui.ExpectedConditions;
+/**
+ * (Super-simple) Logger
+ *
+ * @param context {String} Logger level
+ */
+function WebDriverLogger(log_level) {
+    var _push;
 
-import static org.junit.Assert.assertTrue;
-
-public class GoogleSearchTest extends BaseTest {
-    @Test
-    public void searchForCheese() {
-        String strToSearchFor = "Cheese!";
-        WebDriver d = getDriver();
-
-        // Load Google.com
-        d.get(" http://www.google.com");
-        // Locate the Search field on the Google page
-        WebElement element = d.findElement(By.name("q"));
-        // Type Cheese
-        element.sendKeys(strToSearchFor);
-        // Submit form
-        element.submit();
-
-        new WebDriverWait(d, 5).until(ExpectedConditions.titleIs("Cheese! - Google Search"));
+    // default to no-opt
+    if (log_level === "OFF" || log_levels.indexOf(log_level) === -1) {
+        _push = function(_) {};
+    } else {
+        _push = function(arg) { this.log.push(arg); };
     }
-}
+
+    return {
+        log: [],
+        push: _push
+    };
+};
+
+/**
+ * Export: Create Logger with Log Level
+ *
+ * @param context {String} Log Level of the new Logger
+ */
+exports.create = function (log_level) {
+    return new WebDriverLogger(log_level);
+};

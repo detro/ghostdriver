@@ -1,7 +1,7 @@
 /*
 This file is part of the GhostDriver by Ivan De Marino <http://ivandemarino.me>.
 
-Copyright (c) 2012-2014, Ivan De Marino <http://ivandemarino.me>
+Copyright (c) 2017, Jason Gowan
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -27,30 +27,59 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package ghostdriver;
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
+
 import org.junit.Test;
 import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.phantomjs.PhantomJSDriverService;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 
-import static org.junit.Assert.assertTrue;
+public class UnhandledAlertDismissTest extends BaseTestWithServer {
 
-public class GoogleSearchTest extends BaseTest {
+
+    @Override
+    public void prepareDriver() throws Exception {
+        sCaps.setCapability("unhandledPromptBehavior", "dismiss");
+
+        super.prepareDriver();
+    }
+
     @Test
-    public void searchForCheese() {
-        String strToSearchFor = "Cheese!";
+    public void canHandleAlert() {
+        // Get Driver Instance
         WebDriver d = getDriver();
 
-        // Load Google.com
-        d.get(" http://www.google.com");
-        // Locate the Search field on the Google page
-        WebElement element = d.findElement(By.name("q"));
-        // Type Cheese
-        element.sendKeys(strToSearchFor);
-        // Submit form
-        element.submit();
+        d.get(server.getBaseUrl() + "/common/alerts.html");
+        d.findElement(By.id("alert2")).click();
 
-        new WebDriverWait(d, 5).until(ExpectedConditions.titleIs("Cheese! - Google Search"));
+        new WebDriverWait(d, 5).until(ExpectedConditions.presenceOfElementLocated(By.id("cheese-child")));
+    }
+
+    @Test
+    public void canHandleConfirm() {
+        // Get Driver Instance
+        WebDriver d = getDriver();
+
+        d.get(server.getBaseUrl() + "/common/alerts.html");
+        WebElement elem = d.findElement(By.id("confirm2"));
+        elem.click();
+
+        new WebDriverWait(d, 5).until(ExpectedConditions.attributeToBe(elem, "value", "false"));
+    }
+
+    @Test
+    public void canHandlePrompt() {
+        // Get Driver Instance
+        WebDriver d = getDriver();
+
+        d.get(server.getBaseUrl() + "/common/alerts.html");
+        WebElement elem = d.findElement(By.id("prompt2"));
+        elem.click();
+
+        new WebDriverWait(d, 5).until(ExpectedConditions.attributeToBe(elem, "value", "default value"));
     }
 }
