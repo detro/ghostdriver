@@ -186,12 +186,12 @@ ghostdriver.Session = function(desiredCapabilities) {
         }
         if (k.indexOf(_capsPageBlacklistPref) === 0) {
             const pageBlacklist = [];
-            const len = desiredCapabilities[k].length;
-            for(var i = 0; i < len; i++) {
+            const pageBlacklistLength = desiredCapabilities[k].length;
+            for(var i = 0; i < pageBlacklistLength; i++) {
                 pageBlacklist.push(new RegExp(desiredCapabilities[k][i]));
             }
             _pageBlacklistFilter = function(url, net) {
-                for(var i = 0; i < len; i++) {
+                for(var i = 0; i < pageBlacklistLength; i++) {
                     if(url.search(pageBlacklist[i]) !== -1) {
                         net.abort();
                         _log.debug("blacklist abort " + url);
@@ -201,17 +201,18 @@ ghostdriver.Session = function(desiredCapabilities) {
         }
         if (k.indexOf(_capsPageWhitelistPref) === 0) {
             const pageWhitelist = [];
-            const len2 = desiredCapabilities[k].length;
-            for(var i = 0; i < len; i++) {
+            const pageWhitelistLength = desiredCapabilities[k].length;
+            for(var i = 0; i < pageWhitelistLength; i++) {
                 pageWhitelist.push(new RegExp(desiredCapabilities[k][i]));
             }
             _pageWhitelistFilter = function(url, net) {
-                for(var i = 0; i < len2; i++) {
-                    if(url.search(pageWhitelist[i]) === -1) {
-                        net.abort();
-                        _log.debug("whitelist abort " + url);
+                for(var i = 0; i < pageWhitelistLength; i++) {
+                    if(url.search(pageWhitelist[i]) !== -1) {
+                        return;
                     }
                 }
+                net.abort();
+                _log.debug("whitelist abort " + url);
             }
         }
         if (k.indexOf(_capsPageSettingsProxyPref) === 0) {
