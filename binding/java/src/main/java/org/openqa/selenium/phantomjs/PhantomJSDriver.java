@@ -145,7 +145,7 @@ public class PhantomJSDriver extends RemoteWebDriver implements TakesScreenshot 
      * See the <a href="http://phantomjs.org/api/">PhantomJS API</a>
      * for details on what is available.
      * <br>
-     * A 'page' variable pointing to currently selected page is available for use.
+     * The javascript this keyword points to the currently selected page that is available for use.
      * If there is no page yet, one is created.
      * <br>
      * When overriding any callbacks be sure to wrap in a try/catch block, as failures
