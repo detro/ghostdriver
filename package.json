@@ -1,0 +1,41 @@
+{
+  "name": "ghostdriver",
+  "version": "2.0.0",
+  "description": "Ghost Driver is an implementation of the Remote WebDriver Wire protocol, using PhantomJS as back-end.",
+  "bin": {
+    "ghostdriver": "./bin/ghostdriver"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/detro/ghostdriver.git"
+  },
+  "keywords": [
+    "selenium",
+    "ghostdriver",
+    "phantomjs",
+    "webkit",
+    "headless"
+  ],
+  "author": "Ivan De Marino",
+  "maintainers": [
+    {
+      "name": "Jason Gowan",
+      "email": "gowanjason@gmail.com",
+      "web": "https://github.com/jesg"
+    }
+  ],
+  "license": "BSD-2-Clause",
+  "files": [
+    "LICENSE.BSD",
+    "README.md",
+    "bin/ghostdriver",
+    "src/"
+  ],
+  "optionalDependencies": {
+    "phantomjs-prebuilt": ">2.1.1"
+  },
+  "bugs": {
+    "url": "https://github.com/detro/ghostdriver/issues"
+  },
+  "homepage": "https://github.com/detro/ghostdriver#readme"
+}

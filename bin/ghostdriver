@@ -1,0 +1,131 @@
+#!/usr/bin/env node
+
+/*
+This file is part of the GhostDriver by Ivan De Marino <http://ivandemarino.me>.
+
+Copyright (c) 2017, Jason Gowan
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright notice,
+      this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above copyright notice,
+      this list of conditions and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
+var path = require('path')
+var spawn = require('child_process').spawn
+var process = require('process')
+var phantomjs_path;
+
+if ('PHANTOMJS_BINARY_PATH' in process.env) {
+    phantomjs_path = process.env['PHANTOMJS_BINARY_PATH']
+} else {
+    try {
+        var phantomjs = require('phantomjs-prebuilt')
+        // search for the root of the phantomjs-prebuilt package
+        var phantomjs_prebuilt_path = phantomjs.path
+        while(phantomjs_prebuilt_path && path.basename(phantomjs_prebuilt_path) !== 'phantomjs-prebuilt') {
+            phantomjs_prebuilt_path = path.join(phantomjs_prebuilt_path, '..')
+        }
+        phantomjs_path = path.join(phantomjs_prebuilt_path,'lib','phantom','bin','phantomjs')
+    } catch (err) {
+        phantomjs_path = 'phantomjs';
+    }
+
+}
+
+
+var ip = null
+var port = null
+// add ip and port to additional args
+parse_ip_port = function(str) {
+    if(!str) {
+        port = 8910;
+        return;
+    }
+    var url_regex = /(([0-9\.]+):)?([0-9]+)/
+    var match = str.match(url_regex)
+    if(!match) {
+        port = 8910
+    } else if (match[3]) {
+        ip = match[2]
+        port = match[3]
+    } else if (match[2]) {
+        port = match[2]
+    }
+}
+
+var first_ghostdriver_option_index = null;
+process.argv.forEach(function(val, index, array) {
+    if(first_ghostdriver_option_index === null &&
+       (val.startsWith('-w') || val.startsWith('--webdriver') || val.startsWith('--wd'))) {
+        first_ghostdriver_option_index = index;
+    }
+
+    val = val.replace('--webdriver-selenium-grid-hub', '--hub')
+    .replace('--webdriver-loglevel', '--logLevel')
+    .replace('--webdriver-logfile', '--logFile')
+    array[index] = val;
+
+    if(val.startsWith('-w') || val.startsWith('--webdriver') || val.startsWith('--wd')) {
+        if (val.indexOf('=') === -1) {
+            parse_ip_port(array[index+1])
+        } else {
+            parse_ip_port(array[index])
+        }
+    }
+});
+
+// transform some arguments for ghostdriver
+if (port || ip) {
+    process.argv.splice(first_ghostdriver_option_index, 0, path.join(__dirname, '..', 'src', 'main.js'))
+    if(port) {
+        process.argv.push('--port=' + port);
+    }
+    if(ip) {
+        process.argv.push('--ip=' + ip);
+    } else {
+        process.argv.push('--ip=127.0.0.1');
+    }
+}
+
+
+/* copied from https://github.com/Medium/phantomjs */
+/* // For Node 0.6 compatibility, pipe the streams manually, instead of using */
+/* // `{ stdio: 'inherit' }`. */
+var cp = spawn(phantomjs_path, process.argv.slice(2))
+cp.stdout.pipe(process.stdout)
+cp.stderr.pipe(process.stderr)
+process.stdin.pipe(cp.stdin)
+
+cp.on('error', function (err) {
+  console.error('Error executing phantom at', binPath)
+  console.error(err.stack)
+})
+
+cp.on('exit', function(code){
+  // Wait few ms for error to be printed.
+  setTimeout(function(){
+    process.exit(code)
+  }, 20)
+});
+
+process.on('SIGTERM', function() {
+  cp.kill('SIGTERM')
+  process.exit(1)
+})
