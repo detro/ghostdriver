@@ -1,3 +1,5 @@
+[![Release](https://jitpack.io/v/detro/ghostdriver.svg)]
+(https://jitpack.io/#detro/ghostdriver)
 
 # Ghost Driver
 
@@ -60,7 +62,7 @@ For versions >= 2.0.0, add the following to your `pom.xml`:
 ```xml
 <dependency>
     <groupId>com.github.detro</groupId>
-    <artifactId>phantomjsdriver</artifactId>
+    <artifactId>ghostdriver</artifactId>
     <version>2.0.0</version>
 </dependency>
 ```
@@ -80,7 +82,7 @@ allprojects {
 ```gradle
 dependencies {
     ...
-    testCompile "com.github.detro.ghostdriver:phantomjsdriver:2.0.0"
+    testCompile 'com.github.detro:ghostdriver:2.0.0'
     ...
 }
 ```
