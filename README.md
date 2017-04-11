@@ -1,5 +1,4 @@
-[![Release](https://jitpack.io/v/detro/ghostdriver.svg)]
-(https://jitpack.io/#detro/ghostdriver)
+[![Release](https://jitpack.io/v/detro/ghostdriver.svg)](https://jitpack.io/#detro/ghostdriver)
 
 # Ghost Driver
 
