@@ -76,6 +76,38 @@ var nodeconf = function(ip, port, hub, proxy, version, remoteHost) {
     },
     _log = require("./logger.js").create("HUB Register");
 
+var hubStatus = function(ip, port, hub, proxy, version) {
+    var page;
+    var status = false;
+
+    try {
+        page = require('webpage').create();
+        port = +port; //< ensure it's of type "number"
+        if(!hub.match(/\/$/)) {
+            hub += '/';
+        }
+
+        /* Ping selenium grid hub */
+        page.open(hub +'status', {
+            operation: 'get',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        }, function(status) {
+            if(status !== 'success') {
+                _log.error("hubStatus", "Unable to contact grid " + hub + ": " + status);
+                status = false;
+            } else {
+                _log.info("hubStatus", "Able to contact grid " + hub + ": " + status);
+                status = true;
+            }
+        });
+    } catch (e) {
+        throw new Error("Could not ping Selenium Grid Hub: " + hub);
+    }
+    return status;
+};
+
 module.exports = {
     register: function(ip, port, hub, proxy, version, remoteHost) {
         var page;
@@ -108,5 +140,14 @@ module.exports = {
         } catch (e) {
             throw new Error("Could not register to Selenium Grid Hub: " + hub);
         }
+
+        /* Register periodic heatbeat every 10 seconds */
+        var self = this;
+        !function heartbeat(){
+            if(!hubStatus(ip, port, hub, proxy, version)){
+                self.register(ip, port, hub, proxy, version);
+            }
+            setTimeout(heartbeat, 10000);
+        }();
     }
 };
