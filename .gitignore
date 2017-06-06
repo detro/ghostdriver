@@ -22,3 +22,5 @@ build
 .classpath
 .project
 
+dist
+*.egg-info

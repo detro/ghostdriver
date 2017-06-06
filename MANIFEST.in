@@ -1,0 +1,5 @@
+exclude *
+prune *
+graft svGhostDriver
+include VERSION
+include setup.py
