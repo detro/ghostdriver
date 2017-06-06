@@ -39,11 +39,11 @@ repositories {
 }
 
 ext.commonsFileUploadVersion = "1.3"
-ext.seleniumVersion = "3.0.0"
+ext.seleniumVersion = "3.1.0"
 ext.jettyVersion = "6.1.21"
 ext.jsr305Version = "2.0.1"
 ext.browsermobProxyClientVersion = "0.1.3"
-ext.phantomjsdriverVersion = "2.0.0"
+ext.phantomjsdriverVersion = "2.1.0"
 
 configurations {
     // introduces a transitive dependency on selenium 2.53

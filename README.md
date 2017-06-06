@@ -26,7 +26,7 @@ IRC channel: [#phantomjs-ghostdriver](http://webchat.freenode.net/?channels=%23p
 ## Setup
 
 * Download latest stable PhantomJS from [here](http://phantomjs.org/download.html)
-* Selenium version `">= 3.0.0`"
+* Selenium version `">= 3.1.0`"
 
 **THAT'S IT!!** Because of latest stable GhostDriver being embedded in PhantomJS,
 you shouldn't need anything else to get started.
@@ -62,7 +62,7 @@ For versions >= 2.0.0, add the following to your `pom.xml`:
 <dependency>
     <groupId>com.github.detro</groupId>
     <artifactId>ghostdriver</artifactId>
-    <version>2.0.0</version>
+    <version>2.1.0</version>
 </dependency>
 ```
 
@@ -81,7 +81,7 @@ allprojects {
 ```gradle
 dependencies {
     ...
-    testCompile 'com.github.detro:ghostdriver:2.0.0'
+    testCompile 'com.github.detro:ghostdriver:2.1.0'
     ...
 }
 ```
