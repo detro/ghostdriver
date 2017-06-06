@@ -70,7 +70,8 @@ ghostdriver.Session = function(desiredCapabilities) {
         "proxy" : {                         //< TODO Support more proxy options - PhantomJS does allow setting from command line
             "proxyType" : _const.PROXY_TYPES.DIRECT
         },
-        "webSecurityEnabled" : true
+        "webSecurityEnabled" : true,
+        "webdriver.load.strategy": "normal"
     },
     _negotiatedCapabilities = {
         "browserName"               : _defaultCapabilities.browserName,
@@ -100,7 +101,10 @@ ghostdriver.Session = function(desiredCapabilities) {
             desiredCapabilities.proxy,
         "webSecurityEnabled"        : typeof(desiredCapabilities.webSecurityEnabled) === "undefined" ?
             _defaultCapabilities.webSecurityEnabled :
-            desiredCapabilities.webSecurityEnabled
+            desiredCapabilities.webSecurityEnabled,
+        "webdriver.load.strategy"   : typeof(desiredCapabilities["webdriver.load.strategy"]) === "undefined" ?
+            _defaultCapabilities["webdriver.load.strategy"] :
+            desiredCapabilities["webdriver.load.strategy"]
     },
     // NOTE: This value is needed for Timeouts Upper-bound limit.
     // "setTimeout/setInterval" accept only 32 bit integers, even though Number are all Doubles (go figure!)
@@ -195,6 +199,7 @@ ghostdriver.Session = function(desiredCapabilities) {
                     if(url.search(pageBlacklist[i]) !== -1) {
                         net.abort();
                         _log.debug("blacklist abort " + url);
+                        return true;
                     }
                 }
             }
@@ -213,6 +218,7 @@ ghostdriver.Session = function(desiredCapabilities) {
                 }
                 net.abort();
                 _log.debug("whitelist abort " + url);
+                return true;
             }
         }
         if (k.indexOf(_capsPageSettingsProxyPref) === 0) {
@@ -254,6 +260,16 @@ ghostdriver.Session = function(desiredCapabilities) {
         }
 
         thisPage._onLoadFinishedLatch = false;
+
+        if (_shouldWaitForLoad()) {
+            // Register Callbacks to grab any async event we are interested in
+            this.setOneShotCallback("onLoadFinished", function (status) {
+                _log.debug("_execFuncAndWaitForLoadDecorator", "onLoadFinished: " + status);
+
+                onLoadFinishedArgs = Array.prototype.slice.call(arguments);
+            });
+        }
+
         // Execute "code"
         if (execTypeOpt === "eval") {
             // Remove arguments used by this function before providing them to the target code.
@@ -266,6 +282,11 @@ ghostdriver.Session = function(desiredCapabilities) {
             args.splice(0, 3);
             // "Apply" the provided function
             code.apply(this, args);
+        }
+
+        if (!_shouldWaitForLoad()) {
+            onLoadFunc.call(thisPage, "success");
+            return;
         }
 
         // Wait 10ms before proceeding any further: in this window of time
@@ -333,8 +354,17 @@ ghostdriver.Session = function(desiredCapabilities) {
             // Retry in 10ms
             setTimeout(checkDoneLoading, 10);
         };
-        checkDoneLoading();
+
+        if (_shouldWaitForLoad()) {
+            checkDoneLoading();
+        } else {
+            callback.call(thisPage);
+        }
     },
+
+    _shouldWaitForLoad = function() {
+        return _negotiatedCapabilities["webdriver.load.strategy"] === "normal";
+    }
 
     _oneShotCallbackFactory = function(page, callbackName) {
         return function() {
@@ -522,8 +552,18 @@ ghostdriver.Session = function(desiredCapabilities) {
         };
 
         page.onResourceRequested = function (req, net) {
-            if(_pageWhitelistFilter) { _pageWhitelistFilter(req.url, net); }
-            if(_pageBlacklistFilter) { _pageBlacklistFilter(req.url, net); }
+            if(_pageWhitelistFilter) {
+                if (_pageWhitelistFilter(req.url, net)) {
+                    // don't track a request that we want to ignore (aborted)
+                    return;
+                }
+            }
+            if(_pageBlacklistFilter) {
+                if (_pageBlacklistFilter(req.url, net)) {
+                    // don't track a request that we want to ignore (aborted)
+                    return;
+                }
+            }
 
             _log.debug("page.onResourceRequested", JSON.stringify(req));
 
@@ -566,12 +606,6 @@ ghostdriver.Session = function(desiredCapabilities) {
                 id: req.id,
                 error: req
             });
-        };
-        page.onNavigationRequested = function(url, type, willNavigate, main) {
-            // Clear page log before page loading
-            if (main && willNavigate) {
-                _clearPageLog(page);
-            }
         };
 
         _decoratePromptBehavior(page);
@@ -827,7 +861,6 @@ ghostdriver.Session = function(desiredCapabilities) {
             tmp.push(_createLogEntry(
                 "INFO",
                 JSON.stringify(har.createHar(page, page.resources.log))));
-            page.resources.log = [];
             return tmp;
         }
 
@@ -906,6 +939,7 @@ ghostdriver.Session = function(desiredCapabilities) {
         isLoading : _isLoading,
         getLog: _getLog,
         getLogTypes: _getLogTypes,
+        clearLogs: function() { return _clearPageLog(_getCurrentWindow()); },
         getFrameOffset: _getFrameOffset
     };
 };
