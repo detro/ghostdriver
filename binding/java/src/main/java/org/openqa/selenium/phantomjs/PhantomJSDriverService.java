@@ -69,6 +69,12 @@ public class PhantomJSDriverService extends DriverService {
     public static final String PHANTOMJS_GHOSTDRIVER_PATH_PROPERTY = "phantomjs.ghostdriver.path";
 
     /**
+     * Optional System property that defines the location of the
+     * GhostDriver logfile path.
+     */
+    public static final String PHANTOMJS_LOGFILE_PATH_PROPERTY = "phantomjs.logfile.path";
+
+    /**
      * Capability that allows to add custom command line arguments to the
      * spawned PhantomJS process.
      *
@@ -197,7 +203,7 @@ public class PhantomJSDriverService extends DriverService {
                 .usingGhostDriver(ghostDriverfile)
                 .usingAnyFreePort()
                 .withProxy(proxy)
-                .withLogFile(new File(PHANTOMJS_DEFAULT_LOGFILE))
+                .withLogFile(findLogFile())
                 .withAcceptSslCerts(findAcceptSslCerts(desiredCapabilities))
                 .usingCommandLineArguments(
                         findCLIArgumentsFromCaps(desiredCapabilities, PHANTOMJS_CLI_ARGS))
@@ -305,6 +311,16 @@ public class PhantomJSDriverService extends DriverService {
 
         // This means that no GhostDriver System Property nor Capability was set
         return null;
+    }
+
+    private static File findLogFile() {
+        String logfilepath;
+        if (System.getProperty(PHANTOMJS_LOGFILE_PATH_PROPERTY) != null) {
+            logfilepath = System.getProperty(PHANTOMJS_LOGFILE_PATH_PROPERTY);
+        } else {
+            logfilepath = PHANTOMJS_DEFAULT_LOGFILE;
+        }
+        return new File(logfilepath);
     }
 
     private static String[] findCLIArgumentsFromCaps(Capabilities desiredCapabilities, String capabilityName) {
