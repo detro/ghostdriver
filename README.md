@@ -1,4 +1,5 @@
 [![Release](https://jitpack.io/v/detro/ghostdriver.svg)](https://jitpack.io/#detro/ghostdriver)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fdetro%2Fghostdriver.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fdetro%2Fghostdriver?ref=badge_shield)
 
 # Ghost Driver
 
@@ -245,6 +246,9 @@ Any **help is welcome**, but bear in mind the following base principles:
 
 ## License
 GhostDriver is distributed under [BSD License](http://www.opensource.org/licenses/BSD-2-Clause).
+
+
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fdetro%2Fghostdriver.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fdetro%2Fghostdriver?ref=badge_large)
 
 ## Release names
 See [here](http://en.wikipedia.org/wiki/List_of_ghosts).
