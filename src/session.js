@@ -113,7 +113,8 @@ ghostdriver.Session = function(desiredCapabilities) {
     },
     _windows = {},  //< NOTE: windows are "webpage" in Phantom-dialect
     _currentWindowHandle = null,
-    _cookieJar = require('cookiejar').create(),
+    _cookieJar,
+    _cookiePath = null,
     _id = require("./third_party/uuid.js").v1(),
     _inputs = ghostdriver.Inputs(),
     _capsPageSettingsPref = "phantomjs.page.settings.",
@@ -138,6 +139,14 @@ ghostdriver.Session = function(desiredCapabilities) {
     _pageCustomHeaders = {},
     _log = ghostdriver.logger.create("Session [" + _id + "]"),
     k, settingKey, headerKey, proxySettings;
+
+    if (desiredCapabilities['phantomjs.cookies.path']) {
+      _cookiePath = desiredCapabilities['phantomjs.cookies.path'];
+      _negotiatedCapabilities['phantomjs.cookies.path'] = _cookiePath;
+      _cookieJar = require('cookiejar').create(_cookiePath);
+    } else {
+      _cookieJar = require('cookiejar').create();
+    }
 
     var
     /**
